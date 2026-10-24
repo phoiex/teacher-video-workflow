@@ -9,6 +9,8 @@
 
 讲稿确认后，制作阶段保留原文。网络失败可从已保存的阶段继续。老师使用 Dify 发布页；需要调整节点时，打开「流程与测试」。
 
+推荐用 **Gemini 生成讲稿，Claude 制作分镜和视频**。先生成完整讲稿，再单独按 `deslop-zh` 修改表达，交老师确认后进入制作。讲法由 Gemini 组织，镜头和动画由 Claude 根据定稿安排。
+
 ## 画面风格
 
 | 暖色图解 | ASCII 终端科技 | 空间代码动画 |
@@ -17,6 +19,18 @@
 | 纸面色彩、简洁图形、逐步标注 | 字符网格、程序界面、数据流 | 几何、镜头变化与空间层次 |
 
 每种预设都有对应 Skill 和参考图，也支持自由设计、上传参考图片或视频。空间动画分支参考 OpenFilm 的制作方法；工作流统一用 HTML、Chromium 和 FFmpeg 导出。
+
+## Skill 用途
+
+| Skill | 用途与使用阶段 |
+|---|---|
+| [去 AI 味写作（deslop-zh）](skills/deslop-zh/SKILL.md) | 讲稿初稿完成后，单独修改表达，减少套话和翻译腔，保留知识、例子和推理。也用于需求沟通及界面文案。 |
+| [视频制作主流程（explainer-video-production）](skills/explainer-video-production/SKILL.md) | 根据已确认讲稿安排分镜、声音、字幕和视频交付，并读取所选风格分支。 |
+| [暖色图解](skills/explainer-video-production/branches/warm-explainer.md) | 用纸面色彩、文字和简洁图形逐步解释知识，适合平实的课堂讲解。 |
+| [ASCII 终端科技](skills/explainer-video-production/branches/ascii-terminal.md) | 以字符网格构图，结合终端界面、节点和数据流，适合算法或程序过程的演示。 |
+| [空间代码动画](skills/explainer-video-production/branches/openfilm-cinematic.md) | 参考 OpenFilm 的制作方法，用几何、空间层次和镜头变化展示关系，可按内容加入粒子与光效。 |
+
+制作时组合主流程与选中的风格分支；去 AI 味写作在讲稿阶段使用。每个风格分支都配有上方对应的参考图。
 
 ## 安装与使用
 
@@ -39,6 +53,6 @@
 | `dify-overlay/` | 相对 Dify 1.17.1 的界面与运行恢复改动 |
 | `scripts/` | 本地安装、配置和启动入口 |
 
-当前版本 `0.1.0`。完整功能、检查范围和待验证项见[验证说明](docs/验证.md)。
+当前版本 `0.1.1`。完整功能、检查范围和待验证项见[验证说明](docs/验证.md)。
 
 原创代码采用 MIT 许可；Dify 改动沿用 Dify 许可，写作 Skill 保留上游版权。来源及对应文件见[第三方说明](NOTICE.md)。
