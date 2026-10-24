@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>制作进度</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:4px;font:15px/1.65 system-ui,-apple-system,sans-serif;color:#24334a;background:transparent}
+.card{padding:24px;border:1px solid #e2e8f0;border-radius:18px;background:#fff;box-shadow:0 3px 15px #1d39630a}
+header{display:flex;align-items:center;gap:12px}h2{font-size:20px;line-height:1.4;margin:0;color:#17243b}
+.dot{width:12px;height:12px;flex:none;border-radius:50%;background:#3878ee;box-shadow:0 0 0 6px #edf4ff;animation:breathe 2.4s ease-in-out infinite}
+body[data-status="paused"] .dot,body[data-status="duration_review"] .dot{background:#c98c18;box-shadow:0 0 0 6px #fff6e0;animation:none}
+body[data-status="complete"] .dot{background:#13a36b;box-shadow:0 0 0 6px #e8f8f0;animation:none}
+body[data-status="failed"] .dot{background:#d94b50;animation:none}
+p{margin:16px 0;color:#52627a}.track{height:7px;border-radius:20px;overflow:hidden;background:#edf2fa;margin:20px 0 12px}
+#bar{height:100%;background:linear-gradient(90deg,#6ca5ff,#3473ef);width:0;transition:width .6s ease;border-radius:20px}
+.steps{display:flex;gap:18px;color:#607089;font-size:13px}.steps span.active{color:#2563eb;font-weight:600}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}button,.link{min-height:40px;display:inline-flex;align-items:center;justify-content:center;padding:8px 16px;font:600 14px system-ui;border-radius:10px;border:1px solid #dae1ed;background:#fff;color:#33445d;cursor:pointer;text-decoration:none}
+button.primary{background:#2864df;border-color:#2864df;color:white}button:disabled{cursor:wait;opacity:.55}button:focus-visible,a:focus-visible{outline:3px solid #8eb5ff;outline-offset:3px}
+#error{color:#b13943}#foot{font-size:12px;margin:16px 0 0;color:#7a879b}video{width:100%;border-radius:12px;background:#111;display:block;margin-top:20px;aspect-ratio:16/9}
+[hidden]{display:none!important}dialog{max-width:calc(100% - 28px);width:480px;border:1px solid #e0e6ee;border-radius:16px;padding:24px;color:#25334a;box-shadow:0 15px 60px #263c5c24}dialog::backdrop{background:#17243b66}
+dialog h3{margin:0;font-size:20px}.close{float:right;padding:3px 9px;min-height:30px}
+@keyframes breathe{50%{box-shadow:0 0 0 10px #edf4ff88;opacity:.65}}
+@media(prefers-reduced-motion:reduce){.dot{animation:none}#bar{transition:none}}
+@media(max-width:380px){.card{padding:18px}.steps{gap:10px;font-size:12px}}
+</style>
+<main class="card">
+  <header><span class="dot" aria-hidden="true"></span><h2 id="title">正在读取制作进度</h2></header>
+  <p id="message" role="status">读取后会自动更新。</p>
+  <div id="progress"><div class="track" role="progressbar" aria-label="当前阶段进度" aria-valuemin="0" aria-valuemax="100"><div id="bar"></div></div>
+    <div class="steps"><span data-phase="audio">配音</span><span data-phase="animation">动画</span><span data-phase="export">导出与检查</span></div></div>
+  <div id="player"></div><div id="actions" class="actions"></div>
+  <p id="error" role="alert" hidden></p>
+  <p id="foot">进度自动更新。关闭课程页后，当前片段保存完再暂停。</p>
+</main>
+<dialog id="duration" aria-labelledby="duration-title">
+  <button class="close" id="close-dialog" aria-label="关闭时长提示">关闭</button>
+  <h3 id="duration-title">视频超过目标时长</h3><p id="duration-message"></p>
+  <div class="actions"><button class="primary" data-action="accept_duration">接受这个时长</button><button data-action="revise">返回修改讲稿</button></div>
+</dialog>
+<script>
+const cid=__COURSE__,channel=__CHANNEL__,parentOrigin='http://127.0.0.1:8788';
+const $=id=>document.getElementById(id);
+let busy=false,autoSent=false,decisionShown=false,current,stopped=false;
+function notify(type,extra={}){parent.postMessage({type,channel,...extra},parentOrigin)}
+function announce(){notify('production-state',{status:current?.status||'loading',height:Math.ceil(document.querySelector('main').getBoundingClientRect().height)+8})}
+new ResizeObserver(announce).observe(document.querySelector('main'));
+function send(action){
+  if(busy)return;
+  if(action!=='check'&&!current?.actions.includes(action))return;
+  busy=true;$('error').hidden=true;
+  document.querySelectorAll('button[data-action]').forEach(button=>button.disabled=true);
+  notify('production-action',{action});
+}
+window.addEventListener('message',event=>{
+  if(event.origin!==parentOrigin||event.source!==parent||event.data?.channel!==channel||event.data.type!=='production-ack')return;
+  if(!event.data.ok){
+    busy=false;$('error').hidden=false;$('error').textContent=event.data.error||'操作未能提交，请稍后再试。';
+    if(autoSent){autoSent=false;stopped=false;setTimeout(poll,2000)}
+    render(current,false);
+  }
+});
+document.querySelectorAll('button[data-action]').forEach(button=>button.onclick=()=>send(button.dataset.action));
+$('close-dialog').onclick=()=>$('duration').close();
+function button(label,action,primary=false){
+  const b=document.createElement('button');b.textContent=label;b.dataset.action=action;b.disabled=busy;
+  if(primary)b.className='primary';b.onclick=()=>send(action);$('actions').append(b);
+}
+function render(data,autoAdvance=true){
+  if(!data)return;current=data;document.body.dataset.status=data.status;
+  document.querySelectorAll('dialog button[data-action]').forEach(button=>button.disabled=busy);
+  $('title').textContent=data.title;$('message').textContent=data.message;
+  $('bar').style.width=data.progress+'%';document.querySelector('[role="progressbar"]').setAttribute('aria-valuenow',data.progress);
+  document.querySelectorAll('[data-phase]').forEach(el=>el.classList.toggle('active',el.dataset.phase===data.phase));
+  $('progress').hidden=['complete','duration_review','failed','needs_script'].includes(data.status);
+  $('foot').hidden=['complete','failed','needs_script'].includes(data.status);
+  $('actions').replaceChildren();
+  if(data.actions.includes('pause'))button('暂停制作','pause');
+  if(data.actions.includes('continue'))button(data.action_labels?.continue||'继续制作','continue',true);
+  if(data.status==='duration_review'){
+    $('duration-message').textContent=`按实际配音计算，约 ${(data.actual_seconds/60).toFixed(2)} 分钟；目标为 ${(data.target_seconds/60).toFixed(2)} 分钟。`;
+    const b=document.createElement('button');b.textContent='确认时长';b.className='primary';b.onclick=()=>$('duration').showModal();$('actions').append(b);
+    if(!decisionShown){decisionShown=true;$('duration').showModal()}
+  }else{$('duration').close()}
+  if(data.status==='complete'){
+    const movie=data.files['lesson.mp4'];
+    if(movie&&!$('player').firstChild){const video=document.createElement('video');video.controls=true;video.preload='metadata';video.src=movie;video.setAttribute('aria-label','课程成片');$('player').append(video)}
+    for(const [name,label] of [['lesson.mp4','下载视频'],['lesson.srt','下载字幕'],['制作工程.zip','下载工程']]){
+      if(!data.files[name])continue;const a=document.createElement('a');a.className='link';a.href=data.files[name];a.download=name;a.textContent=label;$('actions').append(a);
+    }
+    if(autoAdvance&&!autoSent){autoSent=true;send('check')}
+    stopped=autoSent;
+  }
+  if(data.status==='needs_script'&&autoAdvance&&!autoSent){autoSent=true;send('check');stopped=true}
+  announce();
+}
+async function poll(){
+  try{
+    const response=await fetch('/production-status/'+cid,{cache:'no-store'});
+    if(!response.ok)throw new Error('暂时读不到制作进度，正在重新连接。');
+    render(await response.json());if(!busy)$('error').hidden=true;
+  }catch(error){$('error').hidden=false;$('error').textContent=error.message}
+  if(!stopped)setTimeout(poll,2000);
+}
+// 心跳与确认弹窗分开，关闭提示不会暂停；关闭整个课程页才停止心跳。
+const heartbeat=new Image();heartbeat.src='/presence/'+cid;
+window.addEventListener('pagehide',()=>{stopped=true;heartbeat.src=''});
+poll();
+</script>
+</html>

@@ -1,0 +1,26 @@
+{
+  "planner": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "protocol": "responses",
+    "reasoning_effort": "max"
+  },
+  "writer": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "protocol": "responses",
+    "reasoning_effort": "max"
+  },
+  "editor": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "protocol": "responses",
+    "reasoning_effort": "max"
+  },
+  "producer": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "protocol": "responses",
+    "reasoning_effort": "max"
+  }
+}

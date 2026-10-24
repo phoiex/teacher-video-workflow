@@ -1,0 +1,4 @@
+interface:
+  display_name: "视频制作：主流程与分支"
+  short_description: "统筹视频制作，按需选择暖色图解、终端科技或代码动画科技分支，复用已有工程"
+  default_prompt: "使用 $explainer-video-production，根据这次内容和参考视频选择适合的制作分支，并从已有进度继续。"

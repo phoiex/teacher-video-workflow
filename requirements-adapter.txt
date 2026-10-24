@@ -1,0 +1,3 @@
+# 使用 Messages 或 Chat Completions 模型制作画面时安装。
+-r requirements.txt
+litellm==1.106.0

@@ -1,0 +1,5375 @@
+app:
+  description: 填写课程要求，选择风格，逐步确认讲稿和分镜后制作视频。
+  icon: 🎬
+  icon_background: '#D5F5F6'
+  icon_type: emoji
+  mode: workflow
+  name: 微课制作
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.7.0
+workflow:
+  conversation_variables: []
+  environment_variables:
+  - description: 本机课程制作配置
+    id: f9eadfb9-15a3-4391-b515-8e6cbaf1cf6c
+    name: LOCAL_TOOL_URL
+    selector:
+    - env
+    - LOCAL_TOOL_URL
+    value: http://host.docker.internal:8794
+    value_type: string
+  - description: 本机课程制作配置
+    id: 86588385-fd28-463c-b897-809fddbdc6a8
+    name: LOCAL_TOOL_TOKEN
+    selector:
+    - env
+    - LOCAL_TOOL_TOKEN
+    value: ''
+    value_type: secret
+  - description: 本机课程制作配置
+    id: 0bb1de15-6c5e-4b30-8959-2b9e1cfb77d1
+    name: COURSE_MODELS
+    selector:
+    - env
+    - COURSE_MODELS
+    value: ''
+    value_type: string
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: http-request
+        targetType: code
+      id: create-source-create_data
+      source: create
+      sourceHandle: source
+      target: create_data
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: code
+        targetType: http-request
+      id: create_args-source-create
+      source: create_args
+      sourceHandle: source
+      target: create
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: code
+        targetType: code
+      id: create_data-source-materials_args
+      source: create_data
+      sourceHandle: source
+      target: materials_args
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: code
+        targetType: http-request
+      id: materials_args-source-materials_prepare
+      source: materials_args
+      sourceHandle: source
+      target: materials_prepare
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: code
+        targetType: code
+      id: materials_data-source-style_args
+      source: materials_data
+      sourceHandle: source
+      target: style_args
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: http-request
+        targetType: code
+      id: materials_prepare-source-materials_data
+      source: materials_prepare
+      sourceHandle: source
+      target: materials_data
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: production_loop
+        sourceType: code
+        targetType: assigner
+      id: production_applied-source-production_accepted
+      source: production_applied
+      sourceHandle: source
+      target: production_accepted
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: production_loop
+        sourceType: http-request
+        targetType: code
+      id: production_apply-source-production_applied
+      source: production_apply
+      sourceHandle: source
+      target: production_applied
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: production_loop
+        sourceType: code
+        targetType: http-request
+      id: production_apply_args-source-production_apply
+      source: production_apply_args
+      sourceHandle: source
+      target: production_apply
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: code
+        targetType: http-request
+      id: production_args-source-production_start
+      source: production_args
+      sourceHandle: source
+      target: production_start
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: production_loop
+        sourceType: if-else
+        targetType: human-input
+      id: production_check-false-production_review
+      source: production_check
+      sourceHandle: 'false'
+      target: production_review
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: production_loop
+        sourceType: if-else
+        targetType: assigner
+      id: production_check-true-production_skip_done
+      source: production_check
+      sourceHandle: 'true'
+      target: production_skip_done
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: production_loop
+        sourceType: code
+        targetType: if-else
+      id: production_data-source-production_check
+      source: production_data
+      sourceHandle: source
+      target: production_check
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: loop
+        targetType: http-request
+      id: production_loop-source-result
+      source: production_loop
+      sourceHandle: source
+      target: result
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: production_loop
+        sourceType: loop-start
+        targetType: code
+      id: production_loop_start-source-production_show_args
+      source: production_loop_start
+      sourceHandle: source
+      target: production_show_args
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: production_loop
+        sourceType: human-input
+        targetType: code
+      id: production_review-accept_duration-production_apply_args
+      source: production_review
+      sourceHandle: accept_duration
+      target: production_apply_args
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: production_loop
+        sourceType: human-input
+        targetType: code
+      id: production_review-check-production_apply_args
+      source: production_review
+      sourceHandle: check
+      target: production_apply_args
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: production_loop
+        sourceType: human-input
+        targetType: code
+      id: production_review-continue-production_apply_args
+      source: production_review
+      sourceHandle: continue
+      target: production_apply_args
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: production_loop
+        sourceType: human-input
+        targetType: code
+      id: production_review-pause-production_apply_args
+      source: production_review
+      sourceHandle: pause
+      target: production_apply_args
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: production_loop
+        sourceType: human-input
+        targetType: code
+      id: production_review-revise-production_apply_args
+      source: production_review
+      sourceHandle: revise
+      target: production_apply_args
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: production_loop
+        sourceType: http-request
+        targetType: code
+      id: production_show-source-production_data
+      source: production_show
+      sourceHandle: source
+      target: production_data
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: production_loop
+        sourceType: code
+        targetType: http-request
+      id: production_show_args-source-production_show
+      source: production_show_args
+      sourceHandle: source
+      target: production_show
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: http-request
+        targetType: loop
+      id: production_start-source-production_loop
+      source: production_start
+      sourceHandle: source
+      target: production_loop
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: requirements_loop
+        sourceType: code
+        targetType: assigner
+      id: requirements_applied-source-requirements_accepted
+      source: requirements_applied
+      sourceHandle: source
+      target: requirements_accepted
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: requirements_loop
+        sourceType: http-request
+        targetType: code
+      id: requirements_apply-source-requirements_applied
+      source: requirements_apply
+      sourceHandle: source
+      target: requirements_applied
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: requirements_loop
+        sourceType: code
+        targetType: http-request
+      id: requirements_apply_args-source-requirements_apply
+      source: requirements_apply_args
+      sourceHandle: source
+      target: requirements_apply
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: requirements_loop
+        sourceType: if-else
+        targetType: human-input
+      id: requirements_check-false-requirements_review
+      source: requirements_check
+      sourceHandle: 'false'
+      target: requirements_review
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: requirements_loop
+        sourceType: if-else
+        targetType: assigner
+      id: requirements_check-true-requirements_skip_done
+      source: requirements_check
+      sourceHandle: 'true'
+      target: requirements_skip_done
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: requirements_loop
+        sourceType: code
+        targetType: if-else
+      id: requirements_data-source-requirements_check
+      source: requirements_data
+      sourceHandle: source
+      target: requirements_check
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: loop
+        targetType: loop
+      id: requirements_loop-source-script_loop
+      source: requirements_loop
+      sourceHandle: source
+      target: script_loop
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: requirements_loop
+        sourceType: loop-start
+        targetType: code
+      id: requirements_loop_start-source-requirements_show_args
+      source: requirements_loop_start
+      sourceHandle: source
+      target: requirements_show_args
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: requirements_loop
+        sourceType: human-input
+        targetType: code
+      id: requirements_review-approve-requirements_apply_args
+      source: requirements_review
+      sourceHandle: approve
+      target: requirements_apply_args
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: requirements_loop
+        sourceType: http-request
+        targetType: code
+      id: requirements_show-source-requirements_data
+      source: requirements_show
+      sourceHandle: source
+      target: requirements_data
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: requirements_loop
+        sourceType: code
+        targetType: http-request
+      id: requirements_show_args-source-requirements_show
+      source: requirements_show_args
+      sourceHandle: source
+      target: requirements_show
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: http-request
+        targetType: code
+      id: result-source-result_data
+      source: result
+      sourceHandle: source
+      target: result_data
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: code
+        targetType: end
+      id: result_data-source-end
+      source: result_data
+      sourceHandle: source
+      target: end
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: script_loop
+        sourceType: code
+        targetType: assigner
+      id: script_applied-source-script_accepted
+      source: script_applied
+      sourceHandle: source
+      target: script_accepted
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: script_loop
+        sourceType: http-request
+        targetType: code
+      id: script_apply-source-script_applied
+      source: script_apply
+      sourceHandle: source
+      target: script_applied
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: script_loop
+        sourceType: code
+        targetType: http-request
+      id: script_apply_args-source-script_apply
+      source: script_apply_args
+      sourceHandle: source
+      target: script_apply
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: script_loop
+        sourceType: if-else
+        targetType: human-input
+      id: script_check-false-script_review
+      source: script_check
+      sourceHandle: 'false'
+      target: script_review
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: script_loop
+        sourceType: if-else
+        targetType: assigner
+      id: script_check-true-script_skip_done
+      source: script_check
+      sourceHandle: 'true'
+      target: script_skip_done
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: script_loop
+        sourceType: code
+        targetType: if-else
+      id: script_data-source-script_check
+      source: script_data
+      sourceHandle: source
+      target: script_check
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: script_loop
+        sourceType: http-request
+        targetType: code
+      id: script_deslop-source-script_deslop_data
+      source: script_deslop
+      sourceHandle: source
+      target: script_deslop_data
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: script_loop
+        sourceType: code
+        targetType: http-request
+      id: script_deslop_data-source-script_show
+      source: script_deslop_data
+      sourceHandle: source
+      target: script_show
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: script_loop
+        sourceType: http-request
+        targetType: code
+      id: script_draft-source-script_draft_data
+      source: script_draft
+      sourceHandle: source
+      target: script_draft_data
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: script_loop
+        sourceType: code
+        targetType: http-request
+      id: script_draft_data-source-script_deslop
+      source: script_draft_data
+      sourceHandle: source
+      target: script_deslop
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: loop
+        targetType: loop
+      id: script_loop-source-storyboard_loop
+      source: script_loop
+      sourceHandle: source
+      target: storyboard_loop
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: script_loop
+        sourceType: loop-start
+        targetType: code
+      id: script_loop_start-source-script_show_args
+      source: script_loop_start
+      sourceHandle: source
+      target: script_show_args
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: script_loop
+        sourceType: human-input
+        targetType: code
+      id: script_review-approve-script_apply_args
+      source: script_review
+      sourceHandle: approve
+      target: script_apply_args
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: script_loop
+        sourceType: human-input
+        targetType: code
+      id: script_review-revise-script_apply_args
+      source: script_review
+      sourceHandle: revise
+      target: script_apply_args
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: script_loop
+        sourceType: http-request
+        targetType: code
+      id: script_show-source-script_data
+      source: script_show
+      sourceHandle: source
+      target: script_data
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: script_loop
+        sourceType: code
+        targetType: http-request
+      id: script_show_args-script_plan
+      source: script_show_args
+      sourceHandle: source
+      target: script_plan
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: start
+        targetType: code
+      id: start-source-create_args
+      source: start
+      sourceHandle: source
+      target: create_args
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: storyboard_loop
+        sourceType: code
+        targetType: assigner
+      id: storyboard_applied-source-storyboard_accepted
+      source: storyboard_applied
+      sourceHandle: source
+      target: storyboard_accepted
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: storyboard_loop
+        sourceType: http-request
+        targetType: code
+      id: storyboard_apply-source-storyboard_applied
+      source: storyboard_apply
+      sourceHandle: source
+      target: storyboard_applied
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: storyboard_loop
+        sourceType: code
+        targetType: http-request
+      id: storyboard_apply_args-source-storyboard_apply
+      source: storyboard_apply_args
+      sourceHandle: source
+      target: storyboard_apply
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: storyboard_loop
+        sourceType: if-else
+        targetType: human-input
+      id: storyboard_check-false-storyboard_review
+      source: storyboard_check
+      sourceHandle: 'false'
+      target: storyboard_review
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: storyboard_loop
+        sourceType: if-else
+        targetType: assigner
+      id: storyboard_check-true-storyboard_skip_done
+      source: storyboard_check
+      sourceHandle: 'true'
+      target: storyboard_skip_done
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: storyboard_loop
+        sourceType: code
+        targetType: if-else
+      id: storyboard_data-source-storyboard_ready
+      source: storyboard_data
+      sourceHandle: source
+      target: storyboard_ready
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: loop
+        targetType: code
+      id: storyboard_loop-source-production_args
+      source: storyboard_loop
+      sourceHandle: source
+      target: production_args
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: storyboard_loop
+        sourceType: loop-start
+        targetType: code
+      id: storyboard_loop_start-source-storyboard_show_args
+      source: storyboard_loop_start
+      sourceHandle: source
+      target: storyboard_show_args
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: storyboard_loop
+        sourceType: if-else
+        targetType: human-input
+      id: storyboard_paused-false-storyboard_wait
+      source: storyboard_paused
+      sourceHandle: 'false'
+      target: storyboard_wait
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: storyboard_loop
+        sourceType: if-else
+        targetType: human-input
+      id: storyboard_paused-true-storyboard_resume
+      source: storyboard_paused
+      sourceHandle: 'true'
+      target: storyboard_resume
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: storyboard_loop
+        sourceType: if-else
+        targetType: if-else
+      id: storyboard_ready-false-storyboard_paused
+      source: storyboard_ready
+      sourceHandle: 'false'
+      target: storyboard_paused
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: storyboard_loop
+        sourceType: if-else
+        targetType: if-else
+      id: storyboard_ready-true-storyboard_check
+      source: storyboard_ready
+      sourceHandle: 'true'
+      target: storyboard_check
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: storyboard_loop
+        sourceType: human-input
+        targetType: code
+      id: storyboard_resume-continue-storyboard_resume_args
+      source: storyboard_resume
+      sourceHandle: continue
+      target: storyboard_resume_args
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: storyboard_loop
+        sourceType: code
+        targetType: http-request
+      id: storyboard_resume_args-source-storyboard_resume_call
+      source: storyboard_resume_args
+      sourceHandle: source
+      target: storyboard_resume_call
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: storyboard_loop
+        sourceType: http-request
+        targetType: code
+      id: storyboard_resume_call-source-storyboard_resumed
+      source: storyboard_resume_call
+      sourceHandle: source
+      target: storyboard_resumed
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: storyboard_loop
+        sourceType: code
+        targetType: assigner
+      id: storyboard_resumed-source-storyboard_skip_done
+      source: storyboard_resumed
+      sourceHandle: source
+      target: storyboard_skip_done
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: storyboard_loop
+        sourceType: human-input
+        targetType: code
+      id: storyboard_review-approve-storyboard_apply_args
+      source: storyboard_review
+      sourceHandle: approve
+      target: storyboard_apply_args
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: storyboard_loop
+        sourceType: human-input
+        targetType: code
+      id: storyboard_review-revise-storyboard_apply_args
+      source: storyboard_review
+      sourceHandle: revise
+      target: storyboard_apply_args
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: storyboard_loop
+        sourceType: http-request
+        targetType: code
+      id: storyboard_show-source-storyboard_data
+      source: storyboard_show
+      sourceHandle: source
+      target: storyboard_data
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: storyboard_loop
+        sourceType: code
+        targetType: http-request
+      id: storyboard_show_args-source-storyboard_show
+      source: storyboard_show_args
+      sourceHandle: source
+      target: storyboard_show
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: storyboard_loop
+        sourceType: human-input
+        targetType: assigner
+      id: storyboard_wait-job_updated-storyboard_skip_done
+      source: storyboard_wait
+      sourceHandle: job_updated
+      target: storyboard_skip_done
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: code
+        targetType: http-request
+      id: style_args-source-style_prepare
+      source: style_args
+      sourceHandle: source
+      target: style_prepare
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: code
+        targetType: loop
+      id: style_data-source-requirements_loop
+      source: style_data
+      sourceHandle: source
+      target: requirements_loop
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        iteration_id: null
+        loop_id: null
+        sourceType: http-request
+        targetType: code
+      id: style_prepare-source-style_data
+      source: style_prepare
+      sourceHandle: source
+      target: style_data
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: script_loop
+        sourceType: http-request
+        targetType: code
+      id: script_plan-script_plan_data
+      source: script_plan
+      sourceHandle: source
+      target: script_plan_data
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    - data:
+        isInIteration: false
+        isInLoop: true
+        iteration_id: null
+        loop_id: script_loop
+        sourceType: code
+        targetType: http-request
+      id: script_plan_data-script_draft
+      source: script_plan_data
+      sourceHandle: source
+      target: script_draft
+      targetHandle: target
+      type: custom
+      zIndex: 1001
+    nodes:
+    - data:
+        authorization:
+          config:
+            api_key: '{{#env.LOCAL_TOOL_TOKEN#}}'
+            type: bearer
+          type: api-key
+        body:
+          data:
+          - id: 6b2337db-b14f-5058-90f0-fe10bc972345
+            type: text
+            value: '{{#create_args.payload#}}'
+          type: raw-text
+        desc: 打开本次课程；填写了课程编号时接着上次的进度继续。
+        headers: 'Content-Type: application/json'
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 2000
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 10
+          max_read_timeout: 600
+          max_write_timeout: 600
+        title: 打开课程
+        type: http-request
+        url: '{{#env.LOCAL_TOOL_URL#}}/api/new'
+        variables: []
+      height: 184
+      id: create
+      position:
+        x: 650
+        y: 100
+      positionAbsolute:
+        x: 650
+        y: 100
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        code: "import json\n\ndef main(requirement, source_files, knowledge_focus,\
+          \ style_preset, style_notes, style_files, source_text, existing_script,\
+          \ resume_course, run_id, model_roles):\n    return {\"payload\": json.dumps({'requirement':\
+          \ requirement, 'source_files': source_files, 'knowledge_focus': knowledge_focus,\
+          \ 'style_preset': style_preset, 'style_notes': style_notes, 'style_files':\
+          \ style_files, 'source_text': source_text, 'existing_script': existing_script,\
+          \ 'resume_course': resume_course, 'run_id': run_id, 'model_roles': model_roles},\
+          \ ensure_ascii=False)}\n"
+        code_language: python3
+        desc: 读取你填写的课程要求和教学材料。
+        outputs:
+          payload:
+            children: null
+            type: string
+        selected: false
+        title: 读取课程要求
+        type: code
+        variables:
+        - value_selector:
+          - start
+          - requirement
+          variable: requirement
+        - value_selector:
+          - start
+          - source_files
+          variable: source_files
+        - value_selector:
+          - start
+          - knowledge_focus
+          variable: knowledge_focus
+        - value_selector:
+          - start
+          - style_preset
+          variable: style_preset
+        - value_selector:
+          - start
+          - style_notes
+          variable: style_notes
+        - value_selector:
+          - start
+          - style_files
+          variable: style_files
+        - value_selector:
+          - start
+          - source_text
+          variable: source_text
+        - value_selector:
+          - start
+          - existing_script
+          variable: existing_script
+        - value_selector:
+          - start
+          - resume_course
+          variable: resume_course
+        - value_selector:
+          - sys
+          - workflow_run_id
+          variable: run_id
+        - value_selector:
+          - env
+          - COURSE_MODELS
+          variable: model_roles
+      height: 80
+      id: create_args
+      position:
+        x: 350
+        y: 100
+      positionAbsolute:
+        x: 350
+        y: 100
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        code: "import json\ndef main(body):\n    data=json.loads(body)\n    if not\
+          \ data.get('ok'):\n        raise ValueError(data.get('error','这一步未完成，请查看错误信息'))\n\
+          \    result={name:str(data.get(name,'') or '') for name in ['course_id',\
+          \ 'view', 'version', 'topic', 'audience', 'duration_minutes', 'objectives',\
+          \ 'prerequisites', 'style', 'style_preset', 'voice_instruction', 'production_mode',\
+          \ 'approved_script', 'feedback', 'screen_text', 'status', 'knowledge_selection']}\n\
+          \    result['done']=bool(data.get('done',False))\n    result['ready']=bool(data.get('ready',True))\n\
+          \    result['paused']=bool(data.get('paused',False))\n    return result\n"
+        code_language: python3
+        desc: 读取课程当前保存的内容与进度。
+        outputs:
+          approved_script:
+            children: null
+            type: string
+          audience:
+            children: null
+            type: string
+          course_id:
+            children: null
+            type: string
+          done:
+            children: null
+            type: boolean
+          duration_minutes:
+            children: null
+            type: string
+          feedback:
+            children: null
+            type: string
+          knowledge_selection:
+            children: null
+            type: string
+          objectives:
+            children: null
+            type: string
+          paused:
+            children: null
+            type: boolean
+          prerequisites:
+            children: null
+            type: string
+          production_mode:
+            children: null
+            type: string
+          ready:
+            children: null
+            type: boolean
+          screen_text:
+            children: null
+            type: string
+          status:
+            children: null
+            type: string
+          style:
+            children: null
+            type: string
+          style_preset:
+            children: null
+            type: string
+          topic:
+            children: null
+            type: string
+          version:
+            children: null
+            type: string
+          view:
+            children: null
+            type: string
+          voice_instruction:
+            children: null
+            type: string
+        selected: false
+        title: 读取结果
+        type: code
+        variables:
+        - value_selector:
+          - create
+          - body
+          variable: body
+      height: 80
+      id: create_data
+      position:
+        x: 950
+        y: 100
+      positionAbsolute:
+        x: 950
+        y: 100
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        desc: 成片和字幕已准备好，可以查看并下载。
+        outputs:
+        - value_selector:
+          - result_data
+          - view
+          value_type: string
+          variable: result
+        selected: false
+        title: 视频和字幕
+        type: end
+      height: 132
+      id: end
+      position:
+        x: 650
+        y: 3460
+      positionAbsolute:
+        x: 650
+        y: 3460
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        code: "import json\n\ndef main(course_id):\n    return {'payload': json.dumps({'course_id':\
+          \ course_id}, ensure_ascii=False)}\n"
+        code_language: python3
+        desc: 读取课件
+        outputs:
+          payload:
+            children: null
+            type: string
+        selected: false
+        title: 读取课件
+        type: code
+        variables:
+        - value_selector:
+          - create_data
+          - course_id
+          variable: course_id
+      height: 80
+      id: materials_args
+      position:
+        x: 1250
+        y: -160
+      positionAbsolute:
+        x: 1250
+        y: -160
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        code: "import json\ndef main(body):\n    data=json.loads(body)\n    if not\
+          \ data.get('ok'):\n        raise ValueError(data.get('error','这一步未完成，请查看错误信息'))\n\
+          \    result={name:str(data.get(name,'') or '') for name in ['course_id',\
+          \ 'view', 'version', 'topic', 'audience', 'duration_minutes', 'objectives',\
+          \ 'prerequisites', 'style', 'style_preset', 'voice_instruction', 'production_mode',\
+          \ 'approved_script', 'feedback', 'screen_text', 'status', 'knowledge_selection']}\n\
+          \    result['done']=bool(data.get('done',False))\n    result['ready']=bool(data.get('ready',True))\n\
+          \    result['paused']=bool(data.get('paused',False))\n    return result\n"
+        code_language: python3
+        desc: 读取结果
+        outputs:
+          approved_script:
+            children: null
+            type: string
+          audience:
+            children: null
+            type: string
+          course_id:
+            children: null
+            type: string
+          done:
+            children: null
+            type: boolean
+          duration_minutes:
+            children: null
+            type: string
+          feedback:
+            children: null
+            type: string
+          knowledge_selection:
+            children: null
+            type: string
+          objectives:
+            children: null
+            type: string
+          paused:
+            children: null
+            type: boolean
+          prerequisites:
+            children: null
+            type: string
+          production_mode:
+            children: null
+            type: string
+          ready:
+            children: null
+            type: boolean
+          screen_text:
+            children: null
+            type: string
+          status:
+            children: null
+            type: string
+          style:
+            children: null
+            type: string
+          style_preset:
+            children: null
+            type: string
+          topic:
+            children: null
+            type: string
+          version:
+            children: null
+            type: string
+          view:
+            children: null
+            type: string
+          voice_instruction:
+            children: null
+            type: string
+        selected: false
+        title: 读取结果
+        type: code
+        variables:
+        - value_selector:
+          - materials_prepare
+          - body
+          variable: body
+      height: 80
+      id: materials_data
+      position:
+        x: 1850
+        y: -160
+      positionAbsolute:
+        x: 1850
+        y: -160
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        authorization:
+          config:
+            api_key: '{{#env.LOCAL_TOOL_TOKEN#}}'
+            type: bearer
+          type: api-key
+        body:
+          data:
+          - id: 883b56c1-55da-5b80-8952-80c99f2fd363
+            type: text
+            value: '{{#materials_args.payload#}}'
+          type: raw-text
+        desc: 解析课件知识点
+        headers: 'Content-Type: application/json'
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 2000
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 10
+          max_read_timeout: 600
+          max_write_timeout: 600
+        title: 解析课件知识点
+        type: http-request
+        url: '{{#env.LOCAL_TOOL_URL#}}/api/materials/prepare'
+        variables: []
+      height: 168
+      id: materials_prepare
+      position:
+        x: 1550
+        y: -160
+      positionAbsolute:
+        x: 1550
+        y: -160
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        desc: 本阶段已确认，进入下一步。
+        isInIteration: false
+        isInLoop: true
+        items:
+        - input_type: variable
+          operation: over-write
+          value:
+          - production_applied
+          - done
+          variable_selector:
+          - production_loop
+          - done
+          write_mode: over-write
+        loop_id: production_loop
+        selected: false
+        title: 进入下一步
+        type: assigner
+        version: '2'
+      height: 112
+      id: production_accepted
+      parentId: production_loop
+      position:
+        x: 2260
+        y: 320
+      positionAbsolute:
+        x: 2300
+        y: 3120
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\ndef main(body):\n    data=json.loads(body)\n    if not\
+          \ data.get('ok'):\n        raise ValueError(data.get('error','这一步未完成，请查看错误信息'))\n\
+          \    result={name:str(data.get(name,'') or '') for name in ['course_id',\
+          \ 'view', 'version', 'topic', 'audience', 'duration_minutes', 'objectives',\
+          \ 'prerequisites', 'style', 'style_preset', 'voice_instruction', 'production_mode',\
+          \ 'approved_script', 'feedback', 'screen_text', 'status', 'knowledge_selection']}\n\
+          \    result['done']=bool(data.get('done',False))\n    result['ready']=bool(data.get('ready',True))\n\
+          \    result['paused']=bool(data.get('paused',False))\n    return result\n"
+        code_language: python3
+        desc: 读取本阶段结果，准备展示。
+        isInIteration: false
+        isInLoop: true
+        loop_id: production_loop
+        outputs:
+          approved_script:
+            children: null
+            type: string
+          audience:
+            children: null
+            type: string
+          course_id:
+            children: null
+            type: string
+          done:
+            children: null
+            type: boolean
+          duration_minutes:
+            children: null
+            type: string
+          feedback:
+            children: null
+            type: string
+          knowledge_selection:
+            children: null
+            type: string
+          objectives:
+            children: null
+            type: string
+          paused:
+            children: null
+            type: boolean
+          prerequisites:
+            children: null
+            type: string
+          production_mode:
+            children: null
+            type: string
+          ready:
+            children: null
+            type: boolean
+          screen_text:
+            children: null
+            type: string
+          status:
+            children: null
+            type: string
+          style:
+            children: null
+            type: string
+          style_preset:
+            children: null
+            type: string
+          topic:
+            children: null
+            type: string
+          version:
+            children: null
+            type: string
+          view:
+            children: null
+            type: string
+          voice_instruction:
+            children: null
+            type: string
+        selected: false
+        title: 读取结果
+        type: code
+        variables:
+        - value_selector:
+          - production_apply
+          - body
+          variable: body
+      height: 80
+      id: production_applied
+      parentId: production_loop
+      position:
+        x: 2260
+        y: 80
+      positionAbsolute:
+        x: 2300
+        y: 2880
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        authorization:
+          config:
+            api_key: '{{#env.LOCAL_TOOL_TOKEN#}}'
+            type: bearer
+          type: api-key
+        body:
+          data:
+          - id: 5084920f-64fc-5caf-917d-00338af05f3b
+            type: text
+            value: '{{#production_apply_args.payload#}}'
+          type: raw-text
+        desc: 保存你提交的内容和选择，按修改意见继续处理。
+        headers: 'Content-Type: application/json'
+        isInIteration: false
+        isInLoop: true
+        loop_id: production_loop
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 2000
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 10
+          max_read_timeout: 600
+          max_write_timeout: 600
+        title: 保存修改
+        type: http-request
+        url: '{{#env.LOCAL_TOOL_URL#}}/api/production/apply'
+        variables: []
+      height: 184
+      id: production_apply
+      parentId: production_loop
+      position:
+        x: 1960
+        y: 80
+      positionAbsolute:
+        x: 2000
+        y: 2880
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\n\ndef main(course_id, version, action):\n    return {'payload':\
+          \ json.dumps({'course_id': course_id, 'version': version, 'action': action},\
+          \ ensure_ascii=False)}\n"
+        code_language: python3
+        desc: 读取你提交的内容和修改意见。
+        isInIteration: false
+        isInLoop: true
+        loop_id: production_loop
+        outputs:
+          payload:
+            children: null
+            type: string
+        selected: false
+        title: 提交修改
+        type: code
+        variables:
+        - value_selector:
+          - create_data
+          - course_id
+          variable: course_id
+        - value_selector:
+          - production_data
+          - version
+          variable: version
+        - value_selector:
+          - production_review
+          - __action_id
+          variable: action
+      height: 80
+      id: production_apply_args
+      parentId: production_loop
+      position:
+        x: 1660
+        y: 80
+      positionAbsolute:
+        x: 1700
+        y: 2880
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\n\ndef main(course_id):\n    return {'payload': json.dumps({'course_id':\
+          \ course_id}, ensure_ascii=False)}\n"
+        code_language: python3
+        desc: 读取已确认的讲稿和分镜，准备制作。
+        outputs:
+          payload:
+            children: null
+            type: string
+        selected: false
+        title: 读取已确认内容
+        type: code
+        variables:
+        - value_selector:
+          - create_data
+          - course_id
+          variable: course_id
+      height: 80
+      id: production_args
+      position:
+        x: 40
+        y: 2600
+      positionAbsolute:
+        x: 40
+        y: 2600
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: is
+            id: 31b8b78d-6e74-5b4f-9862-34c189be938e
+            value: true
+            varType: boolean
+            variable_selector:
+            - production_data
+            - done
+          logical_operator: and
+        desc: 检查本阶段是否已经确认，决定继续还是等待审核。
+        isInIteration: false
+        isInLoop: true
+        loop_id: production_loop
+        selected: false
+        title: 是否需要确认
+        type: if-else
+      height: 168
+      id: production_check
+      parentId: production_loop
+      position:
+        x: 1060
+        y: 80
+      positionAbsolute:
+        x: 1100
+        y: 2880
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\ndef main(body):\n    data=json.loads(body)\n    if not\
+          \ data.get('ok'):\n        raise ValueError(data.get('error','这一步未完成，请查看错误信息'))\n\
+          \    result={name:str(data.get(name,'') or '') for name in ['course_id',\
+          \ 'view', 'version', 'topic', 'audience', 'duration_minutes', 'objectives',\
+          \ 'prerequisites', 'style', 'style_preset', 'voice_instruction', 'production_mode',\
+          \ 'approved_script', 'feedback', 'screen_text', 'status', 'knowledge_selection']}\n\
+          \    result['done']=bool(data.get('done',False))\n    result['ready']=bool(data.get('ready',True))\n\
+          \    result['paused']=bool(data.get('paused',False))\n    return result\n"
+        code_language: python3
+        desc: 读取本阶段结果，准备展示。
+        isInIteration: false
+        isInLoop: true
+        loop_id: production_loop
+        outputs:
+          approved_script:
+            children: null
+            type: string
+          audience:
+            children: null
+            type: string
+          course_id:
+            children: null
+            type: string
+          done:
+            children: null
+            type: boolean
+          duration_minutes:
+            children: null
+            type: string
+          feedback:
+            children: null
+            type: string
+          knowledge_selection:
+            children: null
+            type: string
+          objectives:
+            children: null
+            type: string
+          paused:
+            children: null
+            type: boolean
+          prerequisites:
+            children: null
+            type: string
+          production_mode:
+            children: null
+            type: string
+          ready:
+            children: null
+            type: boolean
+          screen_text:
+            children: null
+            type: string
+          status:
+            children: null
+            type: string
+          style:
+            children: null
+            type: string
+          style_preset:
+            children: null
+            type: string
+          topic:
+            children: null
+            type: string
+          version:
+            children: null
+            type: string
+          view:
+            children: null
+            type: string
+          voice_instruction:
+            children: null
+            type: string
+        selected: false
+        title: 读取结果
+        type: code
+        variables:
+        - value_selector:
+          - production_show
+          - body
+          variable: body
+      height: 80
+      id: production_data
+      parentId: production_loop
+      position:
+        x: 760
+        y: 80
+      positionAbsolute:
+        x: 800
+        y: 2880
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        break_conditions:
+        - comparison_operator: is
+          id: 7801b024-b8aa-5c97-9ea1-3ed889d44b17
+          value: true
+          varType: boolean
+          variable_selector:
+          - production_loop
+          - done
+        desc: 查看配音、动画和导出的实际进度；需要你决定时会在这里提示。
+        error_handle_mode: terminated
+        height: 572
+        logical_operator: and
+        loop_count: 100
+        loop_variables:
+        - id: 03536a76-18b0-5bb0-b19f-cfb8ccdab60c
+          label: done
+          value: false
+          value_type: constant
+          var_type: boolean
+        selected: false
+        start_node_id: production_loop_start
+        title: 制作进度
+        type: loop
+        width: 2520
+      height: 572
+      id: production_loop
+      position:
+        x: 40
+        y: 2800
+      positionAbsolute:
+        x: 40
+        y: 2800
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 2520
+      zIndex: 0
+    - data:
+        desc: 开始处理这一阶段。
+        isInIteration: false
+        isInLoop: true
+        loop_id: production_loop
+        selected: false
+        title: ''
+        type: loop-start
+      draggable: false
+      height: 48
+      id: production_loop_start
+      parentId: production_loop
+      position:
+        x: 55
+        y: 80
+      positionAbsolute:
+        x: 95
+        y: 2880
+      selectable: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-loop-start
+      width: 44
+      zIndex: 1001
+    - data:
+        delivery_methods:
+        - enabled: true
+          id: ae3b668b-59f5-5df8-bb2d-b21af6d1ba3f
+          type: webapp
+        desc: 查看本阶段内容，确认或填写修改意见后继续。
+        form_content: '{{#production_data.view#}}
+
+
+          '
+        inputs: []
+        isInIteration: false
+        isInLoop: true
+        loop_id: production_loop
+        selected: false
+        timeout: 7
+        timeout_unit: day
+        title: 制作进度 · 确认
+        type: human-input
+        user_actions:
+        - button_style: primary
+          id: check
+          title: 查看进度或成片
+        - button_style: default
+          id: continue
+          title: 继续制作
+        - button_style: default
+          id: pause
+          title: 暂停
+        - button_style: default
+          id: accept_duration
+          title: 接受这个时长
+        - button_style: default
+          id: revise
+          title: 修改讲稿
+      height: 311
+      id: production_review
+      parentId: production_loop
+      position:
+        x: 1360
+        y: 80
+      positionAbsolute:
+        x: 1400
+        y: 2880
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        authorization:
+          config:
+            api_key: '{{#env.LOCAL_TOOL_TOKEN#}}'
+            type: bearer
+          type: api-key
+        body:
+          data:
+          - id: ea81628e-1a93-5fda-ab6f-2910c2288f49
+            type: text
+            value: '{{#production_show_args.payload#}}'
+          type: raw-text
+        desc: 查看配音、动画和导出的实际进度；需要你决定时会在这里提示。
+        headers: 'Content-Type: application/json'
+        isInIteration: false
+        isInLoop: true
+        loop_id: production_loop
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 2000
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 10
+          max_read_timeout: 600
+          max_write_timeout: 600
+        title: 制作进度
+        type: http-request
+        url: '{{#env.LOCAL_TOOL_URL#}}/api/production/show'
+        variables: []
+      height: 184
+      id: production_show
+      parentId: production_loop
+      position:
+        x: 460
+        y: 80
+      positionAbsolute:
+        x: 500
+        y: 2880
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\n\ndef main(course_id):\n    return {'payload': json.dumps({'course_id':\
+          \ course_id}, ensure_ascii=False)}\n"
+        code_language: python3
+        desc: 读取这节课的编号和已保存进度。
+        isInIteration: false
+        isInLoop: true
+        loop_id: production_loop
+        outputs:
+          payload:
+            children: null
+            type: string
+        selected: false
+        title: 课程编号
+        type: code
+        variables:
+        - value_selector:
+          - create_data
+          - course_id
+          variable: course_id
+      height: 80
+      id: production_show_args
+      parentId: production_loop
+      position:
+        x: 160
+        y: 80
+      positionAbsolute:
+        x: 200
+        y: 2880
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        desc: 本阶段已确认，进入下一步。
+        isInIteration: false
+        isInLoop: true
+        items:
+        - input_type: variable
+          operation: over-write
+          value:
+          - production_data
+          - done
+          variable_selector:
+          - production_loop
+          - done
+          write_mode: over-write
+        loop_id: production_loop
+        selected: false
+        title: 进入下一步
+        type: assigner
+        version: '2'
+      height: 112
+      id: production_skip_done
+      parentId: production_loop
+      position:
+        x: 2260
+        y: 440
+      positionAbsolute:
+        x: 2300
+        y: 3240
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        authorization:
+          config:
+            api_key: '{{#env.LOCAL_TOOL_TOKEN#}}'
+            type: bearer
+          type: api-key
+        body:
+          data:
+          - id: 02f6b087-9961-59be-9bd4-c2ed5c2f2014
+            type: text
+            value: '{{#production_args.payload#}}'
+          type: raw-text
+        desc: 启动配音和动画制作，复用已经完成的内容。
+        headers: 'Content-Type: application/json'
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 2000
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 10
+          max_read_timeout: 600
+          max_write_timeout: 600
+        title: 开始制作
+        type: http-request
+        url: '{{#env.LOCAL_TOOL_URL#}}/api/production/start'
+        variables: []
+      height: 184
+      id: production_start
+      position:
+        x: 350
+        y: 2600
+      positionAbsolute:
+        x: 350
+        y: 2600
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        desc: 本阶段已确认，进入下一步。
+        isInIteration: false
+        isInLoop: true
+        items:
+        - input_type: variable
+          operation: over-write
+          value:
+          - requirements_applied
+          - done
+          variable_selector:
+          - requirements_loop
+          - done
+          write_mode: over-write
+        loop_id: requirements_loop
+        selected: false
+        title: 进入下一步
+        type: assigner
+        version: '2'
+      height: 112
+      id: requirements_accepted
+      parentId: requirements_loop
+      position:
+        x: 2260
+        y: 320
+      positionAbsolute:
+        x: 2300
+        y: 670
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\ndef main(body):\n    data=json.loads(body)\n    if not\
+          \ data.get('ok'):\n        raise ValueError(data.get('error','这一步未完成，请查看错误信息'))\n\
+          \    result={name:str(data.get(name,'') or '') for name in ['course_id',\
+          \ 'view', 'version', 'topic', 'audience', 'duration_minutes', 'objectives',\
+          \ 'prerequisites', 'style', 'style_preset', 'voice_instruction', 'production_mode',\
+          \ 'approved_script', 'feedback', 'screen_text', 'status', 'knowledge_selection']}\n\
+          \    result['done']=bool(data.get('done',False))\n    result['ready']=bool(data.get('ready',True))\n\
+          \    result['paused']=bool(data.get('paused',False))\n    return result\n"
+        code_language: python3
+        desc: 读取本阶段结果，准备展示。
+        isInIteration: false
+        isInLoop: true
+        loop_id: requirements_loop
+        outputs:
+          approved_script:
+            children: null
+            type: string
+          audience:
+            children: null
+            type: string
+          course_id:
+            children: null
+            type: string
+          done:
+            children: null
+            type: boolean
+          duration_minutes:
+            children: null
+            type: string
+          feedback:
+            children: null
+            type: string
+          knowledge_selection:
+            children: null
+            type: string
+          objectives:
+            children: null
+            type: string
+          paused:
+            children: null
+            type: boolean
+          prerequisites:
+            children: null
+            type: string
+          production_mode:
+            children: null
+            type: string
+          ready:
+            children: null
+            type: boolean
+          screen_text:
+            children: null
+            type: string
+          status:
+            children: null
+            type: string
+          style:
+            children: null
+            type: string
+          style_preset:
+            children: null
+            type: string
+          topic:
+            children: null
+            type: string
+          version:
+            children: null
+            type: string
+          view:
+            children: null
+            type: string
+          voice_instruction:
+            children: null
+            type: string
+        selected: false
+        title: 读取结果
+        type: code
+        variables:
+        - value_selector:
+          - requirements_apply
+          - body
+          variable: body
+      height: 80
+      id: requirements_applied
+      parentId: requirements_loop
+      position:
+        x: 2260
+        y: 80
+      positionAbsolute:
+        x: 2300
+        y: 430
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        authorization:
+          config:
+            api_key: '{{#env.LOCAL_TOOL_TOKEN#}}'
+            type: bearer
+          type: api-key
+        body:
+          data:
+          - id: b6803778-b0b6-5f55-a8aa-268a84e0499c
+            type: text
+            value: '{{#requirements_apply_args.payload#}}'
+          type: raw-text
+        desc: 保存你提交的内容和选择，按修改意见继续处理。
+        headers: 'Content-Type: application/json'
+        isInIteration: false
+        isInLoop: true
+        loop_id: requirements_loop
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 2000
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 10
+          max_read_timeout: 600
+          max_write_timeout: 600
+        title: 保存修改
+        type: http-request
+        url: '{{#env.LOCAL_TOOL_URL#}}/api/requirements/apply'
+        variables: []
+      height: 184
+      id: requirements_apply
+      parentId: requirements_loop
+      position:
+        x: 1960
+        y: 80
+      positionAbsolute:
+        x: 2000
+        y: 430
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\n\ndef main(course_id, version, action, topic, audience,\
+          \ duration_minutes, knowledge_selection, objectives, prerequisites, style_preset,\
+          \ style, voice_instruction, production_mode):\n    return {'payload': json.dumps({'course_id':\
+          \ course_id, 'version': version, 'action': action, 'topic': topic, 'audience':\
+          \ audience, 'duration_minutes': duration_minutes, 'knowledge_selection':\
+          \ knowledge_selection, 'objectives': objectives, 'prerequisites': prerequisites,\
+          \ 'style_preset': style_preset, 'style': style, 'voice_instruction': voice_instruction,\
+          \ 'production_mode': production_mode}, ensure_ascii=False)}\n"
+        code_language: python3
+        desc: 读取你提交的内容和修改意见。
+        isInIteration: false
+        isInLoop: true
+        loop_id: requirements_loop
+        outputs:
+          payload:
+            children: null
+            type: string
+        selected: false
+        title: 提交修改
+        type: code
+        variables:
+        - value_selector:
+          - create_data
+          - course_id
+          variable: course_id
+        - value_selector:
+          - requirements_data
+          - version
+          variable: version
+        - value_selector:
+          - requirements_review
+          - __action_id
+          variable: action
+        - value_selector:
+          - requirements_review
+          - topic
+          variable: topic
+        - value_selector:
+          - requirements_review
+          - audience
+          variable: audience
+        - value_selector:
+          - requirements_review
+          - duration_minutes
+          variable: duration_minutes
+        - value_selector:
+          - requirements_review
+          - knowledge_selection
+          variable: knowledge_selection
+        - value_selector:
+          - requirements_review
+          - objectives
+          variable: objectives
+        - value_selector:
+          - requirements_review
+          - prerequisites
+          variable: prerequisites
+        - value_selector:
+          - requirements_review
+          - style_preset
+          variable: style_preset
+        - value_selector:
+          - requirements_review
+          - style
+          variable: style
+        - value_selector:
+          - requirements_review
+          - voice_instruction
+          variable: voice_instruction
+        - value_selector:
+          - requirements_review
+          - production_mode
+          variable: production_mode
+      height: 80
+      id: requirements_apply_args
+      parentId: requirements_loop
+      position:
+        x: 1660
+        y: 80
+      positionAbsolute:
+        x: 1700
+        y: 430
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: is
+            id: 5ed8d104-d1a0-53fd-9068-526e1bb569c1
+            value: true
+            varType: boolean
+            variable_selector:
+            - requirements_data
+            - done
+          logical_operator: and
+        desc: 检查本阶段是否已经确认，决定继续还是等待审核。
+        isInIteration: false
+        isInLoop: true
+        loop_id: requirements_loop
+        selected: false
+        title: 是否需要确认
+        type: if-else
+      height: 168
+      id: requirements_check
+      parentId: requirements_loop
+      position:
+        x: 1060
+        y: 80
+      positionAbsolute:
+        x: 1100
+        y: 430
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\ndef main(body):\n    data=json.loads(body)\n    if not\
+          \ data.get('ok'):\n        raise ValueError(data.get('error','这一步未完成，请查看错误信息'))\n\
+          \    result={name:str(data.get(name,'') or '') for name in ['course_id',\
+          \ 'view', 'version', 'topic', 'audience', 'duration_minutes', 'objectives',\
+          \ 'prerequisites', 'style', 'style_preset', 'voice_instruction', 'production_mode',\
+          \ 'approved_script', 'feedback', 'screen_text', 'status', 'knowledge_selection']}\n\
+          \    result['done']=bool(data.get('done',False))\n    result['ready']=bool(data.get('ready',True))\n\
+          \    result['paused']=bool(data.get('paused',False))\n    return result\n"
+        code_language: python3
+        desc: 读取本阶段结果，准备展示。
+        isInIteration: false
+        isInLoop: true
+        loop_id: requirements_loop
+        outputs:
+          approved_script:
+            children: null
+            type: string
+          audience:
+            children: null
+            type: string
+          course_id:
+            children: null
+            type: string
+          done:
+            children: null
+            type: boolean
+          duration_minutes:
+            children: null
+            type: string
+          feedback:
+            children: null
+            type: string
+          knowledge_selection:
+            children: null
+            type: string
+          objectives:
+            children: null
+            type: string
+          paused:
+            children: null
+            type: boolean
+          prerequisites:
+            children: null
+            type: string
+          production_mode:
+            children: null
+            type: string
+          ready:
+            children: null
+            type: boolean
+          screen_text:
+            children: null
+            type: string
+          status:
+            children: null
+            type: string
+          style:
+            children: null
+            type: string
+          style_preset:
+            children: null
+            type: string
+          topic:
+            children: null
+            type: string
+          version:
+            children: null
+            type: string
+          view:
+            children: null
+            type: string
+          voice_instruction:
+            children: null
+            type: string
+        selected: false
+        title: 读取结果
+        type: code
+        variables:
+        - value_selector:
+          - requirements_show
+          - body
+          variable: body
+      height: 80
+      id: requirements_data
+      parentId: requirements_loop
+      position:
+        x: 760
+        y: 80
+      positionAbsolute:
+        x: 800
+        y: 430
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        break_conditions:
+        - comparison_operator: is
+          id: e5cf149f-2dd1-5344-8df1-e3596e47c411
+          value: true
+          varType: boolean
+          variable_selector:
+          - requirements_loop
+          - done
+        desc: 整理主题、授课对象、时长和画面要求，请核对后继续。
+        error_handle_mode: terminated
+        height: 572
+        logical_operator: and
+        loop_count: 100
+        loop_variables:
+        - id: 9425a005-f7a6-5b8c-a4bc-81d0eebfaa5c
+          label: done
+          value: false
+          value_type: constant
+          var_type: boolean
+        selected: false
+        start_node_id: requirements_loop_start
+        title: 课程要求
+        type: loop
+        width: 2520
+      height: 572
+      id: requirements_loop
+      position:
+        x: 40
+        y: 350
+      positionAbsolute:
+        x: 40
+        y: 350
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 2520
+      zIndex: 0
+    - data:
+        desc: 开始处理这一阶段。
+        isInIteration: false
+        isInLoop: true
+        loop_id: requirements_loop
+        selected: false
+        title: ''
+        type: loop-start
+      draggable: false
+      height: 48
+      id: requirements_loop_start
+      parentId: requirements_loop
+      position:
+        x: 55
+        y: 80
+      positionAbsolute:
+        x: 95
+        y: 430
+      selectable: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-loop-start
+      width: 44
+      zIndex: 1001
+    - data:
+        delivery_methods:
+        - enabled: true
+          id: 70d43e89-fd44-510a-b09d-a176bc10ef43
+          type: webapp
+        desc: 查看本阶段内容，确认或填写修改意见后继续。
+        form_content: '{{#requirements_data.view#}}
+
+
+          ### 主题
+
+
+          {{#$output.topic#}}
+
+
+          ### 授课对象
+
+
+          {{#$output.audience#}}
+
+
+          ### 视频时长（分钟）
+
+
+          {{#$output.duration_minutes#}}
+
+
+          ### 本次讲解的知识点
+
+
+          {{#$output.knowledge_selection#}}
+
+
+          ### 教学目标
+
+
+          {{#$output.objectives#}}
+
+
+          ### 学生基础
+
+
+          {{#$output.prerequisites#}}
+
+
+          ### 选择画面风格
+
+
+          {{#$output.style_preset#}}
+
+
+          ### 风格说明（可修改或清空）
+
+
+          {{#$output.style#}}
+
+
+          ### 语速和语气
+
+
+          {{#$output.voice_instruction#}}
+
+
+          ### 是否先看分镜
+
+
+          {{#$output.production_mode#}}
+
+
+          '
+        inputs:
+        - default:
+            selector:
+            - requirements_data
+            - topic
+            type: variable
+            value: ''
+          label: 主题
+          output_variable_name: topic
+          required: true
+          type: paragraph
+        - default:
+            selector:
+            - requirements_data
+            - audience
+            type: variable
+            value: ''
+          label: 授课对象
+          output_variable_name: audience
+          required: true
+          type: paragraph
+        - default:
+            selector:
+            - requirements_data
+            - duration_minutes
+            type: variable
+            value: ''
+          label: 视频时长（分钟）
+          output_variable_name: duration_minutes
+          required: true
+          type: paragraph
+        - default:
+            selector:
+            - requirements_data
+            - knowledge_selection
+            type: variable
+            value: ''
+          label: 本次讲解的知识点
+          output_variable_name: knowledge_selection
+          required: false
+          type: paragraph
+        - default:
+            selector:
+            - requirements_data
+            - objectives
+            type: variable
+            value: ''
+          label: 教学目标
+          output_variable_name: objectives
+          required: false
+          type: paragraph
+        - default:
+            selector:
+            - requirements_data
+            - prerequisites
+            type: variable
+            value: ''
+          label: 学生基础
+          output_variable_name: prerequisites
+          required: false
+          type: paragraph
+        - default:
+            selector:
+            - requirements_data
+            - style_preset
+            type: variable
+            value: ''
+          label: 选择画面风格
+          option_source:
+            selector: []
+            type: constant
+            value:
+            - 沿用当前风格
+            - 暖色图解
+            - ASCII 终端科技
+            - 空间代码动画
+            - 自由设计
+            - 自定义
+          output_variable_name: style_preset
+          required: false
+          type: select
+        - default:
+            selector:
+            - requirements_data
+            - style
+            type: variable
+            value: ''
+          label: 风格说明（可修改或清空）
+          output_variable_name: style
+          required: false
+          type: paragraph
+        - default:
+            selector:
+            - requirements_data
+            - voice_instruction
+            type: variable
+            value: ''
+          label: 语速和语气
+          output_variable_name: voice_instruction
+          required: false
+          type: paragraph
+        - default:
+            selector:
+            - requirements_data
+            - production_mode
+            type: variable
+            value: ''
+          label: 是否先看分镜
+          option_source:
+            selector: []
+            type: constant
+            value:
+            - 先看分镜
+            - 直接制作
+          output_variable_name: production_mode
+          required: false
+          type: select
+        isInIteration: false
+        isInLoop: true
+        loop_id: requirements_loop
+        selected: false
+        timeout: 7
+        timeout_unit: day
+        title: 课程要求 · 确认
+        type: human-input
+        user_actions:
+        - button_style: primary
+          id: approve
+          title: 确认课程要求
+      height: 207
+      id: requirements_review
+      parentId: requirements_loop
+      position:
+        x: 1360
+        y: 80
+      positionAbsolute:
+        x: 1400
+        y: 430
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        authorization:
+          config:
+            api_key: '{{#env.LOCAL_TOOL_TOKEN#}}'
+            type: bearer
+          type: api-key
+        body:
+          data:
+          - id: aead9cc7-2dbf-5820-8264-6add084eb59f
+            type: text
+            value: '{{#requirements_show_args.payload#}}'
+          type: raw-text
+        desc: 整理主题、授课对象、时长和画面要求，请核对后继续。
+        headers: 'Content-Type: application/json'
+        isInIteration: false
+        isInLoop: true
+        loop_id: requirements_loop
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 2000
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 10
+          max_read_timeout: 600
+          max_write_timeout: 600
+        title: 课程要求
+        type: http-request
+        url: '{{#env.LOCAL_TOOL_URL#}}/api/requirements/show'
+        variables: []
+      height: 184
+      id: requirements_show
+      parentId: requirements_loop
+      position:
+        x: 460
+        y: 80
+      positionAbsolute:
+        x: 500
+        y: 430
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\n\ndef main(course_id):\n    return {'payload': json.dumps({'course_id':\
+          \ course_id}, ensure_ascii=False)}\n"
+        code_language: python3
+        desc: 读取这节课的编号和已保存进度。
+        isInIteration: false
+        isInLoop: true
+        loop_id: requirements_loop
+        outputs:
+          payload:
+            children: null
+            type: string
+        selected: false
+        title: 课程编号
+        type: code
+        variables:
+        - value_selector:
+          - create_data
+          - course_id
+          variable: course_id
+      height: 80
+      id: requirements_show_args
+      parentId: requirements_loop
+      position:
+        x: 160
+        y: 80
+      positionAbsolute:
+        x: 200
+        y: 430
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        desc: 本阶段已确认，进入下一步。
+        isInIteration: false
+        isInLoop: true
+        items:
+        - input_type: variable
+          operation: over-write
+          value:
+          - requirements_data
+          - done
+          variable_selector:
+          - requirements_loop
+          - done
+          write_mode: over-write
+        loop_id: requirements_loop
+        selected: false
+        title: 进入下一步
+        type: assigner
+        version: '2'
+      height: 112
+      id: requirements_skip_done
+      parentId: requirements_loop
+      position:
+        x: 2260
+        y: 440
+      positionAbsolute:
+        x: 2300
+        y: 790
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        authorization:
+          config:
+            api_key: '{{#env.LOCAL_TOOL_TOKEN#}}'
+            type: bearer
+          type: api-key
+        body:
+          data:
+          - id: f9bbe894-0421-5639-a315-8adf4acbddab
+            type: text
+            value: '{{#production_args.payload#}}'
+          type: raw-text
+        desc: 读取成片、字幕和制作记录。
+        headers: 'Content-Type: application/json'
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 2000
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 10
+          max_read_timeout: 600
+          max_write_timeout: 600
+        title: 打开成片
+        type: http-request
+        url: '{{#env.LOCAL_TOOL_URL#}}/api/result'
+        variables: []
+      height: 168
+      id: result
+      position:
+        x: 40
+        y: 3460
+      positionAbsolute:
+        x: 40
+        y: 3460
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        code: "import json\ndef main(body):\n    data=json.loads(body)\n    if not\
+          \ data.get('ok'):\n        raise ValueError(data.get('error','这一步未完成，请查看错误信息'))\n\
+          \    result={name:str(data.get(name,'') or '') for name in ['course_id',\
+          \ 'view', 'version', 'topic', 'audience', 'duration_minutes', 'objectives',\
+          \ 'prerequisites', 'style', 'style_preset', 'voice_instruction', 'production_mode',\
+          \ 'approved_script', 'feedback', 'screen_text', 'status', 'knowledge_selection']}\n\
+          \    result['done']=bool(data.get('done',False))\n    result['ready']=bool(data.get('ready',True))\n\
+          \    result['paused']=bool(data.get('paused',False))\n    return result\n"
+        code_language: python3
+        desc: 整理可以查看和下载的文件。
+        outputs:
+          approved_script:
+            children: null
+            type: string
+          audience:
+            children: null
+            type: string
+          course_id:
+            children: null
+            type: string
+          done:
+            children: null
+            type: boolean
+          duration_minutes:
+            children: null
+            type: string
+          feedback:
+            children: null
+            type: string
+          knowledge_selection:
+            children: null
+            type: string
+          objectives:
+            children: null
+            type: string
+          paused:
+            children: null
+            type: boolean
+          prerequisites:
+            children: null
+            type: string
+          production_mode:
+            children: null
+            type: string
+          ready:
+            children: null
+            type: boolean
+          screen_text:
+            children: null
+            type: string
+          status:
+            children: null
+            type: string
+          style:
+            children: null
+            type: string
+          style_preset:
+            children: null
+            type: string
+          topic:
+            children: null
+            type: string
+          version:
+            children: null
+            type: string
+          view:
+            children: null
+            type: string
+          voice_instruction:
+            children: null
+            type: string
+        selected: false
+        title: 读取结果
+        type: code
+        variables:
+        - value_selector:
+          - result
+          - body
+          variable: body
+      height: 80
+      id: result_data
+      position:
+        x: 350
+        y: 3460
+      positionAbsolute:
+        x: 350
+        y: 3460
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        desc: 本阶段已确认，进入下一步。
+        isInIteration: false
+        isInLoop: true
+        items:
+        - input_type: variable
+          operation: over-write
+          value:
+          - script_applied
+          - done
+          variable_selector:
+          - script_loop
+          - done
+          write_mode: over-write
+        loop_id: script_loop
+        selected: false
+        title: 进入下一步
+        type: assigner
+        version: '2'
+      height: 112
+      id: script_accepted
+      parentId: script_loop
+      position:
+        x: 4120
+        y: 320
+      positionAbsolute:
+        x: 4160
+        y: 1320
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\ndef main(body):\n    data=json.loads(body)\n    if not\
+          \ data.get('ok'):\n        raise ValueError(data.get('error','这一步未完成，请查看错误信息'))\n\
+          \    result={name:str(data.get(name,'') or '') for name in ['course_id',\
+          \ 'view', 'version', 'topic', 'audience', 'duration_minutes', 'objectives',\
+          \ 'prerequisites', 'style', 'style_preset', 'voice_instruction', 'production_mode',\
+          \ 'approved_script', 'feedback', 'screen_text', 'status', 'knowledge_selection']}\n\
+          \    result['done']=bool(data.get('done',False))\n    result['ready']=bool(data.get('ready',True))\n\
+          \    result['paused']=bool(data.get('paused',False))\n    return result\n"
+        code_language: python3
+        desc: 读取本阶段结果，准备展示。
+        isInIteration: false
+        isInLoop: true
+        loop_id: script_loop
+        outputs:
+          approved_script:
+            children: null
+            type: string
+          audience:
+            children: null
+            type: string
+          course_id:
+            children: null
+            type: string
+          done:
+            children: null
+            type: boolean
+          duration_minutes:
+            children: null
+            type: string
+          feedback:
+            children: null
+            type: string
+          knowledge_selection:
+            children: null
+            type: string
+          objectives:
+            children: null
+            type: string
+          paused:
+            children: null
+            type: boolean
+          prerequisites:
+            children: null
+            type: string
+          production_mode:
+            children: null
+            type: string
+          ready:
+            children: null
+            type: boolean
+          screen_text:
+            children: null
+            type: string
+          status:
+            children: null
+            type: string
+          style:
+            children: null
+            type: string
+          style_preset:
+            children: null
+            type: string
+          topic:
+            children: null
+            type: string
+          version:
+            children: null
+            type: string
+          view:
+            children: null
+            type: string
+          voice_instruction:
+            children: null
+            type: string
+        selected: false
+        title: 读取结果
+        type: code
+        variables:
+        - value_selector:
+          - script_apply
+          - body
+          variable: body
+      height: 80
+      id: script_applied
+      parentId: script_loop
+      position:
+        x: 4120
+        y: 80
+      positionAbsolute:
+        x: 4160
+        y: 1080
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        authorization:
+          config:
+            api_key: '{{#env.LOCAL_TOOL_TOKEN#}}'
+            type: bearer
+          type: api-key
+        body:
+          data:
+          - id: 7c86c686-e4d2-5ff1-a831-907ac3cad1f7
+            type: text
+            value: '{{#script_apply_args.payload#}}'
+          type: raw-text
+        desc: 保存你提交的内容和选择，按修改意见继续处理。
+        headers: 'Content-Type: application/json'
+        isInIteration: false
+        isInLoop: true
+        loop_id: script_loop
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 2000
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 10
+          max_read_timeout: 600
+          max_write_timeout: 600
+        title: 保存修改
+        type: http-request
+        url: '{{#env.LOCAL_TOOL_URL#}}/api/script/apply'
+        variables: []
+      height: 184
+      id: script_apply
+      parentId: script_loop
+      position:
+        x: 3820
+        y: 80
+      positionAbsolute:
+        x: 3860
+        y: 1080
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\n\ndef main(course_id, version, action, approved_script,\
+          \ feedback):\n    return {'payload': json.dumps({'course_id': course_id,\
+          \ 'version': version, 'action': action, 'approved_script': approved_script,\
+          \ 'feedback': feedback}, ensure_ascii=False)}\n"
+        code_language: python3
+        desc: 读取你提交的内容和修改意见。
+        isInIteration: false
+        isInLoop: true
+        loop_id: script_loop
+        outputs:
+          payload:
+            children: null
+            type: string
+        selected: false
+        title: 提交修改
+        type: code
+        variables:
+        - value_selector:
+          - create_data
+          - course_id
+          variable: course_id
+        - value_selector:
+          - script_data
+          - version
+          variable: version
+        - value_selector:
+          - script_review
+          - __action_id
+          variable: action
+        - value_selector:
+          - script_review
+          - approved_script
+          variable: approved_script
+        - value_selector:
+          - script_review
+          - feedback
+          variable: feedback
+      height: 80
+      id: script_apply_args
+      parentId: script_loop
+      position:
+        x: 3520
+        y: 80
+      positionAbsolute:
+        x: 3560
+        y: 1080
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: is
+            id: 0ae98987-70e4-5f9f-b3b0-d37cf897741b
+            value: true
+            varType: boolean
+            variable_selector:
+            - script_data
+            - done
+          logical_operator: and
+        desc: 检查本阶段是否已经确认，决定继续还是等待审核。
+        isInIteration: false
+        isInLoop: true
+        loop_id: script_loop
+        selected: false
+        title: 是否需要确认
+        type: if-else
+      height: 168
+      id: script_check
+      parentId: script_loop
+      position:
+        x: 2920
+        y: 80
+      positionAbsolute:
+        x: 2960
+        y: 1080
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\ndef main(body):\n    data=json.loads(body)\n    if not\
+          \ data.get('ok'):\n        raise ValueError(data.get('error','这一步未完成，请查看错误信息'))\n\
+          \    result={name:str(data.get(name,'') or '') for name in ['course_id',\
+          \ 'view', 'version', 'topic', 'audience', 'duration_minutes', 'objectives',\
+          \ 'prerequisites', 'style', 'style_preset', 'voice_instruction', 'production_mode',\
+          \ 'approved_script', 'feedback', 'screen_text', 'status', 'knowledge_selection']}\n\
+          \    result['done']=bool(data.get('done',False))\n    result['ready']=bool(data.get('ready',True))\n\
+          \    result['paused']=bool(data.get('paused',False))\n    return result\n"
+        code_language: python3
+        desc: 读取本阶段结果，准备展示。
+        isInIteration: false
+        isInLoop: true
+        loop_id: script_loop
+        outputs:
+          approved_script:
+            children: null
+            type: string
+          audience:
+            children: null
+            type: string
+          course_id:
+            children: null
+            type: string
+          done:
+            children: null
+            type: boolean
+          duration_minutes:
+            children: null
+            type: string
+          feedback:
+            children: null
+            type: string
+          knowledge_selection:
+            children: null
+            type: string
+          objectives:
+            children: null
+            type: string
+          paused:
+            children: null
+            type: boolean
+          prerequisites:
+            children: null
+            type: string
+          production_mode:
+            children: null
+            type: string
+          ready:
+            children: null
+            type: boolean
+          screen_text:
+            children: null
+            type: string
+          status:
+            children: null
+            type: string
+          style:
+            children: null
+            type: string
+          style_preset:
+            children: null
+            type: string
+          topic:
+            children: null
+            type: string
+          version:
+            children: null
+            type: string
+          view:
+            children: null
+            type: string
+          voice_instruction:
+            children: null
+            type: string
+        selected: false
+        title: 读取结果
+        type: code
+        variables:
+        - value_selector:
+          - script_show
+          - body
+          variable: body
+      height: 80
+      id: script_data
+      parentId: script_loop
+      position:
+        x: 2620
+        y: 80
+      positionAbsolute:
+        x: 2660
+        y: 1080
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        authorization:
+          config:
+            api_key: '{{#env.LOCAL_TOOL_TOKEN#}}'
+            type: bearer
+          type: api-key
+        body:
+          data:
+          - id: af40148d-e8f7-58b7-8f73-35e191f2cefb
+            type: text
+            value: '{{#script_show_args.payload#}}'
+          type: raw-text
+        desc: 在完整初稿上删去套话、调整句子，保留知识和原意。
+        headers: 'Content-Type: application/json'
+        isInIteration: false
+        isInLoop: true
+        loop_id: script_loop
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 2000
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 10
+          max_read_timeout: 600
+          max_write_timeout: 600
+        title: 调整讲稿表达
+        type: http-request
+        url: '{{#env.LOCAL_TOOL_URL#}}/api/script/prepare/deslop'
+        variables: []
+      height: 184
+      id: script_deslop
+      parentId: script_loop
+      position:
+        x: 1720
+        y: 80
+      positionAbsolute:
+        x: 1760
+        y: 1080
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\ndef main(body):\n    data=json.loads(body)\n    if not\
+          \ data.get('ok'):\n        raise ValueError(data.get('error','这一步未完成，请查看错误信息'))\n\
+          \    result={name:str(data.get(name,'') or '') for name in ['course_id',\
+          \ 'view', 'version', 'topic', 'audience', 'duration_minutes', 'objectives',\
+          \ 'prerequisites', 'style', 'style_preset', 'voice_instruction', 'production_mode',\
+          \ 'approved_script', 'feedback', 'screen_text', 'status', 'knowledge_selection']}\n\
+          \    result['done']=bool(data.get('done',False))\n    result['ready']=bool(data.get('ready',True))\n\
+          \    result['paused']=bool(data.get('paused',False))\n    return result\n"
+        code_language: python3
+        desc: 读取表达修改后的讲稿，准备交给老师审核。
+        isInIteration: false
+        isInLoop: true
+        loop_id: script_loop
+        outputs:
+          approved_script:
+            children: null
+            type: string
+          audience:
+            children: null
+            type: string
+          course_id:
+            children: null
+            type: string
+          done:
+            children: null
+            type: boolean
+          duration_minutes:
+            children: null
+            type: string
+          feedback:
+            children: null
+            type: string
+          knowledge_selection:
+            children: null
+            type: string
+          objectives:
+            children: null
+            type: string
+          paused:
+            children: null
+            type: boolean
+          prerequisites:
+            children: null
+            type: string
+          production_mode:
+            children: null
+            type: string
+          ready:
+            children: null
+            type: boolean
+          screen_text:
+            children: null
+            type: string
+          status:
+            children: null
+            type: string
+          style:
+            children: null
+            type: string
+          style_preset:
+            children: null
+            type: string
+          topic:
+            children: null
+            type: string
+          version:
+            children: null
+            type: string
+          view:
+            children: null
+            type: string
+          voice_instruction:
+            children: null
+            type: string
+        selected: false
+        title: 读取结果
+        type: code
+        variables:
+        - value_selector:
+          - script_deslop
+          - body
+          variable: body
+      height: 96
+      id: script_deslop_data
+      parentId: script_loop
+      position:
+        x: 2020
+        y: 80
+      positionAbsolute:
+        x: 2060
+        y: 1080
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        authorization:
+          config:
+            api_key: '{{#env.LOCAL_TOOL_TOKEN#}}'
+            type: bearer
+          type: api-key
+        body:
+          data:
+          - id: 43478cf8-f1ea-5040-b299-af128ba40b11
+            type: text
+            value: '{{#script_show_args.payload#}}'
+          type: raw-text
+        desc: 按课程要求写出完整初稿，保留知识点、例子和推理。
+        headers: 'Content-Type: application/json'
+        isInIteration: false
+        isInLoop: true
+        loop_id: script_loop
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 2000
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 10
+          max_read_timeout: 600
+          max_write_timeout: 600
+        title: 生成讲稿初稿
+        type: http-request
+        url: '{{#env.LOCAL_TOOL_URL#}}/api/script/prepare/draft'
+        variables: []
+      height: 184
+      id: script_draft
+      parentId: script_loop
+      position:
+        x: 1120
+        y: 80
+      positionAbsolute:
+        x: 1160
+        y: 1080
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\ndef main(body):\n    data=json.loads(body)\n    if not\
+          \ data.get('ok'):\n        raise ValueError(data.get('error','这一步未完成，请查看错误信息'))\n\
+          \    result={name:str(data.get(name,'') or '') for name in ['course_id',\
+          \ 'view', 'version', 'topic', 'audience', 'duration_minutes', 'objectives',\
+          \ 'prerequisites', 'style', 'style_preset', 'voice_instruction', 'production_mode',\
+          \ 'approved_script', 'feedback', 'screen_text', 'status', 'knowledge_selection']}\n\
+          \    result['done']=bool(data.get('done',False))\n    result['ready']=bool(data.get('ready',True))\n\
+          \    result['paused']=bool(data.get('paused',False))\n    return result\n"
+        code_language: python3
+        desc: 保存写好的初稿，准备修改表达。
+        isInIteration: false
+        isInLoop: true
+        loop_id: script_loop
+        outputs:
+          approved_script:
+            children: null
+            type: string
+          audience:
+            children: null
+            type: string
+          course_id:
+            children: null
+            type: string
+          done:
+            children: null
+            type: boolean
+          duration_minutes:
+            children: null
+            type: string
+          feedback:
+            children: null
+            type: string
+          knowledge_selection:
+            children: null
+            type: string
+          objectives:
+            children: null
+            type: string
+          paused:
+            children: null
+            type: boolean
+          prerequisites:
+            children: null
+            type: string
+          production_mode:
+            children: null
+            type: string
+          ready:
+            children: null
+            type: boolean
+          screen_text:
+            children: null
+            type: string
+          status:
+            children: null
+            type: string
+          style:
+            children: null
+            type: string
+          style_preset:
+            children: null
+            type: string
+          topic:
+            children: null
+            type: string
+          version:
+            children: null
+            type: string
+          view:
+            children: null
+            type: string
+          voice_instruction:
+            children: null
+            type: string
+        selected: false
+        title: 读取结果
+        type: code
+        variables:
+        - value_selector:
+          - script_draft
+          - body
+          variable: body
+      height: 80
+      id: script_draft_data
+      parentId: script_loop
+      position:
+        x: 1420
+        y: 80
+      positionAbsolute:
+        x: 1460
+        y: 1080
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        break_conditions:
+        - comparison_operator: is
+          id: 5c317efa-42b9-5390-8cd5-3d0726b778b0
+          value: true
+          varType: boolean
+          variable_selector:
+          - script_loop
+          - done
+        desc: 按已确认的课程要求准备讲稿，完成后展示全文和预计时长。
+        error_handle_mode: terminated
+        height: 572
+        logical_operator: and
+        loop_count: 100
+        loop_variables:
+        - id: de547920-c017-5bc9-b20d-37450f65b28b
+          label: done
+          value: false
+          value_type: constant
+          var_type: boolean
+        selected: false
+        start_node_id: script_loop_start
+        title: 讲稿
+        type: loop
+        width: 4380
+      height: 572
+      id: script_loop
+      position:
+        x: 40
+        y: 1000
+      positionAbsolute:
+        x: 40
+        y: 1000
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 4380
+      zIndex: 0
+    - data:
+        desc: 开始处理这一阶段。
+        isInIteration: false
+        isInLoop: true
+        loop_id: script_loop
+        selected: false
+        title: ''
+        type: loop-start
+      draggable: false
+      height: 48
+      id: script_loop_start
+      parentId: script_loop
+      position:
+        x: 55
+        y: 80
+      positionAbsolute:
+        x: 95
+        y: 1080
+      selectable: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-loop-start
+      width: 44
+      zIndex: 1001
+    - data:
+        delivery_methods:
+        - enabled: true
+          id: 916b3863-9ec8-5289-9ac6-2c3f48fac359
+          type: webapp
+        desc: 查看本阶段内容，确认或填写修改意见后继续。
+        form_content: '{{#script_data.view#}}
+
+
+          ### 讲稿正文
+
+
+          {{#$output.approved_script#}}
+
+
+          ### 修改意见
+
+
+          {{#$output.feedback#}}
+
+
+          '
+        inputs:
+        - default:
+            selector:
+            - script_data
+            - approved_script
+            type: variable
+            value: ''
+          label: 讲稿正文
+          output_variable_name: approved_script
+          required: true
+          type: paragraph
+        - default:
+            selector:
+            - script_data
+            - feedback
+            type: variable
+            value: ''
+          label: 修改意见
+          output_variable_name: feedback
+          required: false
+          type: paragraph
+        isInIteration: false
+        isInLoop: true
+        loop_id: script_loop
+        selected: false
+        timeout: 7
+        timeout_unit: day
+        title: 讲稿 · 确认
+        type: human-input
+        user_actions:
+        - button_style: primary
+          id: approve
+          title: 确认讲稿和时长
+        - button_style: default
+          id: revise
+          title: 按意见修改
+      height: 233
+      id: script_review
+      parentId: script_loop
+      position:
+        x: 3220
+        y: 80
+      positionAbsolute:
+        x: 3260
+        y: 1080
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        authorization:
+          config:
+            api_key: '{{#env.LOCAL_TOOL_TOKEN#}}'
+            type: bearer
+          type: api-key
+        body:
+          data:
+          - id: 1f342ce6-8278-5381-af90-9c11ebffe081
+            type: text
+            value: '{{#script_show_args.payload#}}'
+          type: raw-text
+        desc: 展示讲稿全文、补充内容和预计时长。
+        headers: 'Content-Type: application/json'
+        isInIteration: false
+        isInLoop: true
+        loop_id: script_loop
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 2000
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 10
+          max_read_timeout: 600
+          max_write_timeout: 600
+        title: 查看讲稿
+        type: http-request
+        url: '{{#env.LOCAL_TOOL_URL#}}/api/script/show'
+        variables: []
+      height: 168
+      id: script_show
+      parentId: script_loop
+      position:
+        x: 2320
+        y: 80
+      positionAbsolute:
+        x: 2360
+        y: 1080
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\n\ndef main(course_id):\n    return {'payload': json.dumps({'course_id':\
+          \ course_id}, ensure_ascii=False)}\n"
+        code_language: python3
+        desc: 读取这节课的编号和已保存进度。
+        isInIteration: false
+        isInLoop: true
+        loop_id: script_loop
+        outputs:
+          payload:
+            children: null
+            type: string
+        selected: false
+        title: 课程编号
+        type: code
+        variables:
+        - value_selector:
+          - create_data
+          - course_id
+          variable: course_id
+      height: 80
+      id: script_show_args
+      parentId: script_loop
+      position:
+        x: 160
+        y: 80
+      positionAbsolute:
+        x: 200
+        y: 1080
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        desc: 本阶段已确认，进入下一步。
+        isInIteration: false
+        isInLoop: true
+        items:
+        - input_type: variable
+          operation: over-write
+          value:
+          - script_data
+          - done
+          variable_selector:
+          - script_loop
+          - done
+          write_mode: over-write
+        loop_id: script_loop
+        selected: false
+        title: 进入下一步
+        type: assigner
+        version: '2'
+      height: 112
+      id: script_skip_done
+      parentId: script_loop
+      position:
+        x: 4120
+        y: 440
+      positionAbsolute:
+        x: 4160
+        y: 1440
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        desc: 填写这节课的主题、授课对象、时长和其他要求。
+        selected: false
+        title: 填写课程要求
+        type: start
+        variables:
+        - hint: 描述授课对象、时长和要讲的内容，也可以先上传课件。
+          label: 课程要求
+          max_length: 20000
+          options: []
+          required: false
+          type: paragraph
+          variable: requirement
+        - allowed_file_extensions:
+          - .pdf
+          - .pptx
+          allowed_file_types:
+          - document
+          allowed_file_upload_methods:
+          - local_file
+          hint: 上传后列出知识点和对应页码，再选择本次讲解内容。最多3份，每份120页。
+          label: PDF或PPTX课件
+          max_length: 3
+          number_limits: 3
+          required: false
+          type: file-list
+          variable: source_files
+        - hint: 例如：只讲第12—20页的注意力机制。留空时先整理整份课件。
+          label: 想讲的知识点或页码
+          max_length: 3000
+          options: []
+          required: false
+          type: paragraph
+          variable: knowledge_focus
+        - hint: 可选预设，也可在下方描述。留空时按课程要求设计。
+          label: 画面风格
+          options:
+          - 暖色图解
+          - ASCII 终端科技
+          - 空间代码动画
+          - 自由设计
+          - 自定义
+          required: false
+          type: select
+          variable: style_preset
+        - hint: 例如：沿用参考图的配色；文字大一些；保留视频里图形逐步展开的效果。
+          label: 风格说明或参考重点
+          max_length: 6000
+          options: []
+          required: false
+          type: paragraph
+          variable: style_notes
+        - allowed_file_extensions:
+          - .png
+          - .jpg
+          - .jpeg
+          - .webp
+          - .gif
+          - .bmp
+          - .tif
+          - .tiff
+          - .mp4
+          - .mov
+          - .webm
+          - .m4v
+          allowed_file_types:
+          - image
+          - video
+          allowed_file_upload_methods:
+          - local_file
+          hint: 上传图片或视频片段，提炼结果会显示在课程要求中。单个文件不超过100MB；网页链接请改为截图或视频文件。
+          label: 参考图片或视频（可选，最多3个）
+          max_length: 3
+          number_limits: 3
+          required: false
+          type: file-list
+          variable: style_files
+        - label: 教学材料（粘贴文字）
+          max_length: 80000
+          options: []
+          required: false
+          type: paragraph
+          variable: source_text
+        - label: 已有讲稿
+          max_length: 30000
+          options: []
+          required: false
+          type: paragraph
+          variable: existing_script
+        - label: 课程编号（继续上次制作时填写）
+          max_length: 24
+          options: []
+          required: false
+          type: text-input
+          variable: resume_course
+      height: 361
+      id: start
+      position:
+        x: 40
+        y: 100
+      positionAbsolute:
+        x: 40
+        y: 100
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        desc: 本阶段已确认，进入下一步。
+        isInIteration: false
+        isInLoop: true
+        items:
+        - input_type: variable
+          operation: over-write
+          value:
+          - storyboard_applied
+          - done
+          variable_selector:
+          - storyboard_loop
+          - done
+          write_mode: over-write
+        loop_id: storyboard_loop
+        selected: false
+        title: 进入下一步
+        type: assigner
+        version: '2'
+      height: 112
+      id: storyboard_accepted
+      parentId: storyboard_loop
+      position:
+        x: 2260
+        y: 320
+      positionAbsolute:
+        x: 2300
+        y: 1970
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\ndef main(body):\n    data=json.loads(body)\n    if not\
+          \ data.get('ok'):\n        raise ValueError(data.get('error','这一步未完成，请查看错误信息'))\n\
+          \    result={name:str(data.get(name,'') or '') for name in ['course_id',\
+          \ 'view', 'version', 'topic', 'audience', 'duration_minutes', 'objectives',\
+          \ 'prerequisites', 'style', 'style_preset', 'voice_instruction', 'production_mode',\
+          \ 'approved_script', 'feedback', 'screen_text', 'status', 'knowledge_selection']}\n\
+          \    result['done']=bool(data.get('done',False))\n    result['ready']=bool(data.get('ready',True))\n\
+          \    result['paused']=bool(data.get('paused',False))\n    return result\n"
+        code_language: python3
+        desc: 读取本阶段结果，准备展示。
+        isInIteration: false
+        isInLoop: true
+        loop_id: storyboard_loop
+        outputs:
+          approved_script:
+            children: null
+            type: string
+          audience:
+            children: null
+            type: string
+          course_id:
+            children: null
+            type: string
+          done:
+            children: null
+            type: boolean
+          duration_minutes:
+            children: null
+            type: string
+          feedback:
+            children: null
+            type: string
+          knowledge_selection:
+            children: null
+            type: string
+          objectives:
+            children: null
+            type: string
+          paused:
+            children: null
+            type: boolean
+          prerequisites:
+            children: null
+            type: string
+          production_mode:
+            children: null
+            type: string
+          ready:
+            children: null
+            type: boolean
+          screen_text:
+            children: null
+            type: string
+          status:
+            children: null
+            type: string
+          style:
+            children: null
+            type: string
+          style_preset:
+            children: null
+            type: string
+          topic:
+            children: null
+            type: string
+          version:
+            children: null
+            type: string
+          view:
+            children: null
+            type: string
+          voice_instruction:
+            children: null
+            type: string
+        selected: false
+        title: 读取结果
+        type: code
+        variables:
+        - value_selector:
+          - storyboard_apply
+          - body
+          variable: body
+      height: 80
+      id: storyboard_applied
+      parentId: storyboard_loop
+      position:
+        x: 2260
+        y: 80
+      positionAbsolute:
+        x: 2300
+        y: 1730
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        authorization:
+          config:
+            api_key: '{{#env.LOCAL_TOOL_TOKEN#}}'
+            type: bearer
+          type: api-key
+        body:
+          data:
+          - id: 5aa48d33-5f60-501c-a4b3-118d682fe1e5
+            type: text
+            value: '{{#storyboard_apply_args.payload#}}'
+          type: raw-text
+        desc: 保存你提交的内容和选择，按修改意见继续处理。
+        headers: 'Content-Type: application/json'
+        isInIteration: false
+        isInLoop: true
+        loop_id: storyboard_loop
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 2000
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 10
+          max_read_timeout: 600
+          max_write_timeout: 600
+        title: 保存修改
+        type: http-request
+        url: '{{#env.LOCAL_TOOL_URL#}}/api/storyboard/apply'
+        variables: []
+      height: 184
+      id: storyboard_apply
+      parentId: storyboard_loop
+      position:
+        x: 1960
+        y: 80
+      positionAbsolute:
+        x: 2000
+        y: 1730
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\n\ndef main(course_id, version, action, screen_text, feedback):\n\
+          \    return {'payload': json.dumps({'course_id': course_id, 'version': version,\
+          \ 'action': action, 'screen_text': screen_text, 'feedback': feedback}, ensure_ascii=False)}\n"
+        code_language: python3
+        desc: 读取你提交的内容和修改意见。
+        isInIteration: false
+        isInLoop: true
+        loop_id: storyboard_loop
+        outputs:
+          payload:
+            children: null
+            type: string
+        selected: false
+        title: 提交修改
+        type: code
+        variables:
+        - value_selector:
+          - create_data
+          - course_id
+          variable: course_id
+        - value_selector:
+          - storyboard_data
+          - version
+          variable: version
+        - value_selector:
+          - storyboard_review
+          - __action_id
+          variable: action
+        - value_selector:
+          - storyboard_review
+          - screen_text
+          variable: screen_text
+        - value_selector:
+          - storyboard_review
+          - feedback
+          variable: feedback
+      height: 80
+      id: storyboard_apply_args
+      parentId: storyboard_loop
+      position:
+        x: 1660
+        y: 80
+      positionAbsolute:
+        x: 1700
+        y: 1730
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: is
+            id: 4f0fa3fe-88a9-537c-b190-a4e90a52d1d9
+            value: true
+            varType: boolean
+            variable_selector:
+            - storyboard_data
+            - done
+          logical_operator: and
+        desc: 检查本阶段是否已经确认，决定继续还是等待审核。
+        isInIteration: false
+        isInLoop: true
+        loop_id: storyboard_loop
+        selected: false
+        title: 是否需要确认
+        type: if-else
+      height: 168
+      id: storyboard_check
+      parentId: storyboard_loop
+      position:
+        x: 1060
+        y: 80
+      positionAbsolute:
+        x: 1100
+        y: 1730
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\ndef main(body):\n    data=json.loads(body)\n    if not\
+          \ data.get('ok'):\n        raise ValueError(data.get('error','这一步未完成，请查看错误信息'))\n\
+          \    result={name:str(data.get(name,'') or '') for name in ['course_id',\
+          \ 'view', 'version', 'topic', 'audience', 'duration_minutes', 'objectives',\
+          \ 'prerequisites', 'style', 'style_preset', 'voice_instruction', 'production_mode',\
+          \ 'approved_script', 'feedback', 'screen_text', 'status', 'knowledge_selection']}\n\
+          \    result['done']=bool(data.get('done',False))\n    result['ready']=bool(data.get('ready',True))\n\
+          \    result['paused']=bool(data.get('paused',False))\n    return result\n"
+        code_language: python3
+        desc: 读取本阶段结果，准备展示。
+        isInIteration: false
+        isInLoop: true
+        loop_id: storyboard_loop
+        outputs:
+          approved_script:
+            children: null
+            type: string
+          audience:
+            children: null
+            type: string
+          course_id:
+            children: null
+            type: string
+          done:
+            children: null
+            type: boolean
+          duration_minutes:
+            children: null
+            type: string
+          feedback:
+            children: null
+            type: string
+          knowledge_selection:
+            children: null
+            type: string
+          objectives:
+            children: null
+            type: string
+          paused:
+            children: null
+            type: boolean
+          prerequisites:
+            children: null
+            type: string
+          production_mode:
+            children: null
+            type: string
+          ready:
+            children: null
+            type: boolean
+          screen_text:
+            children: null
+            type: string
+          status:
+            children: null
+            type: string
+          style:
+            children: null
+            type: string
+          style_preset:
+            children: null
+            type: string
+          topic:
+            children: null
+            type: string
+          version:
+            children: null
+            type: string
+          view:
+            children: null
+            type: string
+          voice_instruction:
+            children: null
+            type: string
+        selected: false
+        title: 读取结果
+        type: code
+        variables:
+        - value_selector:
+          - storyboard_show
+          - body
+          variable: body
+      height: 80
+      id: storyboard_data
+      parentId: storyboard_loop
+      position:
+        x: 760
+        y: 80
+      positionAbsolute:
+        x: 800
+        y: 1730
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        break_conditions:
+        - comparison_operator: is
+          id: 693c97aa-531f-5e4b-95c0-ad55e33c624f
+          value: true
+          varType: boolean
+          variable_selector:
+          - storyboard_loop
+          - done
+        desc: 把已确认的讲稿安排成图文分镜，保留讲稿原文。
+        error_handle_mode: terminated
+        height: 820
+        logical_operator: and
+        loop_count: 100
+        loop_variables:
+        - id: 038295c7-003c-594c-8647-9c1dad3b9c64
+          label: done
+          value: false
+          value_type: constant
+          var_type: boolean
+        selected: false
+        start_node_id: storyboard_loop_start
+        title: 分镜
+        type: loop
+        width: 3120
+      height: 820
+      id: storyboard_loop
+      position:
+        x: 40
+        y: 1650
+      positionAbsolute:
+        x: 40
+        y: 1650
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 3120
+      zIndex: 0
+    - data:
+        desc: 开始处理这一阶段。
+        isInIteration: false
+        isInLoop: true
+        loop_id: storyboard_loop
+        selected: false
+        title: ''
+        type: loop-start
+      draggable: false
+      height: 48
+      id: storyboard_loop_start
+      parentId: storyboard_loop
+      position:
+        x: 55
+        y: 80
+      positionAbsolute:
+        x: 95
+        y: 1730
+      selectable: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-loop-start
+      width: 44
+      zIndex: 1001
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: is
+            id: e54d5c4c-63db-51eb-b0c7-ad53e9d2d94e
+            value: true
+            varType: boolean
+            variable_selector:
+            - storyboard_data
+            - paused
+          logical_operator: and
+        desc: 是否已暂停
+        isInIteration: false
+        isInLoop: true
+        loop_id: storyboard_loop
+        selected: false
+        title: 是否已暂停
+        type: if-else
+      height: 152
+      id: storyboard_paused
+      parentId: storyboard_loop
+      position:
+        x: 1360
+        y: 360
+      positionAbsolute:
+        x: 1400
+        y: 2010
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: is
+            id: b330c68a-55c0-5bd9-9064-3b745910bf82
+            value: true
+            varType: boolean
+            variable_selector:
+            - storyboard_data
+            - ready
+          logical_operator: and
+        desc: 画面是否已准备好
+        isInIteration: false
+        isInLoop: true
+        loop_id: storyboard_loop
+        selected: false
+        title: 画面是否已准备好
+        type: if-else
+      height: 152
+      id: storyboard_ready
+      parentId: storyboard_loop
+      position:
+        x: 1060
+        y: 260
+      positionAbsolute:
+        x: 1100
+        y: 1910
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        delivery_methods:
+        - enabled: true
+          id: 5742163f-1264-50bc-a09c-753a3a65f7ca
+          type: webapp
+        desc: 继续分镜制作
+        form_content: 已完成的分镜和修改记录已保存。继续后会接着制作。
+        inputs: []
+        isInIteration: false
+        isInLoop: true
+        loop_id: storyboard_loop
+        selected: false
+        timeout: 7
+        timeout_unit: day
+        title: 继续分镜制作
+        type: human-input
+        user_actions:
+        - button_style: primary
+          id: continue
+          title: 继续制作
+      height: 191
+      id: storyboard_resume
+      parentId: storyboard_loop
+      position:
+        x: 1660
+        y: 600
+      positionAbsolute:
+        x: 1700
+        y: 2250
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\n\ndef main(course_id, version):\n    return {'payload':\
+          \ json.dumps({'course_id': course_id, 'version': version}, ensure_ascii=False)}\n"
+        code_language: python3
+        desc: 读取已保存进度
+        isInIteration: false
+        isInLoop: true
+        loop_id: storyboard_loop
+        outputs:
+          payload:
+            children: null
+            type: string
+        selected: false
+        title: 读取已保存进度
+        type: code
+        variables:
+        - value_selector:
+          - create_data
+          - course_id
+          variable: course_id
+        - value_selector:
+          - storyboard_data
+          - version
+          variable: version
+      height: 80
+      id: storyboard_resume_args
+      parentId: storyboard_loop
+      position:
+        x: 1960
+        y: 600
+      positionAbsolute:
+        x: 2000
+        y: 2250
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        authorization:
+          config:
+            api_key: '{{#env.LOCAL_TOOL_TOKEN#}}'
+            type: bearer
+          type: api-key
+        body:
+          data:
+          - id: a8b010d1-ece4-5825-9aaa-ecf6b8e8846b
+            type: text
+            value: '{{#storyboard_resume_args.payload#}}'
+          type: raw-text
+        desc: 继续制作
+        headers: 'Content-Type: application/json'
+        isInIteration: false
+        isInLoop: true
+        loop_id: storyboard_loop
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 2000
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 10
+          max_read_timeout: 600
+          max_write_timeout: 600
+        title: 继续制作
+        type: http-request
+        url: '{{#env.LOCAL_TOOL_URL#}}/api/storyboard/resume'
+        variables: []
+      height: 168
+      id: storyboard_resume_call
+      parentId: storyboard_loop
+      position:
+        x: 2260
+        y: 600
+      positionAbsolute:
+        x: 2300
+        y: 2250
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\ndef main(body):\n    data=json.loads(body)\n    if not\
+          \ data.get('ok'):\n        raise ValueError(data.get('error','这一步未完成，请查看错误信息'))\n\
+          \    result={name:str(data.get(name,'') or '') for name in ['course_id',\
+          \ 'view', 'version', 'topic', 'audience', 'duration_minutes', 'objectives',\
+          \ 'prerequisites', 'style', 'style_preset', 'voice_instruction', 'production_mode',\
+          \ 'approved_script', 'feedback', 'screen_text', 'status', 'knowledge_selection']}\n\
+          \    result['done']=bool(data.get('done',False))\n    result['ready']=bool(data.get('ready',True))\n\
+          \    result['paused']=bool(data.get('paused',False))\n    return result\n"
+        code_language: python3
+        desc: 读取结果
+        isInIteration: false
+        isInLoop: true
+        loop_id: storyboard_loop
+        outputs:
+          approved_script:
+            children: null
+            type: string
+          audience:
+            children: null
+            type: string
+          course_id:
+            children: null
+            type: string
+          done:
+            children: null
+            type: boolean
+          duration_minutes:
+            children: null
+            type: string
+          feedback:
+            children: null
+            type: string
+          knowledge_selection:
+            children: null
+            type: string
+          objectives:
+            children: null
+            type: string
+          paused:
+            children: null
+            type: boolean
+          prerequisites:
+            children: null
+            type: string
+          production_mode:
+            children: null
+            type: string
+          ready:
+            children: null
+            type: boolean
+          screen_text:
+            children: null
+            type: string
+          status:
+            children: null
+            type: string
+          style:
+            children: null
+            type: string
+          style_preset:
+            children: null
+            type: string
+          topic:
+            children: null
+            type: string
+          version:
+            children: null
+            type: string
+          view:
+            children: null
+            type: string
+          voice_instruction:
+            children: null
+            type: string
+        selected: false
+        title: 读取结果
+        type: code
+        variables:
+        - value_selector:
+          - storyboard_resume_call
+          - body
+          variable: body
+      height: 80
+      id: storyboard_resumed
+      parentId: storyboard_loop
+      position:
+        x: 2560
+        y: 600
+      positionAbsolute:
+        x: 2600
+        y: 2250
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        delivery_methods:
+        - enabled: true
+          id: 9d597f56-94f8-5a24-8599-e721a87ab977
+          type: webapp
+        desc: 查看本阶段内容，确认或填写修改意见后继续。
+        form_content: '{{#storyboard_data.view#}}
+
+
+          ### 画面文字
+
+
+          {{#$output.screen_text#}}
+
+
+          ### 修改意见（注明段号）
+
+
+          {{#$output.feedback#}}
+
+
+          '
+        inputs:
+        - default:
+            selector:
+            - storyboard_data
+            - screen_text
+            type: variable
+            value: ''
+          label: 画面文字
+          output_variable_name: screen_text
+          required: false
+          type: paragraph
+        - default:
+            selector:
+            - storyboard_data
+            - feedback
+            type: variable
+            value: ''
+          label: 修改意见（注明段号）
+          output_variable_name: feedback
+          required: false
+          type: paragraph
+        isInIteration: false
+        isInLoop: true
+        loop_id: storyboard_loop
+        selected: false
+        timeout: 7
+        timeout_unit: day
+        title: 分镜 · 确认
+        type: human-input
+        user_actions:
+        - button_style: primary
+          id: approve
+          title: 确认分镜，开始制作
+        - button_style: default
+          id: revise
+          title: 修改分镜
+      height: 233
+      id: storyboard_review
+      parentId: storyboard_loop
+      position:
+        x: 1360
+        y: 80
+      positionAbsolute:
+        x: 1400
+        y: 1730
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        authorization:
+          config:
+            api_key: '{{#env.LOCAL_TOOL_TOKEN#}}'
+            type: bearer
+          type: api-key
+        body:
+          data:
+          - id: c7a63a7b-b017-5bf6-bd22-03aa6e12c18c
+            type: text
+            value: '{{#storyboard_show_args.payload#}}'
+          type: raw-text
+        desc: 把已确认的讲稿安排成图文分镜，保留讲稿原文。
+        headers: 'Content-Type: application/json'
+        isInIteration: false
+        isInLoop: true
+        loop_id: storyboard_loop
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 2000
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 10
+          max_read_timeout: 600
+          max_write_timeout: 600
+        title: 分镜
+        type: http-request
+        url: '{{#env.LOCAL_TOOL_URL#}}/api/storyboard/show?producer=codex'
+        variables: []
+      height: 200
+      id: storyboard_show
+      parentId: storyboard_loop
+      position:
+        x: 460
+        y: 80
+      positionAbsolute:
+        x: 500
+        y: 1730
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\n\ndef main(course_id):\n    return {'payload': json.dumps({'course_id':\
+          \ course_id}, ensure_ascii=False)}\n"
+        code_language: python3
+        desc: 读取这节课的编号和已保存进度。
+        isInIteration: false
+        isInLoop: true
+        loop_id: storyboard_loop
+        outputs:
+          payload:
+            children: null
+            type: string
+        selected: false
+        title: 课程编号
+        type: code
+        variables:
+        - value_selector:
+          - create_data
+          - course_id
+          variable: course_id
+      height: 80
+      id: storyboard_show_args
+      parentId: storyboard_loop
+      position:
+        x: 160
+        y: 80
+      positionAbsolute:
+        x: 200
+        y: 1730
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        desc: 本阶段已确认，进入下一步。
+        isInIteration: false
+        isInLoop: true
+        items:
+        - input_type: variable
+          operation: over-write
+          value:
+          - storyboard_data
+          - done
+          variable_selector:
+          - storyboard_loop
+          - done
+          write_mode: over-write
+        loop_id: storyboard_loop
+        selected: false
+        title: 进入下一步
+        type: assigner
+        version: '2'
+      height: 112
+      id: storyboard_skip_done
+      parentId: storyboard_loop
+      position:
+        x: 2260
+        y: 440
+      positionAbsolute:
+        x: 2300
+        y: 2090
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        delivery_methods:
+        - enabled: true
+          id: f36aa84e-834c-5509-abb0-c39fc822bf79
+          type: webapp
+        desc: 制作分镜
+        form_content: '正在制作分镜。
+
+
+          http://127.0.0.1:8794/storyboard-panel/{{#create_data.course_id#}}'
+        inputs: []
+        isInIteration: false
+        isInLoop: true
+        loop_id: storyboard_loop
+        selected: false
+        timeout: 7
+        timeout_unit: day
+        title: 制作分镜
+        type: human-input
+        user_actions:
+        - button_style: primary
+          id: job_updated
+          title: 读取制作结果
+      height: 191
+      id: storyboard_wait
+      parentId: storyboard_loop
+      position:
+        x: 1660
+        y: 360
+      positionAbsolute:
+        x: 1700
+        y: 2010
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\n\ndef main(course_id):\n    return {'payload': json.dumps({'course_id':\
+          \ course_id}, ensure_ascii=False)}\n"
+        code_language: python3
+        desc: 读取这节课上传的参考图片或视频。
+        outputs:
+          payload:
+            children: null
+            type: string
+        selected: false
+        title: 读取参考素材
+        type: code
+        variables:
+        - value_selector:
+          - create_data
+          - course_id
+          variable: course_id
+      height: 80
+      id: style_args
+      position:
+        x: 1250
+        y: 100
+      positionAbsolute:
+        x: 1250
+        y: 100
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        code: "import json\ndef main(body):\n    data=json.loads(body)\n    if not\
+          \ data.get('ok'):\n        raise ValueError(data.get('error','这一步未完成，请查看错误信息'))\n\
+          \    result={name:str(data.get(name,'') or '') for name in ['course_id',\
+          \ 'view', 'version', 'topic', 'audience', 'duration_minutes', 'objectives',\
+          \ 'prerequisites', 'style', 'style_preset', 'voice_instruction', 'production_mode',\
+          \ 'approved_script', 'feedback', 'screen_text', 'status', 'knowledge_selection']}\n\
+          \    result['done']=bool(data.get('done',False))\n    result['ready']=bool(data.get('ready',True))\n\
+          \    result['paused']=bool(data.get('paused',False))\n    return result\n"
+        code_language: python3
+        desc: 保存参考素材的读取结果和风格说明。
+        outputs:
+          approved_script:
+            children: null
+            type: string
+          audience:
+            children: null
+            type: string
+          course_id:
+            children: null
+            type: string
+          done:
+            children: null
+            type: boolean
+          duration_minutes:
+            children: null
+            type: string
+          feedback:
+            children: null
+            type: string
+          knowledge_selection:
+            children: null
+            type: string
+          objectives:
+            children: null
+            type: string
+          paused:
+            children: null
+            type: boolean
+          prerequisites:
+            children: null
+            type: string
+          production_mode:
+            children: null
+            type: string
+          ready:
+            children: null
+            type: boolean
+          screen_text:
+            children: null
+            type: string
+          status:
+            children: null
+            type: string
+          style:
+            children: null
+            type: string
+          style_preset:
+            children: null
+            type: string
+          topic:
+            children: null
+            type: string
+          version:
+            children: null
+            type: string
+          view:
+            children: null
+            type: string
+          voice_instruction:
+            children: null
+            type: string
+        selected: false
+        title: 读取结果
+        type: code
+        variables:
+        - value_selector:
+          - style_prepare
+          - body
+          variable: body
+      height: 80
+      id: style_data
+      position:
+        x: 1850
+        y: 100
+      positionAbsolute:
+        x: 1850
+        y: 100
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        authorization:
+          config:
+            api_key: '{{#env.LOCAL_TOOL_TOKEN#}}'
+            type: bearer
+          type: api-key
+        body:
+          data:
+          - id: f0d32f71-f843-5f16-8c06-ebf8c715a9e2
+            type: text
+            value: '{{#style_args.payload#}}'
+          type: raw-text
+        desc: 读取参考画面，整理配色、文字、布局和动效特点，供下一步核对。
+        headers: 'Content-Type: application/json'
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 2000
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 10
+          max_read_timeout: 600
+          max_write_timeout: 600
+        title: 提炼参考风格
+        type: http-request
+        url: '{{#env.LOCAL_TOOL_URL#}}/api/style/prepare'
+        variables: []
+      height: 184
+      id: style_prepare
+      position:
+        x: 1550
+        y: 100
+      positionAbsolute:
+        x: 1550
+        y: 100
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 0
+    - data:
+        authorization:
+          config:
+            api_key: '{{#env.LOCAL_TOOL_TOKEN#}}'
+            type: bearer
+          type: api-key
+        body:
+          data:
+          - id: 43478cf8-f1ea-5040-b299-af128ba40b11
+            type: text
+            value: '{{#script_show_args.payload#}}'
+          type: raw-text
+        desc: 根据确认的课程要求安排知识、例子与讲解顺序。
+        headers: 'Content-Type: application/json'
+        isInIteration: false
+        isInLoop: true
+        loop_id: script_loop
+        method: post
+        params: ''
+        retry_config:
+          max_retries: 2
+          retry_enabled: true
+          retry_interval: 2000
+        selected: false
+        ssl_verify: true
+        timeout:
+          max_connect_timeout: 10
+          max_read_timeout: 600
+          max_write_timeout: 600
+        title: 安排教学内容
+        type: http-request
+        url: '{{#env.LOCAL_TOOL_URL#}}/api/script/prepare/plan'
+        variables: []
+      height: 184
+      id: script_plan
+      parentId: script_loop
+      position:
+        x: 460
+        y: 80
+      positionAbsolute:
+        x: 500
+        y: 1080
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    - data:
+        code: "import json\ndef main(body):\n    data=json.loads(body)\n    if not\
+          \ data.get('ok'):\n        raise ValueError(data.get('error','这一步未完成，请查看错误信息'))\n\
+          \    result={name:str(data.get(name,'') or '') for name in ['course_id',\
+          \ 'view', 'version', 'topic', 'audience', 'duration_minutes', 'objectives',\
+          \ 'prerequisites', 'style', 'style_preset', 'voice_instruction', 'production_mode',\
+          \ 'approved_script', 'feedback', 'screen_text', 'status', 'knowledge_selection']}\n\
+          \    result['done']=bool(data.get('done',False))\n    result['ready']=bool(data.get('ready',True))\n\
+          \    result['paused']=bool(data.get('paused',False))\n    return result\n"
+        code_language: python3
+        desc: 教学安排完成后进入写稿。
+        isInIteration: false
+        isInLoop: true
+        loop_id: script_loop
+        outputs:
+          approved_script:
+            children: null
+            type: string
+          audience:
+            children: null
+            type: string
+          course_id:
+            children: null
+            type: string
+          done:
+            children: null
+            type: boolean
+          duration_minutes:
+            children: null
+            type: string
+          feedback:
+            children: null
+            type: string
+          knowledge_selection:
+            children: null
+            type: string
+          objectives:
+            children: null
+            type: string
+          paused:
+            children: null
+            type: boolean
+          prerequisites:
+            children: null
+            type: string
+          production_mode:
+            children: null
+            type: string
+          ready:
+            children: null
+            type: boolean
+          screen_text:
+            children: null
+            type: string
+          status:
+            children: null
+            type: string
+          style:
+            children: null
+            type: string
+          style_preset:
+            children: null
+            type: string
+          topic:
+            children: null
+            type: string
+          version:
+            children: null
+            type: string
+          view:
+            children: null
+            type: string
+          voice_instruction:
+            children: null
+            type: string
+        selected: false
+        title: 读取教学安排
+        type: code
+        variables:
+        - value_selector:
+          - script_plan
+          - body
+          variable: body
+      height: 80
+      id: script_plan_data
+      parentId: script_loop
+      position:
+        x: 790
+        y: 80
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+      zIndex: 1001
+    viewport:
+      x: 30
+      y: 30
+      zoom: 0.3
+  rag_pipeline_variables: []

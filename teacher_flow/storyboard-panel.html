@@ -1,0 +1,83 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>分镜制作</title><style>
+*{box-sizing:border-box}body{margin:0;padding:16px;font:14px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;color:#1f2937;background:#f7f9fc}h2{font-size:16px;margin:0 0 10px;display:flex;align-items:center;gap:9px}p{margin:6px 0;color:#526175}.dot{width:9px;height:9px;border-radius:50%;background:#5278ee;animation:breathe 1.8s ease-in-out infinite}.paused .dot{background:#d79635;animation:none}.bar{height:5px;background:#e5ebf5;border-radius:6px;overflow:hidden;margin:14px 0}.fill{height:100%;background:#5278ee;transition:width .5s ease}button{font:inherit;font-weight:600;min-height:36px;padding:6px 16px;border:1px solid #ced7e5;border-radius:9px;background:white;color:#27364d;cursor:pointer}button:focus-visible{outline:3px solid #92b0ff;outline-offset:2px}button[hidden]{display:none}.error{color:#b45309}@keyframes breathe{50%{opacity:.35;box-shadow:0 0 0 5px #5278ee18}}@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style><body><section id="card"><h2><span class="dot"></span>分镜制作</h2><p role="status" id="message">正在读取制作进度。</p><div class="bar"><div class="fill" id="fill" style="width:0%"></div></div><p id="count"></p><p id="error" role="alert" class="error"></p><button id="control" hidden></button></section>
+<script>
+const config=__CONFIG__;
+let current=null,busy=false,stopped=false,epoch=0,activeAction='',checking=false;
+const el=id=>document.getElementById(id);
+const notify=status=>parent.postMessage({channel:config.channel,type:'production-state',status,height:document.body.scrollHeight},'http://127.0.0.1:8788');
+function show(data){
+  if(current&&data.key===current.key){
+    if((data.retry_generation||0)<(current.retry_generation||0))return;
+    if((data.retry_generation||0)===(current.retry_generation||0)&&(data.updated_at||0)<(current.updated_at||0))return;
+  }
+  current=data;
+  checking=false;
+  render();
+}
+function render(){
+  const data=current;
+  if(!data)return;
+  const failed=['failed','unknown'].includes(data.status);
+  const networkWait=data.status==='network_wait';
+  el('message').textContent=data.message;
+  el('card').className=data.status==='paused'||failed||networkWait?'paused':'';
+  const drafts=Math.max(0,(data.saved_scenes||[]).length-(data.completed||0));
+  el('count').textContent=data.total?`已完成 ${data.completed||0} / ${data.total} 段${drafts?` · 另有 ${drafts} 段草稿已保存`:''}`:'';
+  el('fill').style.width=(data.total?100*(data.completed||0)/data.total:0)+'%';
+  const action=failed?'retry':['queued','running','network_wait'].includes(data.status)?'pause':'';
+  el('control').hidden=!action;
+  el('control').textContent=action==='retry'?(data.retry_generation?'再次重试':'从断点重试'):'暂停';
+  el('control').dataset.action=action;
+  el('control').disabled=false;
+  if(busy||checking||data.status==='queued'||data.status==='pausing'){
+    el('control').hidden=false;
+    el('control').disabled=true;
+    el('control').dataset.action='';
+    el('card').className='';
+    if(checking){
+      el('message').textContent='正在读取最新进度。';
+      el('control').textContent='读取进度中…';
+      notify('unknown');
+    }else if(busy&&activeAction==='pause'||data.status==='pausing'){
+      el('message').textContent=data.status==='pausing'?data.message:'正在发送暂停请求。';
+      el('control').textContent='正在暂停…';
+      notify('pausing');
+    }else{
+      const resuming=activeAction==='retry'||data.retry_generation>0;
+      el('message').textContent=resuming?'正在从已保存的进度继续制作。':'正在开始制作。';
+      el('control').textContent=resuming?'正在恢复…':'正在启动…';
+      notify('starting');
+    }
+    return;
+  }
+  notify(data.status);
+}
+async function refresh(){
+  if(stopped)return;
+  const started=epoch;
+  try{
+    const r=await fetch(`/storyboard-status/${config.cid}?present=1`,{cache:'no-store'});
+    if(!r.ok)throw Error('暂时无法读取进度。');
+    const data=await r.json();
+    if(started===epoch&&!busy){show(data);el('error').textContent='';}
+  }catch(e){if(started===epoch)el('error').textContent='连接暂时中断，已保存的片段会保留。';}
+  finally{if(!stopped)setTimeout(refresh,2000);}
+}
+el('control').onclick=async()=>{
+  if(busy||checking||!current||el('control').disabled)return;
+  activeAction=el('control').dataset.action;
+  if(!activeAction)return;
+  const payload={key:current.key,action:activeAction,retry_generation:current.retry_generation||0};
+  busy=true;epoch++;el('error').textContent='';render();
+  try{
+    const r=await fetch(`/storyboard-control/${config.cid}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data=await r.json();
+    if(!r.ok)throw Error(data.detail||'操作未完成，请稍后再试。');
+    show(data);
+  }catch(e){checking=true;el('error').textContent=e.message||'暂时无法确认操作结果。';}
+  finally{busy=false;render();}
+};
+window.addEventListener('pagehide',()=>{stopped=true;});refresh();
+</script></body></html>

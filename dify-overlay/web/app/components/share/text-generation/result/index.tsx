@@ -1,0 +1,214 @@
+'use client'
+import type { FC } from 'react'
+import type { TextGenerationTranslate } from '../types'
+import type { WorkflowProcess } from '@/app/components/base/chat/types'
+import type { PromptConfig } from '@/models/debug'
+import type { SiteInfo } from '@/models/share'
+import type { AppSourceType } from '@/service/share'
+import type { VisionFile, VisionSettings } from '@/types/app'
+import { Button } from '@langgenius/dify-ui/button'
+import { toast } from '@langgenius/dify-ui/toast'
+import { useCallback } from 'react'
+import * as React from 'react'
+import { useTranslation } from 'react-i18next'
+import TextGenerationRes from '@/app/components/app/text-generate/item'
+import Loading from '@/app/components/base/loading'
+import NoData from '@/app/components/share/text-generation/no-data'
+import StageRecovery from '@/app/components/workflow/run/stage-recovery'
+import { AppSourceType as SourceType } from '@/service/share'
+import { useResultRunState } from './hooks/use-result-run-state'
+import { useResultSender } from './hooks/use-result-sender'
+import { acknowledgeHumanInputSubmission } from './workflow-stream-handlers'
+
+type IResultProps = {
+  resumeRunId?: string
+  isWorkflow: boolean
+  isCallBatchAPI: boolean
+  isPC: boolean
+  isMobile: boolean
+  appSourceType: AppSourceType
+  appId?: string
+  isError: boolean
+  isShowTextToSpeech: boolean
+  promptConfig: PromptConfig | null
+  moreLikeThisEnabled: boolean
+  inputs: Record<string, any>
+  controlSend?: number
+  controlRetry?: number
+  controlStopResponding?: number
+  onShowRes: () => void
+  handleSaveMessage: (messageId: string) => void
+  taskId?: number
+  onCompleted: (completionRes: string, taskId?: number, success?: boolean) => void
+  visionConfig: VisionSettings
+  completionFiles: VisionFile[]
+  siteInfo: SiteInfo | null
+  onRunStart: () => void
+  onRunControlChange?: (
+    control: {
+      onStop: () => Promise<void> | void
+      isStopping: boolean
+    } | null,
+  ) => void
+  hideInlineStopButton?: boolean
+  onWorkflowProcessChange?: (process: WorkflowProcess | undefined) => void
+}
+const Result: FC<IResultProps> = ({
+  resumeRunId,
+  isWorkflow,
+  isCallBatchAPI,
+  isPC,
+  isMobile,
+  appSourceType,
+  appId,
+  isError,
+  isShowTextToSpeech,
+  promptConfig,
+  moreLikeThisEnabled,
+  inputs,
+  controlSend,
+  controlRetry,
+  controlStopResponding,
+  onShowRes,
+  handleSaveMessage,
+  taskId,
+  onCompleted,
+  visionConfig,
+  completionFiles,
+  siteInfo,
+  onRunStart,
+  onRunControlChange,
+  hideInlineStopButton = false,
+  onWorkflowProcessChange,
+}) => {
+  const { t } = useTranslation()
+  const translateResultKey = useCallback<TextGenerationTranslate>(
+    (selector, options) => t(selector, options),
+    [t],
+  )
+  const notify = useCallback(
+    ({ type, message }: { type: 'error' | 'info' | 'success' | 'warning'; message: string }) => {
+      toast(message, { type })
+    },
+    [],
+  )
+  const runState = useResultRunState({
+    appId,
+    appSourceType,
+    controlStopResponding,
+    isWorkflow,
+    notify,
+    onRunControlChange,
+  })
+  React.useEffect(() => {
+    onWorkflowProcessChange?.(runState.workflowProcessData)
+  }, [onWorkflowProcessChange, runState.workflowProcessData])
+  const { handleSend, handleResume } = useResultSender({
+    resumeRunId,
+    appId,
+    appSourceType,
+    completionFiles,
+    controlRetry,
+    controlSend,
+    inputs,
+    isCallBatchAPI,
+    isPC,
+    isWorkflow,
+    notify,
+    onCompleted,
+    onRunStart,
+    onShowRes,
+    promptConfig,
+    runState,
+    t: translateResultKey,
+    taskId,
+    visionConfig,
+  })
+  const isNoData = !runState.completionRes
+  const renderTextGenerationRes = () => (
+    <>
+      {isWorkflow &&
+        appSourceType === SourceType.webApp &&
+        runState.workflowProcessData?.runId &&
+        promptConfig?.prompt_variables.some((variable) => variable.key === 'resume_course') && (
+          <StageRecovery
+            key={runState.workflowProcessData.runId}
+            appId={appId || ''}
+            runId={runState.workflowProcessData.runId}
+            runStatus={runState.workflowProcessData.status}
+            runError={runState.workflowProcessData.error}
+            publicApp
+            onResumed={handleResume}
+          />
+        )}
+      {!hideInlineStopButton && runState.isResponding && runState.currentTaskId && (
+        <div className={`mb-3 flex ${isPC ? 'justify-end' : 'justify-center'}`}>
+          <Button variant="secondary" disabled={runState.isStopping} onClick={runState.handleStop}>
+            {runState.isStopping ? (
+              <span aria-hidden className="i-ri-loader-2-line h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <span aria-hidden className="i-ri-stop-circle-fill h-3.5 w-3.5" />
+            )}
+            <span className="text-xs font-normal">
+              {t(($) => $['operation.stopResponding'], { ns: 'appDebug' })}
+            </span>
+          </Button>
+        </div>
+      )}
+      <TextGenerationRes
+        onHumanInputFormSubmitted={(token) => {
+          const current = runState.getWorkflowProcessData()
+          runState.setWorkflowProcessData(acknowledgeHumanInputSubmission(current, token))
+          if (current?.runId) handleResume(current.runId)
+        }}
+        isWorkflow={isWorkflow}
+        workflowProcessData={runState.workflowProcessData}
+        isError={isError}
+        onRetry={handleSend}
+        content={runState.completionRes}
+        messageId={runState.messageId}
+        isInWebApp
+        moreLikeThis={moreLikeThisEnabled}
+        onFeedback={runState.handleFeedback}
+        feedback={runState.feedback}
+        onSave={handleSaveMessage}
+        isMobile={isMobile}
+        appSourceType={appSourceType}
+        installedAppId={appId}
+        // isLoading={isCallBatchAPI ? (!completionRes && isResponding) : false}
+        isLoading={false}
+        taskId={isCallBatchAPI ? ((taskId as number) < 10 ? `0${taskId}` : `${taskId}`) : undefined}
+        controlClearMoreLikeThis={runState.controlClearMoreLikeThis}
+        isShowTextToSpeech={isShowTextToSpeech}
+        hideProcessDetail
+        siteInfo={siteInfo}
+      />
+    </>
+  )
+  return (
+    <>
+      {!isCallBatchAPI &&
+        !isWorkflow &&
+        (runState.isResponding && !runState.completionRes ? (
+          <div className="flex size-full items-center justify-center">
+            <Loading type="area" />
+          </div>
+        ) : (
+          <>{isNoData ? <NoData /> : renderTextGenerationRes()}</>
+        ))}
+      {!isCallBatchAPI &&
+        isWorkflow &&
+        (runState.isResponding && !runState.workflowProcessData ? (
+          <div className="flex size-full items-center justify-center">
+            <Loading type="area" />
+          </div>
+        ) : !runState.workflowProcessData ? (
+          <NoData />
+        ) : (
+          renderTextGenerationRes()
+        ))}
+      {isCallBatchAPI && renderTextGenerationRes()}
+    </>
+  )
+}
+export default React.memo(Result)

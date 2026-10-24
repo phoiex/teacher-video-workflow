@@ -1,0 +1,2 @@
+FROM langgenius/dify-api:1.17.1
+COPY dify-overlay/api/ /app/api/

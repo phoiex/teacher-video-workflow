@@ -1,0 +1,12 @@
+fastapi==0.161.1
+uvicorn==0.38.0
+openai==2.54.0
+openai-codex==0.154.0
+openai-codex-cli-bin==0.154.0
+pydantic==2.14.1
+Pillow==10.4.0
+PyMuPDF==2.0
+python-pptx==1.0.2
+PyYAML==6.0.3
+python-dotenv==1.2.2
+httpx==0.28.1

@@ -1,0 +1,4 @@
+interface:
+  display_name: "去ai协作"
+  short_description: "去除中文写作中的 AI 腔调，让表达更自然"
+  default_prompt: "使用 $deslop-zh 将这段中文改得自然、准确，并保留原意和具体例子。"

@@ -1,0 +1,40 @@
+.ring {
+  position: absolute;
+  inset: -5px;
+  pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--color-state-accent-solid, #528bff) 65%, transparent);
+  border-radius: 21px;
+  box-shadow:
+    0 0 0 3px rgb(82 139 255 / 9%),
+    0 0 20px rgb(82 139 255 / 18%);
+  animation: breathe 2.2s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.waiting {
+  border-color: rgb(245 158 11 / 65%);
+  box-shadow:
+    0 0 0 3px rgb(245 158 11 / 8%),
+    0 0 18px rgb(245 158 11 / 16%);
+  animation-duration: 3s;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.99);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.012);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring {
+    animation: none;
+    opacity: 0.65;
+    transform: none;
+  }
+}
