@@ -1,0 +1,44 @@
+{
+  "preset": "手绘白板",
+  "repo": "https://github.com/Matteoikarieth96/whiteboard-video-skill",
+  "reference_url": "https://raw.githubusercontent.com/Matteoikarieth96/whiteboard-video-skill/main/docs/demo.gif",
+  "reference_sha256": "48efbaf93c4979d2fe311f5b50723da1fec1b985c9fdd4dfb3a24ee13f2c3e09",
+  "extracted_frame": 201,
+  "image_sha256": "14a465e2611339246e824436d302060002b40f47bc3dd861abf268bbe1c0062b",
+  "license": "MIT",
+  "fetched_on": "2026-10-31",
+  "files": [
+    {
+      "id": "whiteboard-01",
+      "file": "references/upstream/whiteboard/01-SKILL.md",
+      "name": "SKILL.md",
+      "source_url": "https://raw.githubusercontent.com/Matteoikarieth96/whiteboard-video-skill/main/SKILL.md",
+      "sha256": "32cd6ca8d3a5ee34381a62caee7ddfed477e6f262a581c5851dfbb42921ab6a8",
+      "kind": "guide"
+    },
+    {
+      "id": "whiteboard-02",
+      "file": "references/upstream/whiteboard/02-drawing-api.md",
+      "name": "references/drawing-api.md",
+      "source_url": "https://raw.githubusercontent.com/Matteoikarieth96/whiteboard-video-skill/main/references/drawing-api.md",
+      "sha256": "0044a4a1427740ebba5896169fe1a48f23be8646d8d88f80ca2f478c0325c1c6",
+      "kind": "guide"
+    },
+    {
+      "id": "whiteboard-03",
+      "file": "references/upstream/whiteboard/03-scenes.js",
+      "name": "examples/how-it-works/scenes.js",
+      "source_url": "https://raw.githubusercontent.com/Matteoikarieth96/whiteboard-video-skill/main/examples/how-it-works/scenes.js",
+      "sha256": "1ee8684f892ecc7493764be899978763ff467e8d0d97773f7675521deec53350",
+      "kind": "code"
+    },
+    {
+      "id": "whiteboard-04",
+      "file": "references/upstream/whiteboard/04-LICENSE",
+      "name": "LICENSE",
+      "source_url": "https://raw.githubusercontent.com/Matteoikarieth96/whiteboard-video-skill/main/LICENSE",
+      "sha256": "624d5f4dceeb2211a5d25ef0f5483b8c1fdeca0a873e2883845d4180d5366b20",
+      "kind": "license"
+    }
+  ]
+}

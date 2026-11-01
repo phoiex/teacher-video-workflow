@@ -1,0 +1,44 @@
+{
+  "preset": "立体微缩工坊",
+  "repo": "https://github.com/habibtalib/claude-motion-promo-skill",
+  "reference_url": "https://raw.githubusercontent.com/habibtalib/claude-motion-promo-skill/main/media/contact-sheet.png",
+  "reference_sha256": "b124e9c81e2a131944a6ab0af9d0e977b30c1dd65d5e6b9069a6228fc8f6deab",
+  "extracted_frame": 0,
+  "image_sha256": "1649a5510600c01c5e892c4b906b82bcef87ba9ed73ec96fcc549d91da55f765",
+  "license": "MIT",
+  "fetched_on": "2026-10-31",
+  "files": [
+    {
+      "id": "miniature-diorama-01",
+      "file": "references/upstream/miniature-diorama/01-SKILL.md",
+      "name": "motion-promo/SKILL.md",
+      "source_url": "https://raw.githubusercontent.com/habibtalib/claude-motion-promo-skill/main/motion-promo/SKILL.md",
+      "sha256": "14a58e1bf2f7284ceb7833141a6c75bfd7f38b1b134d0ed0671f8a7b8124739d",
+      "kind": "guide"
+    },
+    {
+      "id": "miniature-diorama-02",
+      "file": "references/upstream/miniature-diorama/02-lib.js",
+      "name": "motion-promo/template/lib.js",
+      "source_url": "https://raw.githubusercontent.com/habibtalib/claude-motion-promo-skill/main/motion-promo/template/lib.js",
+      "sha256": "6acff5b50b28b9a4c920eea5e7e9171eb0f5c6ff420e8c13b98d5ebdb5f555d4",
+      "kind": "code"
+    },
+    {
+      "id": "miniature-diorama-03",
+      "file": "references/upstream/miniature-diorama/03-scene.js",
+      "name": "motion-promo/examples/skill-promo/scene.js",
+      "source_url": "https://raw.githubusercontent.com/habibtalib/claude-motion-promo-skill/main/motion-promo/examples/skill-promo/scene.js",
+      "sha256": "e41ed23b50ccfffe706f0450a38d78dc1ba57f6ce03448dd1fc5a8ccc304878d",
+      "kind": "code"
+    },
+    {
+      "id": "miniature-diorama-04",
+      "file": "references/upstream/miniature-diorama/04-LICENSE",
+      "name": "LICENSE",
+      "source_url": "https://raw.githubusercontent.com/habibtalib/claude-motion-promo-skill/main/LICENSE",
+      "sha256": "41472c25cb959e4f0c7f4ef48b71fa0c225f6aa74ac80ef386347acb7589b3f8",
+      "kind": "license"
+    }
+  ]
+}

@@ -8,9 +8,12 @@ from .model_connections import MODEL_PRESETS, PROVIDERS, PROTOCOLS
 
 CURRENT = ContextVar('course_model_roles', default=None)
 DEFAULT_MODEL_ROLES = {
-    role: {'provider': 'deepseek', 'model': 'deepseek-flash',
-           'protocol': 'responses', 'reasoning_effort': 'max'}
-    for role in ('planner', 'writer', 'editor', 'producer')
+    'planner': {'provider': 'deepseek', 'model': 'deepseek-flash', 'protocol': 'chat.completions',
+                'harness': 'deepseek', 'reasoning_effort': 'max'},
+    'writer': {'provider': 'qwen', 'model': 'qwen3.8-max', 'protocol': 'chat.completions', 'enable_thinking': True},
+    'editor': {'provider': 'qwen', 'model': 'qwen3.8-max', 'protocol': 'chat.completions', 'enable_thinking': True},
+    'producer': {'provider': 'deepseek', 'model': 'deepseek-flash', 'protocol': 'chat.completions',
+                 'harness': 'deepseek', 'reasoning_effort': 'max'},
 }
 
 
@@ -28,7 +31,7 @@ def validate(value):
     if not isinstance(value, dict) or set(value) != set(DEFAULT_MODEL_ROLES):
         raise ValueError('模型分工需包含planner、writer、editor和producer。')
     for role, config in value.items():
-        if not isinstance(config, dict) or set(config) - {'provider','model','protocol','reasoning_effort','catalog_model'}:
+        if not isinstance(config, dict) or set(config) - {'provider','model','protocol','reasoning_effort','catalog_model','harness','enable_thinking'}:
             raise ValueError('模型配置字段不正确。')
         model, protocol = config.get('model',''), config.get('protocol')
         if config.get('provider') not in PROVIDERS or not isinstance(model,str) or not model:
@@ -40,6 +43,12 @@ def validate(value):
             raise ValueError('思考强度不正确。')
         if 'catalog_model' in config and (not isinstance(config['catalog_model'],str) or not config['catalog_model']):
             raise ValueError('模型资料名称不正确。')
+        if config.get('harness') not in (None, 'codex', 'deepseek'):
+            raise ValueError('制作内核配置不正确。')
+        if config.get('harness') == 'deepseek' and (config['provider'] != 'deepseek' or protocol != 'chat.completions'):
+            raise ValueError('DeepSeek Harness 需要 DeepSeek 原生 Chat Completions 接口。')
+        if 'enable_thinking' in config and (type(config['enable_thinking']) is not bool or config['provider'] != 'qwen' or protocol != 'chat.completions'):
+            raise ValueError('enable_thinking 用于 Qwen Chat Completions，值应为 true 或 false。')
     return copy.deepcopy(value)
 
 
@@ -50,4 +59,3 @@ def for_stage(stage):
             'writer' if 'script' in stage else
             'producer' if 'storyboard' in stage else 'planner')
     return roles[role]
-

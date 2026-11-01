@@ -1,0 +1,26 @@
+{
+  "planner": {
+    "provider": "openai",
+    "model": "gpt-6-astra",
+    "protocol": "responses",
+    "reasoning_effort": "max"
+  },
+  "writer": {
+    "provider": "gemini",
+    "model": "gemini-4-argon",
+    "protocol": "chat.completions"
+  },
+  "editor": {
+    "provider": "gemini",
+    "model": "gemini-4-argon",
+    "protocol": "chat.completions"
+  },
+  "producer": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "protocol": "messages",
+    "catalog_model": "claude-opus-5-5",
+    "harness": "codex",
+    "reasoning_effort": "max"
+  }
+}

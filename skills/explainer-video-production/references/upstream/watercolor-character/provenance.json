@@ -1,0 +1,60 @@
+{
+  "preset": "水彩角色动画",
+  "repo": "https://github.com/JohnHeibel/ClaudeAnimationBase",
+  "reference_url": "https://raw.githubusercontent.com/JohnHeibel/ClaudeAnimationBase/main/docs/emotions.jpg",
+  "reference_sha256": "66a0337d8a9db6735b5fc2e5495bd1b8c9a3868d11d83d6b24add6cbfe32001d",
+  "extracted_frame": 0,
+  "image_sha256": "0c72fa251a3016dfbcfe9ce0ccf6308a81109a17017f13d20cbe075c71d63d51",
+  "license": "原作者及社区封装均 MIT；音乐另行选择",
+  "fetched_on": "2026-10-31",
+  "files": [
+    {
+      "id": "watercolor-character-01",
+      "file": "references/upstream/watercolor-character/01-SKILL.md",
+      "name": "skills/painted-animation/SKILL.md",
+      "source_url": "https://raw.githubusercontent.com/tuzhechen2005/opus-video-skills/main/skills/painted-animation/SKILL.md",
+      "sha256": "c14428f8293bf78cb885b4df5531f1268c7dc4aa137aee608d10e2353405dbc3",
+      "kind": "guide"
+    },
+    {
+      "id": "watercolor-character-02",
+      "file": "references/upstream/watercolor-character/02-LICENSE",
+      "name": "LICENSE",
+      "source_url": "https://raw.githubusercontent.com/tuzhechen2005/opus-video-skills/main/LICENSE",
+      "sha256": "ea30fc6f274c0c2b325db2d5b4bc196b51292cf85215b4da67c5fb0b1b0d89fa",
+      "kind": "license"
+    },
+    {
+      "id": "watercolor-character-03",
+      "file": "references/upstream/watercolor-character/03-ANIMATION_GUIDE.md",
+      "name": "ANIMATION_GUIDE.md",
+      "source_url": "https://raw.githubusercontent.com/JohnHeibel/ClaudeAnimationBase/main/ANIMATION_GUIDE.md",
+      "sha256": "f638e1fb3876f587e39ec11a20e2df3aac91421c926d82c2743768642caab990",
+      "kind": "guide"
+    },
+    {
+      "id": "watercolor-character-04",
+      "file": "references/upstream/watercolor-character/04-core.js",
+      "name": "src/core.js",
+      "source_url": "https://raw.githubusercontent.com/JohnHeibel/ClaudeAnimationBase/main/src/core.js",
+      "sha256": "7d8942e917c35089a6db94610367c12e849fe51cbd56ab8e73489046852b0ae2",
+      "kind": "code"
+    },
+    {
+      "id": "watercolor-character-05",
+      "file": "references/upstream/watercolor-character/05-demo.js",
+      "name": "src/scenes/demo.js",
+      "source_url": "https://raw.githubusercontent.com/JohnHeibel/ClaudeAnimationBase/main/src/scenes/demo.js",
+      "sha256": "c783bd05af05875e014afd215d1945b189121910e8cef3218a5a8c7aac1dc361",
+      "kind": "code"
+    },
+    {
+      "id": "watercolor-character-06",
+      "file": "references/upstream/watercolor-character/06-LICENSE",
+      "name": "LICENSE",
+      "source_url": "https://raw.githubusercontent.com/JohnHeibel/ClaudeAnimationBase/main/LICENSE",
+      "sha256": "7d25ae95b305b884c08ce898e53b58d2e180ff0119e5d203d8b4ae30420f3b33",
+      "kind": "license"
+    }
+  ]
+}

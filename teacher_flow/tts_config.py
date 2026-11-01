@@ -3,6 +3,24 @@ import os
 import re
 
 MODEL = os.environ.get('TTS_MODEL', 'qwen-audio-3.0-tts-plus')
+VOICE = os.environ.get('TTS_VOICE', 'longanlingxin')
+LEGACY = {'model': 'qwen-audio-3.0-tts-plus', 'voice': 'longanlingxin'}
+
+
+def snapshot():
+    return {'model': MODEL, 'voice': VOICE}
+
+
+def for_course(course):
+    return dict(course.get('tts_settings') or LEGACY)
+
+
+def clip_name(text, instruction, settings):
+    from .common import digest
+    fields = {'text': text, 'instruction': instruction, 'voice': settings['voice']}
+    if settings != LEGACY:
+        fields['model'] = settings['model']
+    return 'tts_' + digest(fields)[:24]
 
 
 def read_credential(name):

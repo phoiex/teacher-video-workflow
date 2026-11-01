@@ -22,6 +22,7 @@ def normalize(text):
 
 
 def new_course(payload):
+    from .tts_config import snapshot as voice_settings
     from .model_roles import validate as validate_models, default_roles
     models = validate_models(payload.get('model_roles')) or default_roles()
     text = str(payload.get("requirement") or "").strip()
@@ -33,6 +34,10 @@ def new_course(payload):
     resume = str(payload.get("resume_course") or "").strip()
     if resume:
         saved = state(resume)
+        if models and all(x.get('harness')=='deepseek' for x in models.values()):
+            previous=saved.get('model_roles') or {}
+            if set(previous)!=set(models) or any(x.get('harness')!='deepseek' for x in previous.values()):
+                raise ValueError('这节课使用其他制作流程，请从原入口继续，或在这里新建课程。')
         bind_run(payload.get('run_id'), resume)
         return {"course_id": resume, "notice": "课程已打开", "phase": saved["phase"]}
     style_preset = styles.validate_preset(payload.get("style_preset"))
@@ -49,6 +54,7 @@ def new_course(payload):
                         "style_notes": str(payload.get("style_notes") or "").strip(),
                         "style_files": references,
                         "style_preview_version": 1,
+                        "tts_settings": voice_settings(),
                         **({'model_roles': models} if models else {}),
                         "phase": "requirements", "created_at": time.time(),
                         "approvals": {}, "errors": [], "production": {}})
@@ -276,7 +282,8 @@ def show(cid, stage, producer=''):
             if not s["approvals"].get("script"):
                 raise ValueError("请先确认讲稿")
             needs_board = "board" not in s or bool(s.get("board_feedback"))
-            if needs_board and producer == 'codex' and codex_jobs.enabled():
+            dsh=((s.get('model_roles') or {}).get('producer') or {}).get('harness')=='deepseek'
+            if needs_board and (dsh or producer == 'codex' and codex_jobs.enabled()):
                 progress, board = codex_jobs.poll(cid, s)
                 if board is None:
                     return {**response(cid, progress['message'], done=False), 'ready': False,
@@ -284,7 +291,7 @@ def show(cid, stage, producer=''):
                 validate_board(board, s['approved_script'])
                 save_board(cid, board)
                 s['board'] = board
-                s['storyboard_backend'] = 'codex-sdk-0.154.0'
+                s['storyboard_backend'] = 'deepseek-harness-0.1.5-rc.1' if dsh else 'codex-sdk-0.154.0'
                 s.pop('board_feedback', None)
                 archive(cid, 'storyboard', board)
             elif needs_board:

@@ -1,0 +1,36 @@
+{
+  "preset": "数据叙事",
+  "repo": "https://github.com/lemomo-ai/lemo-opuscar",
+  "reference_url": "https://raw.githubusercontent.com/lemomo-ai/lemo-opuscar/main/docs/frames/dataviz.jpg",
+  "reference_sha256": "f44dfbb10b5b9e5e1c04873d03af3cc8f89db1e1bfb538862c27af4850a68e41",
+  "extracted_frame": 0,
+  "image_sha256": "ac5c18e2677281f8be7f6eac3af89d15737d06979fea67eeeec0276ce52b92c9",
+  "license": "代码 MIT；示例视频/图片按作者标注 CC BY 4.0",
+  "fetched_on": "2026-10-31",
+  "files": [
+    {
+      "id": "data-storytelling-01",
+      "file": "references/upstream/data-storytelling/01-STYLE.md",
+      "name": "styles/dataviz/STYLE.md",
+      "source_url": "https://raw.githubusercontent.com/lemomo-ai/lemo-opuscar/main/styles/dataviz/STYLE.md",
+      "sha256": "e94013d5a7c548c8844598a671ff0b49bc78770696cbca0d8d00846336f3c67f",
+      "kind": "guide"
+    },
+    {
+      "id": "data-storytelling-02",
+      "file": "references/upstream/data-storytelling/02-engine.js",
+      "name": "styles/dataviz/demo/engine.js",
+      "source_url": "https://raw.githubusercontent.com/lemomo-ai/lemo-opuscar/main/styles/dataviz/demo/engine.js",
+      "sha256": "d4e4a84552a81eb8bc75c7031783ba7c42dad5376c787b48cf9d44a6ffde2bb2",
+      "kind": "code"
+    },
+    {
+      "id": "data-storytelling-03",
+      "file": "references/upstream/data-storytelling/03-LICENSE",
+      "name": "LICENSE",
+      "source_url": "https://raw.githubusercontent.com/lemomo-ai/lemo-opuscar/main/LICENSE",
+      "sha256": "14c9ff6f14bfb2391e74fedb01c256891d2a3bba1c2acf5789901bdf77e54e33",
+      "kind": "license"
+    }
+  ]
+}

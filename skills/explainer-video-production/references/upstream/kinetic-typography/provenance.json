@@ -1,0 +1,44 @@
+{
+  "preset": "极简动态排版",
+  "repo": "https://github.com/IskakovDamir/apple-motion",
+  "reference_url": "https://raw.githubusercontent.com/IskakovDamir/apple-motion/main/docs/demo.gif",
+  "reference_sha256": "3de649e03139af7eb2223b438c4c893e98d37e5562a23f92af9945d0c41c0d0c",
+  "extracted_frame": 222,
+  "image_sha256": "b89923abff9b3172c44470a040c405aff0d2d600963ce0fe7813cb4c2e1c9090",
+  "license": "Skill/项目 MIT；实现使用 Remotion",
+  "fetched_on": "2026-10-31",
+  "files": [
+    {
+      "id": "kinetic-typography-01",
+      "file": "references/upstream/kinetic-typography/01-SKILL.md",
+      "name": "skill/apple-motion/SKILL.md",
+      "source_url": "https://raw.githubusercontent.com/IskakovDamir/apple-motion/main/skill/apple-motion/SKILL.md",
+      "sha256": "7675cd8365987f7e086d4fd6caff8238591445db73a13720d26cfbda9922e1ac",
+      "kind": "guide"
+    },
+    {
+      "id": "kinetic-typography-02",
+      "file": "references/upstream/kinetic-typography/02-Recap.tsx",
+      "name": "skill/apple-motion/templates/remotion/Recap.tsx",
+      "source_url": "https://raw.githubusercontent.com/IskakovDamir/apple-motion/main/skill/apple-motion/templates/remotion/Recap.tsx",
+      "sha256": "9ff58e89083ccec879862e099a2463102a1b39726dba70211db44ee808f665b4",
+      "kind": "code"
+    },
+    {
+      "id": "kinetic-typography-03",
+      "file": "references/upstream/kinetic-typography/03-tokens.ts",
+      "name": "skill/apple-motion/templates/remotion/tokens.ts",
+      "source_url": "https://raw.githubusercontent.com/IskakovDamir/apple-motion/main/skill/apple-motion/templates/remotion/tokens.ts",
+      "sha256": "8416f8ef5cafa4e686ba0d36c4c8cb4f8a5a50ee229a7e7ef3d4a087fc313165",
+      "kind": "code"
+    },
+    {
+      "id": "kinetic-typography-04",
+      "file": "references/upstream/kinetic-typography/04-LICENSE",
+      "name": "LICENSE",
+      "source_url": "https://raw.githubusercontent.com/IskakovDamir/apple-motion/main/LICENSE",
+      "sha256": "9f09dd153e82ef699c403cc4c901d35d6cdad80870dc1d54e5f05b97095eadbd",
+      "kind": "license"
+    }
+  ]
+}

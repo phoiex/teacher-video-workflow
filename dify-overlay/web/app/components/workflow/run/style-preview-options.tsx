@@ -1,12 +1,13 @@
 'use client'
 
 import { cn } from '@langgenius/dify-ui/cn'
+import catalog from '@/public/teacher-style/catalog.json'
 
-const previews: Record<string, string> = {
-  暖色图解: '/teacher-style/warm.png',
-  'ASCII 终端科技': '/teacher-style/ascii.png',
-  空间代码动画: '/teacher-style/openfilm.png',
-}
+const previews: Record<string, string> = Object.fromEntries(
+  catalog.presets
+    .filter((preset) => preset.image)
+    .map((preset) => [preset.name, `/teacher-style/${preset.image}`]),
+)
 
 type Props = { options: string[]; value?: string; onChange: (value: string) => void }
 

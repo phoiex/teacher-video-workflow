@@ -40,6 +40,9 @@ TOOLS = [
           "approved": {"type": "boolean"}}),
 ]
 
+STYLE_SOURCE_TOOL = tool('course_style_source', '按材料ID读取所选风格的原作者指南、参考代码或许可证。',
+                         {'source_id': {'type': 'string'}})
+
 
 def normalized(text):
     return re.sub(r"\s+", "", text)
@@ -100,7 +103,9 @@ class BoardTools:
         if name == "course_read":
             result = text_result({k: self.inputs.get(k) for k in ('requirements', 'script', 'feedback')} | {
                 "plan": load(self.plan_path) if self.plan_path.exists() else None,
-                "current_scene": self.allowed_scene})
+                "current_scene": self.allowed_scene,
+                "style_sources": [{k: item[k] for k in ('id', 'name', 'kind', 'source_url')}
+                                  for item in self.inputs.get('style_reference_sources', [])]})
             for reference in self.inputs.get('style_reference_images', []):
                 image = Path(reference['path']).read_bytes()
                 if digest(image) != reference['sha256']:
@@ -110,6 +115,16 @@ class BoardTools:
                     {'type':'inputImage', 'imageUrl':'data:image/png;base64,'+base64.b64encode(image).decode()},
                 ])
             return result
+        if name == 'course_style_source':
+            source = next((item for item in self.inputs.get('style_reference_sources', [])
+                           if item['id'] == args.get('source_id')), None)
+            if source is None:
+                raise ValueError('未找到当前风格的参考材料')
+            content = Path(source['path']).read_bytes()
+            if digest(content) != source['sha256']:
+                raise ValueError('风格参考材料已变化，请重新读取制作材料')
+            return text_result({'name': source['name'], 'source_url': source['source_url'],
+                                'kind': source['kind'], 'content': content.decode('utf-8')})
         if name == "course_plan":
             if not self.allow_plan: raise ValueError("计划已保存，本轮只制作当前分镜")
             self._validate_plan(args)
@@ -186,6 +201,26 @@ def produce(folder, session_folder, inputs, on_progress=None, checkpoint=None, p
     from .codex_runtime import continuation_label
     tools = BoardTools(folder, inputs, on_progress)
     instructions = inputs.get("style_instructions", "") + "\n\n" + instruction('producer')
+    session_type=Session
+    definitions=TOOLS
+    handler=tools.call
+    if (inputs.get('producer_profile') or {}).get('harness')=='deepseek':
+        from .dsh_runtime import Session as DeepSeekSession
+        session_type=DeepSeekSession
+        definitions=[*TOOLS,tool('view_image','查看本课的实际渲染图片。',{'path':{'type':'string'}})]
+        instructions=instructions.replace('返回 `image_url` 时，用 `image(result.image_url)` 显示图片。','工具会返回图片内容。')
+        def handler(name,args):
+            if name!='view_image':return tools.call(name,args)
+            path=Path(args.get('path','')).resolve()
+            if not path.is_relative_to(tools.folder.resolve()) or path.suffix.lower() not in ('.png','.jpg','.jpeg'):
+                raise ValueError('只能查看本课的渲染图片。')
+            tools.viewed_paths.add(str(path))
+            return {'success':True,'contentItems':[{'type':'inputImage','imageUrl':
+                'data:image/'+('png' if path.suffix.lower()=='.png' else 'jpeg')+';base64,'+
+                base64.b64encode(path.read_bytes()).decode()}]}
+    if inputs.get('style_reference_sources'):
+        definitions = [*definitions, STYLE_SOURCE_TOOL]
+        instructions += '\n参考材料目录由 course_read 返回；可用 course_style_source 按材料ID读取指南和代码，结合当前课程工具改编。'
     job = tools.input_hash[:20]
     def run_part(session, original, prompt):
         label = continuation_label(session_folder, original)
@@ -195,7 +230,7 @@ def produce(folder, session_folder, inputs, on_progress=None, checkpoint=None, p
             on_progress(active_label=label, original_label=original)
         return session.run(label, prompt)
     if checkpoint: checkpoint()
-    with Session(session_folder, instructions, TOOLS, tools.call, on_event=tools.observe_event,
+    with session_type(session_folder, instructions, definitions, handler, on_event=tools.observe_event,
                  pause_requested=pause_requested, profile=inputs.get('producer_profile')) as session:
         if not tools.plan_path.exists():
             tools.allow_plan = True

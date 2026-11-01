@@ -1,0 +1,36 @@
+{
+  "preset": "纸张拼贴",
+  "repo": "https://github.com/Vincentwei1021/mg-styles-15",
+  "reference_url": "https://raw.githubusercontent.com/Vincentwei1021/mg-styles-15/main/docs/readme/films/06-collage.webp",
+  "reference_sha256": "6b29ea4592adacca488503137c2b625ba43b5bc4c0e3c63f039f61074744b6e8",
+  "extracted_frame": 28,
+  "image_sha256": "924d9530d1ed5f8ffcc539fa8bdcbeff2186b10a21272270b7450e31921ef53c",
+  "license": "代码 MIT；素材另列许可",
+  "fetched_on": "2026-10-31",
+  "files": [
+    {
+      "id": "paper-collage-01",
+      "file": "references/upstream/paper-collage/01-06-collage.md",
+      "name": "prompts/06-collage.md",
+      "source_url": "https://raw.githubusercontent.com/Vincentwei1021/mg-styles-15/main/prompts/06-collage.md",
+      "sha256": "556478d4122d1db0535656998f64da8d1805505b14c9eb623f002d3b6aef688d",
+      "kind": "guide"
+    },
+    {
+      "id": "paper-collage-02",
+      "file": "references/upstream/paper-collage/02-index.html",
+      "name": "demos/06-collage/index.html",
+      "source_url": "https://raw.githubusercontent.com/Vincentwei1021/mg-styles-15/main/demos/06-collage/index.html",
+      "sha256": "1ce00a0c261735d1fb7338a69b82ffe167cf750e723a27e6e21ec7d53c08c6c4",
+      "kind": "code"
+    },
+    {
+      "id": "paper-collage-03",
+      "file": "references/upstream/paper-collage/03-LICENSE",
+      "name": "LICENSE",
+      "source_url": "https://raw.githubusercontent.com/Vincentwei1021/mg-styles-15/main/LICENSE",
+      "sha256": "7f03fee9299a401615e13e2c636ead0394f47395da4f816ae60b35ed2d91a932",
+      "kind": "license"
+    }
+  ]
+}

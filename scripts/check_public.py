@@ -11,8 +11,8 @@ SKIP = {'.git', '.venv', '.runtime', 'vendor', 'dist', 'node_modules', '__pycach
 
 def public_files():
     if (ROOT / '.git').exists():
-        names = subprocess.check_output(['git', 'ls-files', '-z'], cwd=ROOT).decode().split('\0')
-        return [ROOT / name for name in names if name]
+        names = subprocess.check_output(['git', 'ls-files', '--cached', '--others', '--exclude-standard', '-z'], cwd=ROOT).decode().split('\0')
+        return [ROOT / name for name in sorted(set(names)) if name]
     files = []
     for folder, directories, names in os.walk(ROOT):
         directories[:] = [name for name in directories if name not in SKIP]
@@ -37,7 +37,9 @@ def problems(files):
         except (UnicodeDecodeError, ValueError): continue
         for name, pattern in rules.items():
             if re.search(pattern, text): issues.append(f'{rel}: {name}')
-        if path.suffix == '.md' and 'dify-overlay' not in path.parts:
+        # Author snapshots retain their original relative links; provenance records point to that repository.
+        upstream = 'references/upstream/' in rel.as_posix()
+        if path.suffix == '.md' and 'dify-overlay' not in path.parts and not upstream:
             for target in re.findall(r'\]\(([^)]+)\)', text):
                 target = target.strip('<>').split('#')[0]
                 if not target or re.match(r'[a-z]+:', target): continue
@@ -49,10 +51,11 @@ def main():
     files = public_files()
     issues = problems(files)
     import yaml
-    dsl = yaml.safe_load((ROOT / 'workflow/teacher-video.yml').read_text())
-    for item in dsl['workflow']['environment_variables']:
-        if item.get('value_type') == 'secret' and item.get('value'):
-            issues.append('workflow/teacher-video.yml: 包含工具凭据')
+    for path in (ROOT / 'workflow').glob('*.yml'):
+        dsl = yaml.safe_load(path.read_text())
+        for item in dsl['workflow']['environment_variables']:
+            if item.get('value_type') == 'secret' and item.get('value'):
+                issues.append(f'{path.relative_to(ROOT)}: 包含工具凭据')
     for issue in issues: print(issue)
     print(f'检查 {len(files)} 个发布文件，发现 {len(issues)} 项问题。')
     return 1 if issues else 0

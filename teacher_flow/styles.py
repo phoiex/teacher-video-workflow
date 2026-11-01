@@ -1,12 +1,11 @@
-"""老师可选的画面方向；预设名称与制作分支分别保存。"""
+"""界面选项、制作分支与参考材料共用一份风格目录。"""
+import json
 
-PRESETS = {
-    "暖色图解": ("warm-explainer.md", "暖色背景、清楚的图形和逐步标注，适合平实的知识讲解。"),
-    "ASCII 终端科技": ("ascii-terminal.md", "深色终端、等宽字符、点阵和数据流，保持中文与图形可读。"),
-    "空间代码动画": ("openfilm-cinematic.md", "用几何、空间层次和镜头变化解释关系，配色按课程安排。"),
-    "自由设计": (None, "结合课程内容自由设计画面。"),
-    "自定义": (None, "按老师填写的风格说明和参考素材设计。"),
-}
+from .common import TOOL, PRODUCTION_SKILL, digest
+
+CATALOG = json.loads((TOOL / 'assets/style/catalog.json').read_text())
+DETAILS = {item['name']: item for item in CATALOG['presets']}
+PRESETS = {name: (item['branch'], item['description']) for name, item in DETAILS.items()}
 KEEP = "沿用当前风格"
 
 
@@ -45,16 +44,32 @@ def branch(style="", preset=""):
 
 
 def choices_markdown():
-    images = {'暖色图解':'warm.png','ASCII 终端科技':'ascii.png','空间代码动画':'openfilm.png'}
-    return "\n\n".join(f"**{name}**：{description}" +
-        (f"\n\n![{name}参考画面](http://127.0.0.1:8788/teacher-style/{images[name]})" if name in images else '')
-        for name, (_, description) in PRESETS.items())
+    blocks = []
+    for name, (_, description) in PRESETS.items():
+        item = DETAILS[name]
+        text = f"**{name}**：{description}"
+        if item.get('image'):
+            text += f"\n\n![{name}参考画面](http://127.0.0.1:8788/teacher-style/{item['image']})"
+        if item.get('video_url'):
+            text += f"\n\n[查看参考作品]({item['video_url']})"
+        blocks.append(text)
+    return "\n\n".join(blocks)
 
 
 def preview_images(preset):
-    from .common import TOOL, digest
-    name = {'暖色图解':'warm.png','ASCII 终端科技':'ascii.png','空间代码动画':'openfilm.png'}.get(preset)
+    name = DETAILS.get(preset, {}).get('image')
     if not name:
         return []
     path = TOOL / 'assets/style' / name
     return [{'name':preset, 'path':str(path), 'sha256':digest(path.read_bytes())}]
+
+
+def reference_sources(preset):
+    sources = []
+    for item in DETAILS.get(preset, {}).get('sources', []):
+        path = (PRODUCTION_SKILL / item['file']).resolve()
+        if not path.is_relative_to(PRODUCTION_SKILL.resolve()) or not path.is_file():
+            raise ValueError('风格参考材料路径无效')
+        sources.append({**{key: item[key] for key in ('id', 'name', 'kind', 'source_url', 'sha256')},
+                        'path': str(path)})
+    return sources

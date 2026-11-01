@@ -17,7 +17,7 @@ import zipfile
 from .common import (DEFAULT_VOICE_INSTRUCTION, PYTHON, TOOL, course_dir, digest, estimate_seconds, load,
                      lock, public_url, save, state, store, version)
 from .engine import render, validate_board
-from . import network_retry, tts_client
+from . import network_retry, tts_client, tts_config
 
 ACTIVE = set()
 PRESENCE = {}
@@ -65,6 +65,7 @@ def start(cid):
         s = state(cid)
         assert_approved(s)
         key = version({"script": s["approved_script"], "board": s["board"],
+                       **({'tts_settings': s['tts_settings']} if 'tts_settings' in s else {}),
                        "voice_instruction": s["requirements"].get("voice_instruction")
                        or DEFAULT_VOICE_INSTRUCTION})
         current = s.get("production", {})
@@ -115,12 +116,13 @@ def audio_retry_info(cid, s=None):
     if p.get("failed_step") != "audio" and not p.get("message", "").startswith("配音"):
         return None
     instruction = s.get("requirements", {}).get("voice_instruction") or DEFAULT_VOICE_INSTRUCTION
+    settings = tts_config.for_course(s)
     folder = course_dir(cid) / "audio"
     completed, total, failed = 0, 0, []
     for i, scene in enumerate(s.get("board", {}).get("scenes", []), 1):
         for j, text in enumerate(sentence_chunks(scene.get("narration", "")), 1):
             total += 1
-            name = "tts_" + digest({"text": text, "instruction": instruction, "voice": "longanlingxin"})[:24]
+            name = tts_config.clip_name(text, instruction, settings)
             record = folder / (name + ".json")
             if not record.exists():
                 continue
@@ -129,7 +131,8 @@ def audio_retry_info(cid, s=None):
             except (OSError, ValueError):
                 return None
             if (data.get("text_sha256") != hashlib.sha256(text.encode()).hexdigest()
-                    or data.get("voice") != "longanlingxin" or data.get("instruction") != instruction):
+                    or data.get("voice") != settings['voice'] or data.get("instruction") != instruction
+                    or data.get('model', settings['model']) != settings['model']):
                 return None
             if data.get("status") == "complete":
                 if not (folder / (name + ".wav")).is_file():
@@ -194,6 +197,7 @@ def run(cid):
         checkpoint(cid)
         s = state(cid); assert_approved(s)
         instruction = s["requirements"].get("voice_instruction") or DEFAULT_VOICE_INSTRUCTION
+        settings = tts_config.for_course(s)
         freeze = s["production"]["input_version"]
         audio_dir = root / "audio"; audio_dir.mkdir(exist_ok=True)
         build = root / "build" / freeze; build.mkdir(parents=True, exist_ok=True)
@@ -204,8 +208,7 @@ def run(cid):
             texts = sentence_chunks(scene["narration"])
             for j, text in enumerate(texts):
                 checkpoint(cid)
-                name = "tts_" + digest({"text": text, "instruction": instruction,
-                                        "voice": "longanlingxin"})[:24]
+                name = tts_config.clip_name(text, instruction, settings)
                 text_path = audio_dir / (name + ".txt")
                 if not text_path.exists():
                     text_path.write_text(text)
@@ -215,7 +218,7 @@ def run(cid):
                         update(cid, retrying=True, retry_attempt=event['attempt'],
                                message=f"配音：第{i+1}/{len(scenes)}段，第{j+1}/{len(texts)}句。"+event['message'])
                     tts_client.synthesize(text,name,audio_dir,instruction,
-                                          checkpoint=lambda:checkpoint(cid),on_retry=audio_retry)
+                                          checkpoint=lambda:checkpoint(cid),on_retry=audio_retry,settings=settings)
                 except Paused:
                     raise
                 except Exception:

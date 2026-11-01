@@ -1,10 +1,10 @@
 app:
-  description: 填写课程要求，选择风格，逐步确认讲稿和分镜后制作视频。
+  description: 上传课件或描述课程要求，确认讲稿与分镜后制作视频。
   icon: 🎬
   icon_background: '#D5F5F6'
   icon_type: emoji
   mode: workflow
-  name: 微课制作
+  name: 微课制作 · 省钱方案
   use_icon_as_answer_icon: false
 dependencies: []
 kind: app
@@ -12,29 +12,35 @@ version: 0.7.0
 workflow:
   conversation_variables: []
   environment_variables:
-  - description: 本机课程制作配置
-    id: f9eadfb9-15a3-4391-b515-8e6cbaf1cf6c
+  - description: 本机课程工具
+    id: d28b5556-20e8-4014-80fb-f19a1e9a53a5
     name: LOCAL_TOOL_URL
     selector:
     - env
     - LOCAL_TOOL_URL
     value: http://host.docker.internal:8794
     value_type: string
-  - description: 本机课程制作配置
-    id: 86588385-fd28-463c-b897-809fddbdc6a8
+  - description: 本机工具鉴权
+    id: 8c49cc23-c8c3-4796-996d-eb3dca961afc
     name: LOCAL_TOOL_TOKEN
     selector:
     - env
     - LOCAL_TOOL_TOKEN
     value: ''
     value_type: secret
-  - description: 本机课程制作配置
-    id: 0bb1de15-6c5e-4b30-8959-2b9e1cfb77d1
+  - description: 规划、初稿、表达修改和画面制作的模型配置。
+    id: 517f9b51-d05a-4ef0-b59e-1381b91d906e
     name: COURSE_MODELS
     selector:
     - env
     - COURSE_MODELS
-    value: ''
+    value: '{"planner": {"provider": "deepseek", "model": "deepseek-flash", "protocol":
+      "chat.completions", "harness": "deepseek", "reasoning_effort": "max"}, "writer":
+      {"provider": "qwen", "model": "qwen3.8-max", "protocol": "chat.completions",
+      "enable_thinking": true}, "editor": {"provider": "qwen", "model": "qwen3.8-max",
+      "protocol": "chat.completions", "enable_thinking": true}, "producer": {"provider":
+      "deepseek", "model": "deepseek-flash", "protocol": "chat.completions", "harness":
+      "deepseek", "reasoning_effort": "max"}}'
     value_type: string
   features:
     file_upload:
@@ -2815,6 +2821,13 @@ workflow:
             - 暖色图解
             - ASCII 终端科技
             - 空间代码动画
+            - 黑板粉笔
+            - 手绘白板
+            - 立体微缩工坊
+            - 纸张拼贴
+            - 水彩角色动画
+            - 数据叙事
+            - 极简动态排版
             - 自由设计
             - 自定义
           output_variable_name: style_preset
@@ -4067,6 +4080,13 @@ workflow:
           - 暖色图解
           - ASCII 终端科技
           - 空间代码动画
+          - 黑板粉笔
+          - 手绘白板
+          - 立体微缩工坊
+          - 纸张拼贴
+          - 水彩角色动画
+          - 数据叙事
+          - 极简动态排版
           - 自由设计
           - 自定义
           required: false

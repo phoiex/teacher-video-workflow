@@ -20,13 +20,14 @@ def archive(folder,name,record):
     save(target/(name+'.json'),record)
 
 
-def synthesize(text,name,folder,instruction,*,checkpoint=None,on_retry=None):
+def synthesize(text,name,folder,instruction,*,checkpoint=None,on_retry=None,settings=None):
     folder=Path(folder);folder.mkdir(exist_ok=True,parents=True)
     record_path=folder/(name+'.json');audio=folder/(name+'.wav')
     recovery=folder/'download-recovery'/(name+'.json')
     module=provider()
+    settings = settings or {'model': module.MODEL, 'voice': getattr(module, 'VOICE', 'longanlingxin')}
     expected={'text_sha256':hashlib.sha256(text.encode()).hexdigest(),
-              'model':module.MODEL,'voice':'longanlingxin','instruction':instruction}
+              'model':settings['model'],'voice':settings['voice'],'instruction':instruction}
     previous=load(record_path) if record_path.exists() else None
     if previous:
         if any(previous.get(k)!=v for k,v in expected.items()):raise ValueError('已保存的配音与当前文本或声音设置不一致。')
@@ -36,7 +37,7 @@ def synthesize(text,name,folder,instruction,*,checkpoint=None,on_retry=None):
             return audio
         if not recovery.exists() and not network_retry.receipt_retryable(previous):
             raise ValueError('配音接入或文本需要处理，请查看错误记录。')
-    state={**expected,'status':'submitted','model':module.MODEL,'provider':'阿里云百炼',
+    state={**expected,'status':'submitted','provider':'阿里云百炼',
            'region':'cn-beijing','characters':len(text),'retry_count':0}
     def remember_error(exc,phase):
         state.update(status='needs_review',error_type=type(exc).__name__,
@@ -46,7 +47,7 @@ def synthesize(text,name,folder,instruction,*,checkpoint=None,on_retry=None):
     if not recovery.exists():
         key=module.read_credential('API Key');workspace=module.read_credential('Workspace ID')
         endpoint=f'https://{workspace}.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer'
-        payload={'model':module.MODEL,'input':{'text':text,'voice':'longanlingxin','language_hints':['zh'],
+        payload={'model':settings['model'],'input':{'text':text,'voice':settings['voice'],'language_hints':['zh'],
             'format':'wav','sample_rate':24000,'seed':17,'instruction':instruction}}
         def request_once(attempt):
             if record_path.exists():archive(folder,name,load(record_path))

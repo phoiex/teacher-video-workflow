@@ -11,3 +11,4 @@ if [ ! -d .venv ]; then "$teacher_python" -m venv .venv; fi
 .venv/bin/python -m pip install -r requirements.txt
 .venv/bin/python scripts/local.py init
 .venv/bin/python scripts/install_renderer.py
+.venv/bin/python scripts/install_dsh.py

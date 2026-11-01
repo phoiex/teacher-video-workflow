@@ -12,7 +12,7 @@ import subprocess
 import sys
 import time
 
-from .common import (PRODUCTION_SKILL, TOOL, course_dir, digest, load, save, state, version)
+from .common import (PRODUCTION_SKILL, TOOL, PYTHON, course_dir, digest, load, save, state, version)
 from . import styles
 from .codex_runtime import SDK_PYTHON, SessionPaused, continuation_label
 from .common import RUNTIME
@@ -35,6 +35,14 @@ def update_job(folder, **fields):
         return data
 
 
+def _course_content(s):
+    inputs = {'requirements': s.get('requirements', {}), 'script': s['approved_script'],
+              'previous_storyboard': s.get('board'), 'feedback': s.get('board_feedback', '')}
+    if s.get('model_roles'):
+        inputs['producer_profile'] = s['model_roles']['producer']
+    return inputs
+
+
 def inputs_for(s):
     branch = styles.branch(s['requirements'].get('style', ''), s['requirements'].get('style_preset', ''))
     resources = PRODUCTION_SKILL.joinpath('SKILL.md').read_text()
@@ -42,14 +50,28 @@ def inputs_for(s):
         resources += '\n\n' + PRODUCTION_SKILL.joinpath('branches', branch).read_text()
     resources += ('\n\n本课程使用固定讲稿和既有课程工具。已完成讲稿确认；本阶段只制作分镜。'
                   '不增加样片或配音，不询问模型分工。完成后交回工作流，由老师按既定模式确认。')
-    inputs = {'requirements': s['requirements'], 'script': s['approved_script'],
-            'previous_storyboard': s.get('board'), 'feedback': s.get('board_feedback', ''),
-            'style_instructions': resources}
-    if s.get('model_roles'):
-        inputs['producer_profile'] = s['model_roles']['producer']
+    inputs = {**_course_content(s), 'style_instructions': resources}
     if s.get('style_preview_version'):
         inputs['style_reference_images'] = styles.preview_images(s['requirements'].get('style_preset', ''))
+    sources = styles.reference_sources(s['requirements'].get('style_preset', ''))
+    if sources:
+        inputs['style_reference_sources'] = sources
     return inputs
+
+
+def saved_inputs_for(cid, s):
+    """课程内容未变时沿用已开始任务的材料，安装新风格不重建在制任务。"""
+    current = course_dir(cid) / 'harness/current.json'
+    if current.exists():
+        folder = job_dir(cid, load(current)['key'])
+        if (folder / 'input.json').exists():
+            saved = load(folder / 'input.json')
+            content = _course_content(s)
+            fields = ('requirements', 'script', 'previous_storyboard', 'feedback', 'producer_profile')
+            if (all(saved.get(key) == content.get(key) for key in fields)
+                    and ('style_reference_images' in saved) == bool(s.get('style_preview_version'))):
+                return saved
+    return inputs_for(s)
 
 
 def job_dir(cid, key):
@@ -230,9 +252,11 @@ def public_status(cid):
 
 def _launch(cid, key):
     folder = job_dir(cid, key)
-    if not SDK_PYTHON.exists(): raise RuntimeError('课程制作运行时尚未安装')
+    profile=load(folder/'input.json').get('producer_profile') or {}
+    python=PYTHON if profile.get('harness')=='deepseek' else SDK_PYTHON
+    if not python.exists(): raise RuntimeError('课程制作运行时尚未安装')
     with (folder / 'worker.log').open('ab') as log:
-        process = subprocess.Popen([str(SDK_PYTHON), '-m', 'teacher_flow.codex_jobs', cid, key],
+        process = subprocess.Popen([str(python), '-m', 'teacher_flow.codex_jobs', cid, key],
             cwd=TOOL, env={**os.environ, 'PYTHONPATH': str(TOOL)},
             stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
     update_job(folder, pid=process.pid)
@@ -241,7 +265,7 @@ def _launch(cid, key):
 def ensure(cid, s):
     if s.get('approvals', {}).get('script') != version(s.get('approved_script', '')):
         raise ValueError('请先确认当前讲稿')
-    inputs = inputs_for(s)
+    inputs = saved_inputs_for(cid, s)
     key = version(inputs)
     folder = job_dir(cid, key)
     folder.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -321,7 +345,7 @@ def control(cid, key, action, retry_generation=None):
                 ctl.update(pause=True, requested_at=ctl.get('requested_at') or time.time())
                 save(folder / 'control.json', ctl)
                 update_job(folder, message='正在暂停，保留当前制作进度。')
-                if latest.get('pause_protocol') != 'native-turn-v1' and not ctl.get('signal_sent_at'):
+                if latest.get('pause_protocol') not in ('native-turn-v1','dsh-session-v1') and not ctl.get('signal_sent_at'):
                     _signal_legacy_worker(latest.get('pid'), cid, key)
                     save(folder / 'control.json', {**ctl, 'signal_sent_at': time.time()})
     elif action == 'continue' and data['status'] == 'paused':
@@ -367,8 +391,10 @@ def worker(cid, key):
             if approved != load(folder / 'job.json')['script_version']:
                 raise ValueError('当前讲稿版本已变化')
         try:
-            update(status='running', message='正在安排分镜。', pause_protocol='native-turn-v1')
             inputs = load(folder / 'input.json')
+            dsh=(inputs.get('producer_profile') or {}).get('harness')=='deepseek'
+            update(status='running', message='正在安排分镜。',
+                   harness='deepseek' if dsh else 'codex',pause_protocol='dsh-session-v1' if dsh else 'native-turn-v1')
             session_folder = course_dir(cid) / 'harness/sessions' / version(inputs['script'])
             result = produce(folder / 'work', session_folder, inputs,
                              on_progress=update, checkpoint=checkpoint,

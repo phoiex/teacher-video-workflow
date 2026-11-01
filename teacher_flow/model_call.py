@@ -26,6 +26,9 @@ def generate(stage, instructions, message, images=None, profile=None):
     profile = profile or model_roles.for_stage(stage)
     if not profile or profile['protocol'] not in model_connections.PROTOCOLS:
         raise ValueError('内容节点模型协议配置不正确。')
+    if profile.get('harness') == 'deepseek':
+        from .dsh_call import generate as dsh_generate
+        return dsh_generate(stage, instructions, message, images, profile=profile)
     images = images or []
     packet = {'format_version':1, 'stage':stage, 'profile':profile, 'instructions':instructions, 'message':message,
               'images':[{**p,'sha256':digest(Path(p['path']).read_bytes())} for p in images]}
@@ -82,6 +85,8 @@ def generate(stage, instructions, message, images=None, profile=None):
                             'response_format':{'type':'json_object'}, 'stream':True, 'stream_options':{'include_usage':True}}
                         if profile.get('reasoning_effort'):
                             options['reasoning_effort']=profile['reasoning_effort']
+                        if 'enable_thinking' in profile:
+                            options['extra_body'] = {'enable_thinking': profile['enable_thinking']}
                         with client.chat.completions.create(**options) as stream:
                             for event in stream:
                                 record.update(response_id=event.id,returned_model=event.model)

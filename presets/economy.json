@@ -1,0 +1,28 @@
+{
+  "planner": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "protocol": "chat.completions",
+    "harness": "deepseek",
+    "reasoning_effort": "max"
+  },
+  "writer": {
+    "provider": "qwen",
+    "model": "qwen3.8-max",
+    "protocol": "chat.completions",
+    "enable_thinking": true
+  },
+  "editor": {
+    "provider": "qwen",
+    "model": "qwen3.8-max",
+    "protocol": "chat.completions",
+    "enable_thinking": true
+  },
+  "producer": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "protocol": "chat.completions",
+    "harness": "deepseek",
+    "reasoning_effort": "max"
+  }
+}

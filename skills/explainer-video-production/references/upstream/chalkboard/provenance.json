@@ -1,0 +1,36 @@
+{
+  "preset": "黑板粉笔",
+  "repo": "https://github.com/lemomo-ai/lemo-opuscar",
+  "reference_url": "https://raw.githubusercontent.com/lemomo-ai/lemo-opuscar/main/docs/frames/chalkboard.jpg",
+  "reference_sha256": "4259730cf76d08e8dd35db475b18657200a17ecabe36ffa0e5af5090a2a7934d",
+  "extracted_frame": 0,
+  "image_sha256": "a6ceb743ff866b7e62d2d09e2dff941ef91e32039b511c3ff920b20d6472b247",
+  "license": "代码 MIT；示例视频/图片按作者标注 CC BY 4.0",
+  "fetched_on": "2026-10-31",
+  "files": [
+    {
+      "id": "chalkboard-01",
+      "file": "references/upstream/chalkboard/01-STYLE.md",
+      "name": "styles/chalkboard/STYLE.md",
+      "source_url": "https://raw.githubusercontent.com/lemomo-ai/lemo-opuscar/main/styles/chalkboard/STYLE.md",
+      "sha256": "7f89f1a4694805e6bc767050007a6b44f2b7ab2474b0e3244032d3a0269b3e1c",
+      "kind": "guide"
+    },
+    {
+      "id": "chalkboard-02",
+      "file": "references/upstream/chalkboard/02-app.js",
+      "name": "styles/chalkboard/demo/js/app.js",
+      "source_url": "https://raw.githubusercontent.com/lemomo-ai/lemo-opuscar/main/styles/chalkboard/demo/js/app.js",
+      "sha256": "246dc24b85a7ac103a437ba434fdf5abadf31947bdfad9ba0b27c1c6ac5b3f19",
+      "kind": "code"
+    },
+    {
+      "id": "chalkboard-03",
+      "file": "references/upstream/chalkboard/03-LICENSE",
+      "name": "LICENSE",
+      "source_url": "https://raw.githubusercontent.com/lemomo-ai/lemo-opuscar/main/LICENSE",
+      "sha256": "14c9ff6f14bfb2391e74fedb01c256891d2a3bba1c2acf5789901bdf77e54e33",
+      "kind": "license"
+    }
+  ]
+}

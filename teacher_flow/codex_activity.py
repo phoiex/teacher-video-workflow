@@ -27,6 +27,10 @@ def _scan(path, turn_id, started_at, size, modified_ns, inode):
             continue
         latest = max(latest, at)
         method = event.get('method', '')
+        if method=='session.event':
+            native=params.get('event') or {}
+            if native.get('type')=='llm/retry':waiting=True
+            elif native.get('type') in ('assistant/message','assistant/delta','tool/result','turn/end'):waiting=False
         if method == 'error':
             error = params.get('error') or {}
             info = error.get('codexErrorInfo') or {}

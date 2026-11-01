@@ -1,11 +1,13 @@
 """Provider credentials and model metadata, separate from workflow roles."""
 import os
 
-PROVIDERS = {'openai', 'deepseek', 'anthropic', 'custom'}
+PROVIDERS = {'openai', 'deepseek', 'anthropic', 'qwen', 'gemini', 'custom'}
 PROTOCOLS = {'responses', 'chat.completions', 'messages'}
 MODEL_PRESETS = {}
 DEFAULT_URLS = {'openai': 'https://api.openai.com/v1', 'deepseek': 'https://api.deepseek.com',
-                'anthropic': 'https://api.anthropic.com'}
+                'anthropic': 'https://api.anthropic.com',
+                'qwen': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+                'gemini': 'https://generativelanguage.googleapis.com/v1beta/openai/'}
 
 
 def route(profile):
@@ -18,6 +20,8 @@ def connection(profile, runtime=None):
         raise ValueError('模型服务商尚未配置。')
     prefix = provider.upper()
     key = os.environ.get(prefix + '_API_KEY', '').strip()
+    if provider == 'qwen' and not key:
+        key = os.environ.get('DASHSCOPE_API_KEY', '').strip()
     base = os.environ.get(prefix + '_BASE_URL', DEFAULT_URLS.get(provider, '')).strip()
     if not key or not base:
         raise ValueError(f'请在 .env 中配置 {prefix}_API_KEY 和 {prefix}_BASE_URL。')

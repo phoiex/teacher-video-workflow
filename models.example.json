@@ -2,25 +2,27 @@
   "planner": {
     "provider": "deepseek",
     "model": "deepseek-flash",
-    "protocol": "responses",
+    "protocol": "chat.completions",
+    "harness": "deepseek",
     "reasoning_effort": "max"
   },
   "writer": {
-    "provider": "deepseek",
-    "model": "deepseek-flash",
-    "protocol": "responses",
-    "reasoning_effort": "max"
+    "provider": "qwen",
+    "model": "qwen3.8-max",
+    "protocol": "chat.completions",
+    "enable_thinking": true
   },
   "editor": {
-    "provider": "deepseek",
-    "model": "deepseek-flash",
-    "protocol": "responses",
-    "reasoning_effort": "max"
+    "provider": "qwen",
+    "model": "qwen3.8-max",
+    "protocol": "chat.completions",
+    "enable_thinking": true
   },
   "producer": {
     "provider": "deepseek",
     "model": "deepseek-flash",
-    "protocol": "responses",
+    "protocol": "chat.completions",
+    "harness": "deepseek",
     "reasoning_effort": "max"
   }
 }
