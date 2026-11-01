@@ -1,26 +1,38 @@
 {
-  "version": 2,
+  "version": 3,
   "presets": [
     {
       "id": "warm",
       "name": "暖色图解",
       "branch": "warm-explainer.md",
       "description": "暖色背景、清楚的图形和逐步标注，适合平实的知识讲解。",
-      "image": "warm.png"
+      "image": "warm.png",
+      "preview_video": "videos/warm.mp4",
+      "preview_poster": "posters/warm.jpg",
+      "preview_captions": "captions/warm.vtt",
+      "preview_seconds": 8
     },
     {
       "id": "ascii",
       "name": "ASCII 终端科技",
       "branch": "ascii-terminal.md",
       "description": "深色终端、等宽字符、点阵和数据流，保持中文与图形可读。",
-      "image": "ascii.png"
+      "image": "ascii.png",
+      "preview_video": "videos/ascii.mp4",
+      "preview_poster": "posters/ascii.jpg",
+      "preview_captions": "captions/ascii.vtt",
+      "preview_seconds": 8
     },
     {
       "id": "openfilm",
       "name": "空间代码动画",
       "branch": "openfilm-cinematic.md",
       "description": "用几何、空间层次和镜头变化解释关系，配色按课程安排。",
-      "image": "openfilm.png"
+      "image": "openfilm.png",
+      "preview_video": "videos/openfilm.mp4",
+      "preview_poster": "posters/openfilm.jpg",
+      "preview_captions": "captions/openfilm.vtt",
+      "preview_seconds": 8
     },
     {
       "id": "chalkboard",
@@ -58,7 +70,11 @@
           "sha256": "14c9ff6f14bfb2391e74fedb01c256891d2a3bba1c2acf5789901bdf77e54e33",
           "kind": "license"
         }
-      ]
+      ],
+      "preview_video": "videos/chalkboard.mp4",
+      "preview_poster": "posters/chalkboard.jpg",
+      "preview_captions": "captions/chalkboard.vtt",
+      "preview_seconds": 8
     },
     {
       "id": "whiteboard",
@@ -104,7 +120,11 @@
           "sha256": "624d5f4dceeb2211a5d25ef0f5483b8c1fdeca0a873e2883845d4180d5366b20",
           "kind": "license"
         }
-      ]
+      ],
+      "preview_video": "videos/whiteboard.mp4",
+      "preview_poster": "posters/whiteboard.jpg",
+      "preview_captions": "captions/whiteboard.vtt",
+      "preview_seconds": 8
     },
     {
       "id": "miniature-diorama",
@@ -150,7 +170,11 @@
           "sha256": "41472c25cb959e4f0c7f4ef48b71fa0c225f6aa74ac80ef386347acb7589b3f8",
           "kind": "license"
         }
-      ]
+      ],
+      "preview_video": "videos/miniature-diorama.mp4",
+      "preview_poster": "posters/miniature-diorama.jpg",
+      "preview_captions": "captions/miniature-diorama.vtt",
+      "preview_seconds": 8
     },
     {
       "id": "paper-collage",
@@ -188,7 +212,11 @@
           "sha256": "7f03fee9299a401615e13e2c636ead0394f47395da4f816ae60b35ed2d91a932",
           "kind": "license"
         }
-      ]
+      ],
+      "preview_video": "videos/paper-collage.mp4",
+      "preview_poster": "posters/paper-collage.jpg",
+      "preview_captions": "captions/paper-collage.vtt",
+      "preview_seconds": 8
     },
     {
       "id": "watercolor-character",
@@ -250,7 +278,11 @@
           "sha256": "7d25ae95b305b884c08ce898e53b58d2e180ff0119e5d203d8b4ae30420f3b33",
           "kind": "license"
         }
-      ]
+      ],
+      "preview_video": "videos/watercolor-character.mp4",
+      "preview_poster": "posters/watercolor-character.jpg",
+      "preview_captions": "captions/watercolor-character.vtt",
+      "preview_seconds": 8
     },
     {
       "id": "data-storytelling",
@@ -288,7 +320,11 @@
           "sha256": "14c9ff6f14bfb2391e74fedb01c256891d2a3bba1c2acf5789901bdf77e54e33",
           "kind": "license"
         }
-      ]
+      ],
+      "preview_video": "videos/data-storytelling.mp4",
+      "preview_poster": "posters/data-storytelling.jpg",
+      "preview_captions": "captions/data-storytelling.vtt",
+      "preview_seconds": 8
     },
     {
       "id": "kinetic-typography",
@@ -334,7 +370,11 @@
           "sha256": "9f09dd153e82ef699c403cc4c901d35d6cdad80870dc1d54e5f05b97095eadbd",
           "kind": "license"
         }
-      ]
+      ],
+      "preview_video": "videos/kinetic-typography.mp4",
+      "preview_poster": "posters/kinetic-typography.jpg",
+      "preview_captions": "captions/kinetic-typography.vtt",
+      "preview_seconds": 8
     },
     {
       "id": "free",

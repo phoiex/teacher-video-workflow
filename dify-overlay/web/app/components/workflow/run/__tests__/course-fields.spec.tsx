@@ -39,4 +39,31 @@ describe('course material selection', () => {
     expect(onChange).toHaveBeenCalledWith('空间代码动画')
     expect(screen.getAllByRole('button')).toHaveLength(3)
   })
+
+  it('plays a sample without changing the selected style', () => {
+    const onChange = vi.fn()
+    render(
+      <StylePreviewOptions
+        options={['暖色图解', '手绘白板']}
+        value="暖色图解"
+        onChange={onChange}
+      />,
+    )
+    const video = screen.getByLabelText('手绘白板', { selector: 'video' })
+    fireEvent.play(video)
+    expect(onChange).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: '暖色图解' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByRole('button', { name: '手绘白板' }))
+    expect(onChange).toHaveBeenCalledWith('手绘白板')
+  })
+
+  it('pauses the previous sample when another starts playing', () => {
+    render(<StylePreviewOptions options={['暖色图解', '手绘白板']} onChange={vi.fn()} />)
+    const first = screen.getByLabelText('暖色图解', { selector: 'video' }) as HTMLVideoElement
+    const second = screen.getByLabelText('手绘白板', { selector: 'video' })
+    const pause = vi.spyOn(first, 'pause').mockImplementation(() => {})
+    fireEvent.play(first)
+    fireEvent.play(second)
+    expect(pause).toHaveBeenCalledOnce()
+  })
 })

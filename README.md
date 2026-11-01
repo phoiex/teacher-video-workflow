@@ -7,7 +7,9 @@
 → 讲稿确认 → 制作分镜 → 分镜确认（可选）→ 配音与渲染 → 下载成片和工程
 ```
 
-**v0.2.0 合并了两套模型方案，功能相同。** 10 种风格预设、图片与视频参考、课件解析、审核弹窗、实时进度、暂停和断点重试都由两套方案共用。老师从 Dify 发布页制作课程，需要编辑节点时进入「流程与测试」。
+**v0.2.1 为十种风格补齐了参考短片。** 两套模型方案的功能相同。 10 种风格预设、图片与视频参考、课件解析、审核弹窗、实时进度、暂停和断点重试都由两套方案共用。老师从 Dify 发布页制作课程，需要编辑节点时进入「流程与测试」。
+
+[播放十种风格样片](https://phoiex.github.io/teacher-video-workflow/) · [样片与源码](examples/style-previews/README.md)
 
 ## 选择模型方案
 
@@ -39,20 +41,20 @@ GPT、Claude 与 DeepSeek 示例设为 `max`；Qwen 开启 `enable_thinking`，�
 
 ## 风格与 Skill
 
-每个预设都包含对应分支、参考图；新增七种还附作者指南或参考代码与来源。模型读取所选风格的图片和说明，按需读取参考代码。也支持自由设计、自定义描述和上传图片、视频参考。
+每个预设都附一段8秒参考视频、对应 Skill 和参考图；新增七种还附作者指南或参考代码与来源。软件中点击视频播放，点击下方名称选择风格。模型读取所选风格的图片和说明，按需读取参考代码。也支持自由设计、自定义描述和上传图片、视频参考。
 
-| 预设 | 参考图 | 用途与 Skill |
+| 预设 | 样片（点击画面播放） | 用途与 Skill |
 |---|---|---|
-| 暖色图解 | ![暖色](assets/style/warm.png) | 纸面色彩、文字与简洁图形。[分支](skills/explainer-video-production/branches/warm-explainer.md) |
-| ASCII 终端科技 | ![ASCII](assets/style/ascii.png) | 字符网格、程序界面与数据流。[分支](skills/explainer-video-production/branches/ascii-terminal.md) |
-| 空间代码动画 | ![空间](assets/style/openfilm.png) | OpenFilm 方法、几何与镜头变化。[分支](skills/explainer-video-production/branches/openfilm-cinematic.md) |
-| 黑板粉笔 | ![黑板](assets/style/chalkboard.png) | 按推导顺序书写、圈画和擦除。[分支](skills/explainer-video-production/branches/chalkboard.md) |
-| 手绘白板 | ![白板](assets/style/whiteboard.png) | 手绘线条、箭头和局部标注。[分支](skills/explainer-video-production/branches/whiteboard.md) |
-| 立体微缩工坊 | ![微缩](assets/style/miniature-diorama.png) | 用微缩场景呈现结构和过程。[分支](skills/explainer-video-production/branches/miniature-diorama.md) |
-| 纸张拼贴 | ![拼贴](assets/style/paper-collage.png) | 用剪纸、拼接与层次解释关系。[分支](skills/explainer-video-production/branches/paper-collage.md) |
-| 水彩角色动画 | ![水彩](assets/style/watercolor-character.png) | 水彩画面和角色叙事。[分支](skills/explainer-video-production/branches/watercolor-character.md) |
-| 数据叙事 | ![数据](assets/style/data-storytelling.png) | 图表、数据变化与结论。[分支](skills/explainer-video-production/branches/data-storytelling.md) |
-| 极简动态排版 | ![排版](assets/style/kinetic-typography.png) | 以文字节奏和版面变化突出概念。[分支](skills/explainer-video-production/branches/kinetic-typography.md) |
+| 暖色图解 | [![暖色](assets/style/posters/warm.jpg)](assets/style/videos/warm.mp4) | 纸面色彩、文字与简洁图形。[分支](skills/explainer-video-production/branches/warm-explainer.md) |
+| ASCII 终端科技 | [![ASCII](assets/style/posters/ascii.jpg)](assets/style/videos/ascii.mp4) | 字符网格、程序界面与数据流。[分支](skills/explainer-video-production/branches/ascii-terminal.md) |
+| 空间代码动画 | [![空间](assets/style/posters/openfilm.jpg)](assets/style/videos/openfilm.mp4) | OpenFilm 方法、几何与镜头变化。[分支](skills/explainer-video-production/branches/openfilm-cinematic.md) |
+| 黑板粉笔 | [![黑板](assets/style/posters/chalkboard.jpg)](assets/style/videos/chalkboard.mp4) | 按推导顺序书写、圈画和擦除。[分支](skills/explainer-video-production/branches/chalkboard.md) |
+| 手绘白板 | [![白板](assets/style/posters/whiteboard.jpg)](assets/style/videos/whiteboard.mp4) | 手绘线条、箭头和局部标注。[分支](skills/explainer-video-production/branches/whiteboard.md) |
+| 立体微缩工坊 | [![微缩](assets/style/posters/miniature-diorama.jpg)](assets/style/videos/miniature-diorama.mp4) | 用微缩场景呈现结构和过程。[分支](skills/explainer-video-production/branches/miniature-diorama.md) |
+| 纸张拼贴 | [![拼贴](assets/style/posters/paper-collage.jpg)](assets/style/videos/paper-collage.mp4) | 用剪纸、拼接与层次解释关系。[分支](skills/explainer-video-production/branches/paper-collage.md) |
+| 水彩角色动画 | [![水彩](assets/style/posters/watercolor-character.jpg)](assets/style/videos/watercolor-character.mp4) | 水彩画面和角色叙事。[分支](skills/explainer-video-production/branches/watercolor-character.md) |
+| 数据叙事 | [![数据](assets/style/posters/data-storytelling.jpg)](assets/style/videos/data-storytelling.mp4) | 图表、数据变化与结论。[分支](skills/explainer-video-production/branches/data-storytelling.md) |
+| 极简动态排版 | [![排版](assets/style/posters/kinetic-typography.jpg)](assets/style/videos/kinetic-typography.mp4) | 以文字节奏和版面变化突出概念。[分支](skills/explainer-video-production/branches/kinetic-typography.md) |
 
 [视频制作主 Skill](skills/explainer-video-production/SKILL.md) 统筹分镜、声音和交付，再读取所选分支。[去 AI 味写作 Skill](skills/deslop-zh/SKILL.md) 在初稿完成后单独改写一轮，也用于需求沟通与界面文案。讲稿经老师确认后固定，制作阶段按原稿做画面。
 

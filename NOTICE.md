@@ -13,3 +13,5 @@
 新增七种风格的参考图片、原作者指南与代码见 [风格材料来源](assets/style/CREDITS.md)，逐文件来源及许可保存在 `skills/explainer-video-production/references/upstream/`。这些材料沿用原许可，不并入本项目 MIT 授权。
 
 DeepSeek Harness 通过 `runtime/deepseek/package-lock.json` 固定版本，由 npm 安装；对应依赖保留各自许可。本项目仅在私有运行副本补接原生会话恢复入口，不分发个人账户或订阅配置。
+
+本项目生成的十段参考短片及可编辑场景见[样片说明](examples/style-previews/README.md)，制作时使用的作者风格资料与代码许可仍按上述来源保留。

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<title>信息如何聚焦</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;width:1920px;height:1080px;overflow:hidden;background:#efeade}
+  #stage{position:relative;width:1920px;height:1080px;overflow:hidden;
+    background:radial-gradient(120% 95% at 20% 6%,#fdfbf4 0%,#f8f4e9 42%,#efe9dc 100%)}
+  #grain{position:absolute;left:0;top:0;width:1920px;height:1080px;opacity:.40;mix-blend-mode:multiply}
+  #vign{position:absolute;left:0;top:0;width:1920px;height:1080px;
+    background:radial-gradient(110% 95% at 50% 42%,rgba(255,255,255,0) 52%,rgba(126,110,82,.13) 100%)}
+  #edge{position:absolute;left:22px;top:22px;right:22px;bottom:22px;border:2px solid #ded8c8;border-radius:18px;opacity:.6}
+  svg#board{position:absolute;left:0;top:0;width:1920px;height:1080px}
+  svg text{font-family:"LXGW WenKai","Kaiti SC","STKaiti","KaiTi","BiauKai","Noto Serif CJK SC","Source Han Serif SC","Songti SC","Noto Sans CJK SC",sans-serif}
+</style>
+</head>
+<body>
+<div id="stage">
+  <img id="grain" alt=""/>
+  <div id="vign"></div>
+  <div id="edge"></div>
+  <svg id="board" viewBox="0 0 1920 1080" width="1920" height="1080" xmlns="http://www.w3.org/2000/svg"></svg>
+</div>
+<script>
+(function(){
+  'use strict';
+  var NS='http://www.w3.org/2000/svg';
+  var INK='#24211c', GOLD='#d99f2b', BLUE='#3f6d8c', GRAY='#8b8577';
+  var SCENE=Object.assign({caption:'信息如何聚焦',narration:'',duration_seconds:8}, window.SCENE||{});
+  var D=Math.max(1, Number(SCENE.duration_seconds)||8);
+  function T(f){ return f*D; }
+
+  var SVG=document.getElementById('board');
+  var DEFS=document.createElementNS(NS,'defs'); SVG.appendChild(DEFS);
+  var CAM=document.createElementNS(NS,'g'); SVG.appendChild(CAM);
+
+  var CID=0, ITEMS=[];
+  var washEl=null;
+
+  // ---------- deterministic hand-drawn geometry ----------
+  function rnd(seed){
+    var s=(seed*2654435761)>>>0; if(!s) s=1;
+    return function(){ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
+  }
+  function jseg(r,x1,y1,x2,y2,amp){
+    var dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy)||1;
+    var nx=-dy/L, ny=dx/L, n=Math.max(2,Math.round(L/55)), d='';
+    for(var i=1;i<=n;i++){
+      var t=i/n, off=(i===n)?0:(r()*2-1)*amp;
+      d+='L '+(x1+dx*t+nx*off).toFixed(2)+' '+(y1+dy*t+ny*off).toFixed(2)+' ';
+    }
+    return d;
+  }
+  function linePath(x1,y1,x2,y2,amp,seed){
+    var r=rnd(seed);
+    return 'M '+x1+' '+y1+' '+jseg(r,x1,y1,x2,y2,amp);
+  }
+  // one continuous marker trace: top, right, bottom, left (closes past the start)
+  function rectPath(x,y,w,h,seed,amp,over){
+    amp=amp||1.7; over=over||5;
+    var r=rnd(seed);
+    var d='M '+x+' '+y+' ';
+    d+=jseg(r,x,y,x+w,y,amp);
+    d+=jseg(r,x+w,y,x+w,y+h,amp);
+    d+=jseg(r,x+w,y+h,x,y+h,amp);
+    d+=jseg(r,x,y+h,x,y-over,amp);
+    return d;
+  }
+  function curvePath(p0,p1,p2,p3,amp,seed){
+    var r=rnd(seed), d='', n=44;
+    for(var i=0;i<=n;i++){
+      var t=i/n, mt=1-t;
+      var x=mt*mt*mt*p0[0]+3*mt*mt*t*p1[0]+3*mt*t*t*p2[0]+t*t*t*p3[0];
+      var y=mt*mt*mt*p0[1]+3*mt*mt*t*p1[1]+3*mt*t*t*p2[1]+t*t*t*p3[1];
+      if(i>0&&i<n){ var o=(r()*2-1)*amp; x+=o; y+=o*0.45; }
+      d+=(i?'L ':'M ')+x.toFixed(2)+' '+y.toFixed(2)+' ';
+    }
+    return d;
+  }
+  function wavePath(x0,x1,y,amp,per,seed){
+    var r=rnd(seed), d='', n=Math.max(18,Math.round((x1-x0)/5));
+    for(var i=0;i<=n;i++){
+      var x=x0+(x1-x0)*i/n;
+      var yy=y+Math.sin((x-x0)/per*Math.PI*2)*amp;
+      if(i>0&&i<n) yy+=(r()*2-1)*0.7;
+      d+=(i?'L ':'M ')+x.toFixed(2)+' '+yy.toFixed(2)+' ';
+    }
+    return d;
+  }
+  function blobRect(x,y,w,h,seed,amp){
+    var r=rnd(seed), d='M '+x+' '+y+' ';
+    d+=jseg(r,x,y,x+w,y,amp);
+    d+=jseg(r,x+w,y,x+w,y+h,amp);
+    d+=jseg(r,x+w,y+h,x,y+h,amp);
+    d+=jseg(r,x,y+h,x,y,amp);
+    return d+'Z';
+  }
+
+  // ---------- timeline items ----------
+  function addPath(d,atF,durF,o){
+    o=o||{};
+    var el=document.createElementNS(NS,'path');
+    el.setAttribute('d',d);
+    el.setAttribute('fill','none');
+    var op=(o.op===undefined)?1:o.op;
+    el.setAttribute('stroke',o.color||INK);
+    el.setAttribute('stroke-width',o.w||5);
+    el.setAttribute('stroke-opacity',0);
+    el.setAttribute('stroke-linecap','round');
+    el.setAttribute('stroke-linejoin','round');
+    (o.parent||CAM).appendChild(el);
+    var len=0;
+    try{ len=el.getTotalLength(); }catch(e){ len=100; }
+    el.setAttribute('stroke-dasharray',len+' '+len);
+    el.setAttribute('stroke-dashoffset',len);
+    ITEMS.push({kind:'path',el:el,at:T(atF),dur:T(durF),len:len,op:op,post:o.post||null});
+    return el;
+  }
+  function wipe(el,atF,durF,to){
+    var cp=document.createElementNS(NS,'clipPath');
+    cp.setAttribute('clipPathUnits','objectBoundingBox');
+    var r=document.createElementNS(NS,'rect');
+    r.setAttribute('x','-0.08'); r.setAttribute('y','-0.8');
+    r.setAttribute('height','2.6'); r.setAttribute('width','0');
+    cp.appendChild(r);
+    var id='w'+(CID++); cp.setAttribute('id',id);
+    DEFS.appendChild(cp);
+    el.setAttribute('clip-path','url(#'+id+')');
+    ITEMS.push({kind:'wipe',rect:r,at:T(atF),dur:T(durF),to:to||1.10});
+    return el;
+  }
+  function addText(str,x,y,size,atF,durF,o){
+    o=o||{};
+    var t=document.createElementNS(NS,'text');
+    t.setAttribute('x',x); t.setAttribute('y',y);
+    t.setAttribute('font-size',size);
+    t.setAttribute('text-anchor',o.anchor||'middle');
+    t.setAttribute('fill',o.color||INK);
+    if(o.weight) t.setAttribute('font-weight',o.weight);
+    if(o.ls) t.setAttribute('letter-spacing',o.ls);
+    t.textContent=str;
+    (o.parent||CAM).appendChild(t);
+    wipe(t,atF,durF,1.10);
+    return t;
+  }
+
+  // ---------- paper grain ----------
+  (function(){
+    var c=document.createElement('canvas'); c.width=960; c.height=540;
+    var g=c.getContext('2d'), im=g.createImageData(960,540), d=im.data, r=rnd(97);
+    for(var i=0;i<d.length;i+=4){
+      var v=168+Math.floor(r()*88);
+      d[i]=v; d[i+1]=v-4; d[i+2]=v-16; d[i+3]=Math.floor(r()*44);
+    }
+    g.putImageData(im,0,0);
+    document.getElementById('grain').src=c.toDataURL('image/png');
+  })();
+
+  // =====================================================================
+  //  LAYOUT
+  // =====================================================================
+  var TITLE=SCENE.caption||'信息如何聚焦';
+  var TSIZE=Math.min(92,1300/Math.max(4,TITLE.length));
+
+  addText(TITLE,960,168,TSIZE,0.010,0.075,{weight:'600',ls:'1px'});
+  var half=TITLE.length*TSIZE*0.5+18;
+  addPath(wavePath(960-half,960+half,206,5,104,11),0.080,0.030,{color:GOLD,w:8});
+
+  addText('数字为示意',222,150,32,0.455,0.040,{anchor:'start',color:GRAY,ls:'1px'});
+
+  // ---------- three information objects ----------
+  var CARD_X=200, CARD_W=270, CARD_H=130;
+  var CY=[362,586,810];
+  var cardRot=[-1.1,0.8,-0.7];
+  var cardAt=[0.100,0.178,0.256];
+  var iconAt=[0.148,0.226,0.305];
+
+  function group(transform){
+    var g=document.createElementNS(NS,'g');
+    if(transform) g.setAttribute('transform',transform);
+    CAM.appendChild(g);
+    return g;
+  }
+
+  for(var ci=0;ci<3;ci++){
+    var cy=CY[ci], top=cy-CARD_H/2, ccx=CARD_X+CARD_W/2;
+    var g=group('rotate('+cardRot[ci]+' '+ccx+' '+cy+')');
+    addPath(rectPath(CARD_X,top,CARD_W,CARD_H,701+ci,1.7,5),cardAt[ci],0.055,{w:4.6,parent:g});
+    if(ci===0){ // 文字资料
+      var dA='';
+      dA+=linePath(238,cy-27,430,cy-27,1.4,511);
+      dA+=linePath(238,cy+2,394,cy+2,1.4,512);
+      dA+=linePath(238,cy+31,354,cy+31,1.4,513);
+      addPath(dA,iconAt[ci],0.048,{w:7,parent:g});
+    } else if(ci===1){ // 图表
+      addPath(linePath(234,cy+30,434,cy+30,1.4,621),iconAt[ci],0.030,{w:4,parent:g});
+      var dB='';
+      dB+=linePath(272,cy-4,272,cy+27,0.9,622);
+      dB+=linePath(320,cy-30,320,cy+27,0.9,623);
+      dB+=linePath(368,cy+4,368,cy+27,0.9,624);
+      addPath(dB,iconAt[ci]+0.022,0.030,{w:14,parent:g});
+    } else { // 声音波形
+      addPath(wavePath(244,426,cy+2,24,48,731),iconAt[ci],0.048,{w:6,parent:g});
+    }
+  }
+
+  // ---------- weight badges ----------
+  var PCT=['60%','30%','10%'];
+  var BARM=[120,60,20];
+  var pctAt=[0.395,0.442,0.489];
+  var barAt=[0.422,0.469,0.516];
+  var BADGE_X=505;
+
+  for(var wi=0;wi<3;wi++){
+    var wy=CY[wi];
+    addPath(linePath(474,wy,497,wy,0.6,811+wi),0.360+wi*0.012,0.016,{w:3.4,op:0.72});
+    addText(PCT[wi],BADGE_X,wy+22,62,pctAt[wi],0.032,{anchor:'start',weight:'600'});
+    addPath(linePath(BADGE_X,wy+37,BADGE_X+BARM[wi],wy+37,1.1,821+wi),barAt[wi],0.018,{color:GOLD,w:8});
+  }
+
+  // ---------- streams merging into the result ----------
+  addPath(curvePath([645,362],[840,362],[960,566],[1074,580],1.2,831),0.530,0.095,{w:16});
+  addPath(curvePath([645,586],[820,586],[960,586],[1074,587],1.0,832),0.585,0.085,{w:9.5});
+  addPath(curvePath([645,810],[840,810],[960,608],[1074,594],0.8,833),0.625,0.080,{w:4.6});
+  addPath(linePath(1088,587,1222,587,0.6,834),0.695,0.055,{w:25});
+
+  // ---------- result card ----------
+  var BOX={x:1212,y:456,w:476,h:260};
+  var BOX_CX=BOX.x+BOX.w/2, BOX_CY=BOX.y+BOX.h/2;
+
+  washEl=document.createElementNS(NS,'path');
+  washEl.setAttribute('d',blobRect(1224,470,452,232,902,3.2));
+  washEl.setAttribute('fill',GOLD);
+  washEl.setAttribute('fill-opacity','0.30');
+  washEl.setAttribute('stroke','none');
+  var wg=group('rotate(-0.7 '+BOX_CX+' '+BOX_CY+')');
+  wg.appendChild(washEl);
+  wipe(washEl,0.780,0.065,1.12);
+
+  addPath(rectPath(BOX.x,BOX.y,BOX.w,BOX.h,901,1.8,6),0.730,0.075,{w:5});
+
+  addText('结果',BOX_CX,584,74,0.805,0.0375,{weight:'600',ls:'2px'});
+  addText('注意力汇总的表示',BOX_CX,654,42,0.8325,0.0425,{color:BLUE,ls:'1px'});
+
+  // ---------- focus brackets ----------
+  var corners=[
+    {x:BOX.x,y:BOX.y,sx:-1,sy:-1,at:0.865},
+    {x:BOX.x+BOX.w,y:BOX.y,sx:1,sy:-1,at:0.874},
+    {x:BOX.x+BOX.w,y:BOX.y+BOX.h,sx:1,sy:1,at:0.883},
+    {x:BOX.x,y:BOX.y+BOX.h,sx:-1,sy:1,at:0.892}
+  ];
+  corners.forEach(function(c,i){
+    var OFF=30, ARM=46;
+    var gx=c.x+c.sx*OFF, gy=c.y+c.sy*OFF;
+    var a1x=gx-c.sx*ARM, a1y=gy;
+    var a2x=gx, a2y=gy-c.sy*ARM;
+    var d=linePath(a1x,a1y,gx,gy,1.0,941+i)+linePath(gx,gy,a2x,a2y,1.0,951+i);
+    var bg=group();
+    addPath(d,c.at,0.026,{color:GOLD,w:5.5,parent:bg,post:function(e){
+      var q=(1-e)*17;
+      bg.setAttribute('transform','translate('+(-c.sx*q).toFixed(2)+' '+(-c.sy*q).toFixed(2)+')');
+    }});
+  });
+
+  // =====================================================================
+  //  FRAME
+  // =====================================================================
+  function easeOut(p){ return 1-Math.pow(1-p,3); }
+  function easeInOut(p){ return p<0.5 ? 4*p*p*p : 1-Math.pow(-2*p+2,3)/2; }
+
+  function frame(tRaw){
+    var t=Number(tRaw);
+    if(!isFinite(t)) t=0;
+    if(t>D*4) t=t/1000;
+    t=Math.max(0,Math.min(D,t));
+
+    var cp=easeInOut(Math.min(1,t/(D*0.92)));
+    var s=1+0.028*cp;
+    CAM.setAttribute('transform','translate(1150 562) scale('+s.toFixed(5)+') translate(-1150 -562)');
+
+    for(var i=0;i<ITEMS.length;i++){
+      var it=ITEMS[i];
+      var p=it.dur>0 ? (t-it.at)/it.dur : (t>=it.at?1:0);
+      p=Math.max(0,Math.min(1,p));
+      if(it.kind==='path'){
+        var e=easeOut(p);
+        it.el.setAttribute('stroke-dashoffset',(it.len*(1-e)).toFixed(2));
+        it.el.setAttribute('stroke-opacity', p<=0 ? 0 : it.op);
+        if(it.post) it.post(e);
+      } else if(it.kind==='wipe'){
+        it.rect.setAttribute('width',(it.to*easeOut(p)).toFixed(4));
+      }
+    }
+
+    var gp=Math.max(0,(t-T(0.84))/(D-T(0.84)));
+    var glow=0.30+0.05*Math.sin(Math.PI*Math.min(1,gp));
+    washEl.setAttribute('fill-opacity',glow.toFixed(3));
+  }
+
+  function film(t){ return frame(t); }
+  film.frame=frame;
+  window.film=film;
+
+  frame(0);
+})();
+</script>
+</body>
+</html>

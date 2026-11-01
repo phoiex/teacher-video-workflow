@@ -71,15 +71,15 @@ def prepare(source=SOURCE):
     common.write_text(common.read_text().replace('client_lifetime 5 minutes', 'client_lifetime 20 minutes'))
     (deploy / 'teacher.override.yml').write_text('''services:
   api:
-    image: teacher-video-api:0.2.0
+    image: teacher-video-api:0.2.1
   api_websocket:
-    image: teacher-video-api:0.2.0
+    image: teacher-video-api:0.2.1
   worker:
-    image: teacher-video-api:0.2.0
+    image: teacher-video-api:0.2.1
   worker_beat:
-    image: teacher-video-api:0.2.0
+    image: teacher-video-api:0.2.1
   web:
-    image: teacher-video-web:0.2.0
+    image: teacher-video-web:0.2.1
   plugin_daemon:
     ports: !reset []
 ''')
@@ -102,8 +102,8 @@ def main():
     elif action == 'build':
         if not (SOURCE / 'docker/teacher.override.yml').exists():
             raise RuntimeError('请先运行 prepare。')
-        run('docker', 'build', '-t', 'teacher-video-api:0.2.0', '-f', 'Dockerfile.api', '.')
-        run('docker', 'build', '-t', 'teacher-video-web:0.2.0', '-f', 'web/Dockerfile',
+        run('docker', 'build', '-t', 'teacher-video-api:0.2.1', '-f', 'Dockerfile.api', '.')
+        run('docker', 'build', '-t', 'teacher-video-web:0.2.1', '-f', 'web/Dockerfile',
             '--build-arg', 'COMMIT_SHA=' + BASE['commit'], '.', cwd=SOURCE)
     else: compose(action)
 

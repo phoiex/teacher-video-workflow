@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>信息如何聚焦</title>
+<style>
+  html,body{margin:0;padding:0;width:100%;height:100%;background:#F6F2E9;overflow:hidden;}
+  #stage{display:block;width:100%;height:100%;}
+</style>
+</head>
+<body>
+<canvas id="stage" width="1920" height="1080"></canvas>
+<script>
+(function(){
+  'use strict';
+
+  var W = 1920, H = 1080, BASE = 8;
+  var SCENE = window.SCENE || {};
+  var CAPTION = (SCENE.caption && String(SCENE.caption).trim()) || '信息如何聚焦';
+  var NAR = (SCENE.narration && String(SCENE.narration).trim()) || '注意力把不同信息按相关程度分配权重，再汇总成当前需要的表示。';
+  var DUR = Math.max(1, Number(SCENE.duration_seconds) || 8);
+
+  var cv = document.getElementById('stage');
+  var g = cv.getContext('2d');
+  var T = 0;
+
+  var SERIF = '"Songti SC","Source Han Serif SC","Noto Serif CJK SC","Noto Serif SC",Georgia,"Times New Roman",serif';
+  var HAND  = '"Kaiti SC","KaiTi","STKaiti","Kaiti TC","Songti SC","Noto Serif SC",serif';
+
+  var P = {
+    paper: '#F6F2E9',
+    dot: 'rgba(198,186,164,0.60)',
+    ink: '#2B2723',
+    soft: '#6F675C',
+    rule: '#CFC5B4',
+    blueDeep: '#2E5B86',
+    blue: '#5C87AE',
+    bluePale: '#93AFC4',
+    blueInk: '#33587C',
+    red: '#A8283A'
+  };
+
+  // ---------------- math ----------------
+  function clamp(v, a, b){ a = (a === undefined) ? 0 : a; b = (b === undefined) ? 1 : b; return v < a ? a : (v > b ? b : v); }
+  function lerp(a, b, u){ return a + (b - a) * u; }
+  function easeInOut(u){ u = clamp(u); return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; }
+  function easeOut(u){ u = clamp(u); return 1 - Math.pow(1 - u, 3); }
+  function hash(n){ var s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); }
+  function nz(x){ return Math.sin(x * 1.73 + 0.61) * 0.5 + Math.sin(x * 0.59 + 2.13) * 0.5; }
+  function rng(seed){
+    var a = seed >>> 0;
+    return function(){
+      a = (a + 0x6D2B79F5) >>> 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // ---------------- paper ----------------
+  var TILE = null, PAT = null;
+  function makePaper(){
+    var S = 512;
+    var c = document.createElement('canvas'); c.width = S; c.height = S;
+    var q = c.getContext('2d');
+    var R = rng(23);
+    q.fillStyle = P.paper; q.fillRect(0, 0, S, S);
+    var id = q.getImageData(0, 0, S, S), d = id.data;
+    for (var y = 0; y < S; y++){
+      for (var x = 0; x < S; x++){
+        var u = x / S * Math.PI * 2, v = y / S * Math.PI * 2;
+        var lo = Math.sin(u * 3 + Math.sin(v * 2) * 1.35) * 1.7 + Math.sin(v * 5 + 1.2) * 1.0;
+        var n = (R() - 0.5) * 5.2 + lo;
+        var i = (y * S + x) * 4;
+        d[i] += n; d[i + 1] += n; d[i + 2] += n * 0.9;
+      }
+    }
+    q.putImageData(id, 0, 0);
+    for (var k = 0; k < 1100; k++){
+      var px = R() * S, py = R() * S, a = R() * Math.PI * 2, l = 4 + R() * 16;
+      q.strokeStyle = R() < 0.5 ? 'rgba(120,100,70,0.055)' : 'rgba(255,255,255,0.30)';
+      q.lineWidth = 0.6 + R() * 0.7;
+      q.beginPath(); q.moveTo(px, py);
+      q.quadraticCurveTo(px + Math.cos(a + 0.6) * l * 0.5, py + Math.sin(a + 0.6) * l * 0.5,
+                         px + Math.cos(a) * l, py + Math.sin(a) * l);
+      q.stroke();
+    }
+    TILE = c;
+  }
+  function paperPattern(){
+    if (!TILE) makePaper();
+    if (!PAT) PAT = g.createPattern(TILE, 'repeat');
+    return PAT;
+  }
+
+  // ---------------- camera ----------------
+  var CAMK = [
+    [0.0, { x: 944, y: 566, z: 1.050 }],
+    [2.2, { x: 910, y: 556, z: 1.030 }],
+    [4.8, { x: 962, y: 552, z: 1.006 }],
+    [6.6, { x: 1030, y: 548, z: 1.020 }],
+    [8.0, { x: 1000, y: 552, z: 1.000 }]
+  ];
+  function cameraAt(t){
+    var a = CAMK[0], b = CAMK[CAMK.length - 1];
+    for (var i = 0; i < CAMK.length - 1; i++){
+      if (t >= CAMK[i][0] && t <= CAMK[i + 1][0]){ a = CAMK[i]; b = CAMK[i + 1]; break; }
+    }
+    var u = (b[0] === a[0]) ? 1 : clamp((t - a[0]) / (b[0] - a[0]));
+    var e = u * u * (3 - 2 * u);
+    return { x: lerp(a[1].x, b[1].x, e), y: lerp(a[1].y, b[1].y, e), z: lerp(a[1].z, b[1].z, e) };
+  }
+  function applyCam(c){
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.translate(W / 2, H / 2);
+    g.scale(c.z, c.z);
+    g.translate(-c.x, -c.y);
+  }
+  function w2s(c, x, y){ return [W / 2 + (x - c.x) * c.z, H / 2 + (y - c.y) * c.z]; }
+
+  // ---------------- paths ----------------
+  function makePath(pts, step){
+    step = step || 3;
+    var out = [], lens = [], acc = 0;
+    out.push([pts[0][0], pts[0][1]]); lens.push(0);
+    for (var i = 1; i < pts.length; i++){
+      var a = pts[i - 1], b = pts[i];
+      var d = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      var n = Math.max(1, Math.ceil(d / step));
+      for (var k = 1; k <= n; k++){
+        var u = k / n;
+        out.push([a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]);
+        acc += d / n;
+        lens.push(acc);
+      }
+    }
+    return { pts: out, len: lens, total: acc };
+  }
+  function pathAt(path, u){
+    var target = path.total * clamp(u);
+    var i = 1;
+    while (i < path.len.length && path.len[i] < target) i++;
+    if (i >= path.pts.length) return path.pts[path.pts.length - 1].slice();
+    var a = path.pts[i - 1], b = path.pts[i];
+    var k = (target - path.len[i - 1]) / Math.max(0.000001, path.len[i] - path.len[i - 1]);
+    return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+  }
+  function strokeWorld(path, o){
+    o = o || {};
+    var pr = (o.progress === undefined) ? 1 : clamp(o.progress);
+    if (pr <= 0 || !path.pts.length) return;
+    var pts = [];
+    var end = path.total * pr;
+    for (var i = 0; i < path.pts.length; i++){
+      if (path.len[i] > end){
+        if (i > 0){
+          var a = path.pts[i - 1], b = path.pts[i];
+          var k = (end - path.len[i - 1]) / Math.max(0.000001, path.len[i] - path.len[i - 1]);
+          pts.push([a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k]);
+        }
+        break;
+      }
+      pts.push(path.pts[i]);
+    }
+    if (pts.length < 2) return;
+    var wob = (o.wobble === undefined) ? 0.5 : o.wobble;
+    var seed = (o.seed === undefined) ? 1 : o.seed;
+    var out = [];
+    for (var j = 0; j < pts.length; j++){
+      var p0 = pts[Math.max(0, j - 1)], p1 = pts[Math.min(pts.length - 1, j + 1)];
+      var dx = p1[0] - p0[0], dy = p1[1] - p0[1], l = Math.hypot(dx, dy) || 1;
+      var w = (nz(path.len[j] * 0.035 + seed * 9.1) - 0.5) * 2 * wob;
+      out.push([pts[j][0] - dy / l * w, pts[j][1] + dx / l * w]);
+    }
+    g.save();
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    g.strokeStyle = o.color || P.ink;
+    g.globalAlpha = (o.alpha === undefined) ? 1 : o.alpha;
+    g.beginPath(); g.moveTo(out[0][0], out[0][1]);
+    for (var m = 1; m < out.length; m++) g.lineTo(out[m][0], out[m][1]);
+    g.lineWidth = (o.width === undefined) ? 1.5 : o.width;
+    g.stroke();
+    if (o.passes === 2){
+      g.globalAlpha *= 0.42;
+      g.lineWidth *= 0.72;
+      g.translate(0.7, -0.5);
+      g.stroke();
+    }
+    g.restore();
+  }
+
+  // ---------------- text ----------------
+  function trackText(text, x, y, size, font, color, track, alpha){
+    if (alpha <= 0) return 0;
+    g.save();
+    g.font = '400 ' + size + 'px ' + font;
+    g.fillStyle = color;
+    g.textBaseline = 'alphabetic';
+    g.textAlign = 'left';
+    g.globalAlpha = clamp(alpha);
+    var cx = x;
+    var chars = Array.from(text);
+    for (var i = 0; i < chars.length; i++){
+      g.fillText(chars[i], cx, y);
+      cx += g.measureText(chars[i]).width + track;
+    }
+    g.restore();
+    return cx - x;
+  }
+  function revealCJK(text, x, y, size, font, color, alpha, start, stagger, dur, rise){
+    g.save();
+    g.font = '400 ' + size + 'px ' + font;
+    g.fillStyle = color;
+    g.textBaseline = 'alphabetic';
+    g.textAlign = 'left';
+    var cx = x;
+    var chars = Array.from(text);
+    for (var i = 0; i < chars.length; i++){
+      var k = clamp((T - (start + i * stagger)) / dur);
+      if (k > 0){
+        g.globalAlpha = alpha * k;
+        g.fillText(chars[i], cx, y + (1 - k) * rise);
+      }
+      cx += g.measureText(chars[i]).width;
+    }
+    g.restore();
+  }
+  function handText(text, x, y, o){
+    o = o || {};
+    var size = o.size || 30;
+    var color = o.color || P.ink;
+    var pr = (o.progress === undefined) ? 1 : clamp(o.progress);
+    var alpha = (o.alpha === undefined) ? 1 : o.alpha;
+    if (pr <= 0 || alpha <= 0) return 0;
+    g.save();
+    g.font = '400 ' + size + 'px ' + HAND;
+    g.textBaseline = 'alphabetic';
+    g.textAlign = 'left';
+    var chars = Array.from(text);
+    var widths = [], total = 0, i;
+    for (i = 0; i < chars.length; i++){ var w = g.measureText(chars[i]).width; widths.push(w); total += w; }
+    var left = (o.align === 'right') ? x - total : (o.align === 'center') ? x - total / 2 : x;
+    if (pr < 0.999){
+      g.beginPath();
+      g.rect(left - 8, y - size * 1.5, total * pr + 10, size * 2.2);
+      g.clip();
+    }
+    var cx = left;
+    var seed = o.seed || 1;
+    for (i = 0; i < chars.length; i++){
+      var h = hash(seed * 31.7 + i * 7.31);
+      g.save();
+      g.translate(cx, y + (h - 0.5) * size * 0.055);
+      g.rotate((h - 0.5) * 0.045);
+      g.fillStyle = color;
+      g.globalAlpha = alpha * (0.82 + 0.18 * hash(seed * 3.3 + i * 2.7));
+      g.fillText(chars[i], 0, 0);
+      g.restore();
+      cx += widths[i];
+    }
+    g.restore();
+    return total;
+  }
+
+  // ---------------- source rows geometry ----------------
+  var ROWS = [
+    { cy: 376, w: 0.60, L: 180, color: P.blueDeep, label: '信息 A', lines: 3, seed: 11 },
+    { cy: 556, w: 0.30, L: 90,  color: P.blue,     label: '信息 B', lines: 2, seed: 23 },
+    { cy: 736, w: 0.10, L: 30,  color: P.bluePale, label: '信息 C', lines: 1, seed: 37 }
+  ];
+  var BARX = 314, BARH = 18, AXIS = 300;
+
+  var RIB = [
+    { s: [494, 385], e: [1336, 468], wid: 7.4, color: P.blueDeep },
+    { s: [404, 565], e: [1336, 635], wid: 4.2, color: P.blue },
+    { s: [344, 745], e: [1336, 709], wid: 2.8, color: '#6E8FA9' }
+  ];
+  var ribPaths = RIB.map(function(r){
+    return makePath(cubicPts(r.s, [r.s[0] + 340, r.s[1]], [r.e[0] - 380, r.e[1]], r.e, 72), 3);
+  });
+  function cubicPts(p0, p1, p2, p3, n){
+    var out = [];
+    for (var i = 0; i <= n; i++){
+      var u = i / n, v = 1 - u;
+      out.push([
+        v * v * v * p0[0] + 3 * v * v * u * p1[0] + 3 * v * u * u * p2[0] + u * u * u * p3[0],
+        v * v * v * p0[1] + 3 * v * v * u * p1[1] + 3 * v * u * u * p2[1] + u * u * u * p3[1]
+      ]);
+    }
+    return out;
+  }
+
+  // stack
+  var STACK = { x: 1328, w: 66, top: 356, h: 372 };
+  var SEG = [
+    { h: 372 * 0.60, color: P.blueDeep },
+    { h: 372 * 0.30, color: P.blue },
+    { h: 372 * 0.10, color: P.bluePale }
+  ];
+  var SEG_TOP = [356, 356 + SEG[0].h, 356 + SEG[0].h + SEG[1].h];
+  var STACK_PATH = makePath([
+    [STACK.x, STACK.top], [STACK.x + STACK.w, STACK.top],
+    [STACK.x + STACK.w, STACK.top + STACK.h], [STACK.x, STACK.top + STACK.h],
+    [STACK.x, STACK.top]
+  ], 2);
+  var RING_C = { x: 1362, y: 542, rx: 56, ry: 202 };
+  var RING_PATH = makePath(ellipseRing(RING_C.x, RING_C.y, RING_C.rx, RING_C.ry, 4.1, 1.10, -2.32), 2);
+
+  function ellipseRing(cx, cy, rx, ry, seed, turns, a0){
+    var pts = [], N = 120;
+    for (var i = 0; i <= N; i++){
+      var u = i / N, a = a0 + u * turns * Math.PI * 2;
+      var w = 1 + 0.035 * Math.sin(u * 7 + seed) + u * 0.02;
+      pts.push([cx + Math.cos(a) * rx * w, cy + Math.sin(a) * ry * w]);
+    }
+    return pts;
+  }
+
+  // ---------------- time schedules ----------------
+  function segFn(a, b){ return function(t){ return clamp((t - a) / (b - a)); }; }
+  var pBars = [
+    (function(f){ return function(t){ return easeInOut(f(t)); }; })(segFn(1.60, 2.15)),
+    (function(f){ return function(t){ return easeInOut(f(t)); }; })(segFn(2.30, 2.76)),
+    (function(f){ return function(t){ return easeInOut(f(t)); }; })(segFn(2.90, 3.26))
+  ];
+  var pRibs = [
+    (function(f){ return function(t){ return easeInOut(f(t)); }; })(segFn(3.44, 4.16)),
+    (function(f){ return function(t){ return easeInOut(f(t)); }; })(segFn(4.30, 4.82)),
+    (function(f){ return function(t){ return easeInOut(f(t)); }; })(segFn(4.96, 5.30))
+  ];
+  function pOutline(t){ return easeInOut(clamp((t - 5.60) / 0.36)); }
+  function pRing(t){ return easeInOut(clamp((t - 6.10) / 0.60)); }
+
+  // ---------------- drawing: paper ----------------
+  function drawPaper(c){
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.globalAlpha = 1;
+    g.fillStyle = P.paper;
+    g.fillRect(0, 0, W, H);
+    applyCam(c);
+    g.fillStyle = paperPattern();
+    g.fillRect(-160, -160, W + 320, H + 320);
+    g.fillStyle = P.dot;
+    var step = 26;
+    for (var x = -156; x < W + 160; x += step){
+      for (var y = -156; y < H + 160; y += step){
+        g.fillRect(x - 0.95, y - 0.95, 1.9, 1.9);
+      }
+    }
+    g.setTransform(1, 0, 0, 1, 0, 0);
+  }
+
+  // ---------------- drawing: title ----------------
+  function drawTitle(){
+    var kin = clamp((T - 0.18) / 0.40);
+    trackText('注意力 · 数据示意', 160, 108, 18, SERIF, P.soft, 3.0, 0.9 * kin);
+
+    if (T > 0.26){
+      revealCJK(CAPTION, 160, 178, 60, SERIF, P.ink, 0.94, 0.26, 0.045, 0.36, 9);
+    }
+    var rp = easeOut(clamp((T - 0.60) / 0.40));
+    if (rp > 0){
+      strokeWorld(makePath([[160, 208], [412, 208]], 2), {
+        color: P.ink, width: 1.25, alpha: 0.44, progress: rp, seed: 13, wobble: 0.4
+      });
+    }
+  }
+
+  // ---------------- drawing: sources ----------------
+  function drawInfoCard(cx, cy, lines, prog, seed){
+    if (prog <= 0) return;
+    var w = 32, h = 28, rot = -0.055;
+    var cs = Math.cos(rot), sn = Math.sin(rot);
+    function P2(x, y){ return [cx + x * cs - y * sn, cy + x * sn + y * cs]; }
+    var pts = [P2(-w / 2, -h / 2), P2(w / 2, -h / 2), P2(w / 2, h / 2), P2(-w / 2, h / 2), P2(-w / 2, -h / 2)];
+    strokeWorld(makePath(pts, 2), {
+      color: '#3A352E', width: 1.45, alpha: 0.82, progress: prog, seed: seed, wobble: 0.36
+    });
+    var la = clamp((prog - 0.55) / 0.4);
+    if (la > 0){
+      for (var k = 0; k < lines; k++){
+        var yy = -6 + k * 6;
+        var x1 = (k === lines - 1) ? 1 : 8;
+        strokeWorld(makePath([P2(-8, yy), P2(x1, yy)], 1.5), {
+          color: '#3A352E', width: 1.25, alpha: 0.55 * la, progress: 1, seed: seed + k * 3, wobble: 0.22
+        });
+      }
+    }
+  }
+  function drawBar(i, prog){
+    var r = ROWS[i];
+    var w = r.L * prog;
+    if (w < 0.6) return;
+    var x = BARX, y = r.cy, h = BARH;
+
+    g.save();
+    g.globalAlpha = 0.97;
+    g.fillStyle = r.color;
+    g.fillRect(x, y, w, h);
+    g.beginPath();
+    g.rect(x, y, w, h);
+    g.clip();
+    g.strokeStyle = 'rgba(255,255,255,0.13)';
+    g.lineWidth = 1;
+    for (var k = -h; k < w + h; k += 7){
+      g.beginPath();
+      g.moveTo(x + k, y + h);
+      g.lineTo(x + k + h, y);
+      g.stroke();
+    }
+    g.restore();
+
+    strokeWorld(makePath([[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]], 2), {
+      color: '#2F2A24', width: 1.25, alpha: 0.82, progress: 1, seed: r.seed, wobble: 0.32
+    });
+  }
+  function drawNumber(i, prog){
+    var r = ROWS[i];
+    var a = clamp(prog * 3.2);
+    if (a <= 0) return;
+    var val = Math.round(r.w * 100 * prog);
+    handText(val + '%', AXIS - 10, r.cy + 19, {
+      size: 32, color: P.blueDeep, progress: a, seed: r.seed + 5, alpha: 0.96, align: 'right'
+    });
+  }
+  function drawSources(){
+    var np = clamp((T - 0.80) / 0.52);
+    if (np > 0){
+      handText('相关程度决定权重', 314, 296, {
+        size: 26, color: P.blueInk, progress: np, seed: 3, alpha: 0.95
+      });
+    }
+    var ul = easeOut(clamp((T - 1.30) / 0.36));
+    if (ul > 0){
+      strokeWorld(makePath([[316, 310], [522, 310]], 2), {
+        color: P.blueInk, width: 1.0, alpha: 0.30, progress: ul, seed: 17, wobble: 0.7
+      });
+    }
+
+    var ax = easeOut(clamp((T - 1.05) / 0.55));
+    if (ax > 0){
+      strokeWorld(makePath([[AXIS, 320], [AXIS, 790]], 3), {
+        color: '#B6AB97', width: 1.1, alpha: 0.85, progress: ax, seed: 5, wobble: 0.7
+      });
+    }
+    var wA = clamp((T - 1.55) / 0.35);
+    if (wA > 0) trackText('权重', 316, 820, 17, SERIF, P.soft, 2.4, 0.62 * wA);
+
+    for (var i = 0; i < ROWS.length; i++){
+      var r = ROWS[i];
+      var cardP = clamp((T - (0.86 + i * 0.13)) / 0.42);
+      if (cardP > 0) drawInfoCard(178, r.cy - 30, r.lines, easeOut(cardP), r.seed);
+
+      var lp = clamp((T - (0.95 + i * 0.14)) / 0.50);
+      if (lp > 0){
+        handText(r.label, 314, r.cy - 26, {
+          size: 27, color: '#3B352D', progress: lp, seed: 10 + i * 3, alpha: 0.95
+        });
+      }
+      var bp = pBars[i](T);
+      drawBar(i, bp);
+      drawNumber(i, bp);
+    }
+  }
+
+  // ---------------- drawing: empty result slot ----------------
+  function drawPlaceholder(){
+    var a = clamp((T - 1.30) / 0.45) * (1 - clamp((T - 4.02) / 0.45));
+    if (a <= 0.01) return;
+    var dash = 7, gap = 6;
+    g.save();
+    g.strokeStyle = '#8F8576';
+    g.lineWidth = 1.2;
+    g.globalAlpha = 0.48 * a;
+    g.beginPath();
+    var drawing = false;
+    for (var i = 1; i < STACK_PATH.pts.length; i++){
+      var on = (STACK_PATH.len[i] % (dash + gap)) < dash;
+      if (on && !drawing){
+        g.moveTo(STACK_PATH.pts[i - 1][0], STACK_PATH.pts[i - 1][1]);
+        drawing = true;
+      }
+      if (on && drawing) g.lineTo(STACK_PATH.pts[i][0], STACK_PATH.pts[i][1]);
+      if (!on) drawing = false;
+    }
+    g.stroke();
+    g.restore();
+
+    var la = clamp((T - 1.55) / 0.35) * (1 - clamp((T - 4.05) / 0.35));
+    if (la > 0){
+      g.save();
+      g.font = '400 18px ' + SERIF;
+      var tw = g.measureText('结果').width;
+      g.restore();
+      trackText('结果', 1361 - tw / 2, 338, 18, SERIF, P.soft, 2, 0.66 * la);
+    }
+  }
+
+  // ---------------- drawing: ribbons + flow ----------------
+  var RIB_DONE = [4.16, 4.82, 5.30];
+  function drawRibbons(){
+    for (var i = 0; i < RIB.length; i++){
+      var p = pRibs[i](T);
+      if (p <= 0) continue;
+      var r = RIB[i];
+      strokeWorld(ribPaths[i], {
+        color: 'rgba(60,95,130,0.10)', width: r.wid * 3.1, alpha: 0.9,
+        progress: p, seed: i * 3 + 1, wobble: 0.9
+      });
+      strokeWorld(ribPaths[i], {
+        color: r.color, width: r.wid, alpha: 0.93,
+        progress: p, seed: i * 7 + 3, wobble: 0.85
+      });
+    }
+
+    var flowA = clamp((T - 4.24) / 0.40) * (1 - clamp((T - 6.45) / 0.55));
+    if (flowA <= 0.01) return;
+    for (var j = 0; j < RIB.length; j++){
+      if (T < RIB_DONE[j] + 0.04) continue;
+      var rr = RIB[j];
+      var count = 2 + Math.round(rr.wid * 0.78);
+      for (var k = 0; k < count; k++){
+        var u = (T * 0.30 + k / count + j * 0.23 + hash(k + j * 7) * 0.045) % 1;
+        if (u < 0.05 || u > 0.95) continue;
+        var pt = pathAt(ribPaths[j], u);
+        var a = flowA * Math.pow(Math.sin(Math.PI * u), 0.7) * (0.55 + 0.45 * (rr.wid / 8));
+        var rad = 2.4 + 2.1 * (rr.wid / 8);
+        g.save();
+        g.fillStyle = '#FBF7EE';
+        g.globalAlpha = clamp(a);
+        g.beginPath(); g.arc(pt[0], pt[1], rad, 0, Math.PI * 2); g.fill();
+        g.strokeStyle = rr.color;
+        g.lineWidth = 1.15;
+        g.globalAlpha = clamp(a) * 0.95;
+        g.beginPath(); g.arc(pt[0], pt[1], rad, 0, Math.PI * 2); g.stroke();
+        g.restore();
+      }
+    }
+  }
+
+  // ---------------- drawing: result stack ----------------
+  var SEG_START = [4.16, 4.82, 5.28];
+  var SEG_DUR = [0.40, 0.34, 0.24];
+  function drawStack(){
+    for (var i = 0; i < SEG.length; i++){
+      var u = clamp((T - SEG_START[i]) / SEG_DUR[i]);
+      if (u <= 0) continue;
+      var e = easeOut(u);
+      var segH = SEG[i].h;
+      var ww = lerp(5, STACK.w - 2, e);
+      var hh = lerp(5, segH - 2, e);
+      var top = SEG_TOP[i] + (segH - hh) / 2;
+      g.save();
+      g.globalAlpha = clamp(u * 3.0) * 0.97;
+      g.fillStyle = SEG[i].color;
+      g.fillRect(STACK.x + 1, top, ww, hh);
+      g.globalAlpha = clamp(u * 3.0) * 0.20;
+      g.fillStyle = '#FFFFFF';
+      g.fillRect(STACK.x + 1, top, ww, Math.min(3.2, hh));
+      g.restore();
+
+      g.save();
+      g.beginPath();
+      g.rect(STACK.x + 1, top, ww, hh);
+      g.clip();
+      g.strokeStyle = 'rgba(255,255,255,0.12)';
+      g.lineWidth = 1;
+      g.globalAlpha = clamp(u * 3.0);
+      for (var k = -hh; k < ww + hh; k += 7){
+        g.beginPath();
+        g.moveTo(STACK.x + 1 + k, top + hh);
+        g.lineTo(STACK.x + 1 + k + hh, top);
+        g.stroke();
+      }
+      g.restore();
+    }
+
+    var op = pOutline(T);
+    if (op > 0){
+      strokeWorld(STACK_PATH, {
+        color: '#2F2A24', width: 1.7, alpha: 0.9, progress: op,
+        seed: 31, wobble: 0.38, passes: 2
+      });
+    }
+  }
+
+  // ---------------- drawing: annotations ----------------
+  function drawAnnotations(){
+    var ak = clamp((T - 5.42) / 0.30);
+    trackText('加权汇总', 1470, 404, 19, SERIF, P.soft, 2.6, ak);
+
+    var ah = clamp((T - 5.55) / 0.52);
+    if (ah > 0){
+      handText('当前的表示', 1468, 464, {
+        size: 40, color: P.red, progress: ah, seed: 4, alpha: 0.96
+      });
+    }
+    var as = clamp((T - 5.95) / 0.34);
+    if (as > 0){
+      handText('三项权重合计 100%', 1470, 504, {
+        size: 22, color: P.soft, progress: as, seed: 8, alpha: 0.95
+      });
+    }
+  }
+  function drawRing(){
+    var p = pRing(T);
+    if (p <= 0) return;
+    strokeWorld(RING_PATH, {
+      color: P.red, width: 2.5, alpha: 0.88, progress: p, seed: 7.7, wobble: 0.55, passes: 2
+    });
+  }
+
+  // ---------------- drawing: caption & disclaimer ----------------
+  function drawCaption(){
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    var ruleA = clamp((T - 0.18) / 0.42);
+    g.save();
+    g.globalAlpha = 0.55 * ruleA;
+    g.strokeStyle = P.rule;
+    g.lineWidth = 1;
+    g.beginPath(); g.moveTo(160, 924); g.lineTo(1760, 924); g.stroke();
+    g.restore();
+
+    var comma = NAR.search(/[，,]/);
+    var l1 = comma > 0 ? NAR.slice(0, comma + 1) : NAR;
+    var l2 = comma > 0 ? NAR.slice(comma + 1) : '';
+
+    g.save();
+    g.font = '400 33px ' + SERIF;
+    g.fillStyle = '#2C2823';
+    g.textBaseline = 'alphabetic';
+    g.textAlign = 'left';
+    var chars = Array.from(l1), cx = 160, i, k;
+    for (i = 0; i < chars.length; i++){
+      k = clamp((T - (0.55 + i * 0.014)) / 0.30);
+      if (k > 0){
+        g.globalAlpha = 0.92 * k;
+        g.fillText(chars[i], cx, 976 + (1 - k) * 5);
+      }
+      cx += g.measureText(chars[i]).width;
+    }
+    if (l2){
+      chars = Array.from(l2); cx = 160;
+      for (i = 0; i < chars.length; i++){
+        k = clamp((T - (0.86 + i * 0.014)) / 0.30);
+        if (k > 0){
+          g.globalAlpha = 0.92 * k;
+          g.fillText(chars[i], cx, 1022 + (1 - k) * 5);
+        }
+        cx += g.measureText(chars[i]).width;
+      }
+    }
+    g.restore();
+
+    var da = clamp((T - 5.20) / 0.40);
+    if (da > 0){
+      g.save();
+      g.font = '400 20px ' + HAND;
+      g.fillStyle = '#6B6357';
+      g.textAlign = 'right';
+      g.textBaseline = 'alphabetic';
+      g.globalAlpha = 0.95 * da;
+      g.fillText('数字为教学示意', 1760, 888);
+      g.restore();
+    }
+  }
+
+  // ---------------- pencil performer ----------------
+  var BODY_IMG = null, BODY_SHADOW = null;
+  function pencilImages(){
+    if (BODY_IMG) return;
+    var w = 760, h = 100, ox = 26, oy = 50;
+    var c = document.createElement('canvas'); c.width = w; c.height = h;
+    var q = c.getContext('2d');
+    q.translate(ox, oy);
+    q.beginPath();
+    q.moveTo(0, 0); q.lineTo(30, -13); q.lineTo(30, 13); q.closePath();
+    q.fillStyle = '#E2C69B'; q.fill();
+    q.beginPath();
+    q.moveTo(0, 0); q.lineTo(8.5, -3.4); q.lineTo(8.5, 3.4); q.closePath();
+    q.fillStyle = '#2B2723'; q.fill();
+    q.fillStyle = P.blueDeep; q.fillRect(30, -13, 150, 26);
+    q.fillStyle = P.red; q.fillRect(180, -13, 580, 26);
+    q.fillStyle = 'rgba(255,255,255,0.20)'; q.fillRect(30, -13, 730, 4.5);
+    q.fillStyle = 'rgba(0,0,0,0.17)'; q.fillRect(30, 8.2, 730, 4.8);
+    q.fillStyle = 'rgba(30,20,10,0.35)'; q.fillRect(178, -13, 3.5, 26);
+    q.fillStyle = 'rgba(140,100,50,0.22)';
+    q.beginPath(); q.moveTo(0, 0); q.lineTo(30, 13); q.lineTo(30, 2); q.closePath(); q.fill();
+
+    q.globalCompositeOperation = 'destination-in';
+    var gr = q.createLinearGradient(0, 0, 480, 0);
+    gr.addColorStop(0, 'rgba(0,0,0,1)');
+    gr.addColorStop(0.28, 'rgba(0,0,0,1)');
+    gr.addColorStop(0.55, 'rgba(0,0,0,0.62)');
+    gr.addColorStop(1, 'rgba(0,0,0,0)');
+    q.fillStyle = gr;
+    q.fillRect(-60, -60, 860, 120);
+
+    BODY_IMG = c;
+
+    var d = document.createElement('canvas'); d.width = w; d.height = h;
+    var dq = d.getContext('2d');
+    dq.drawImage(c, 0, 0);
+    dq.globalCompositeOperation = 'source-in';
+    dq.fillStyle = '#3B2E20';
+    dq.fillRect(0, 0, w, h);
+    BODY_SHADOW = d;
+  }
+  function drawPencil(ps){
+    if (!ps || ps.alpha <= 0.005) return;
+    pencilImages();
+    var p = ps.p, lift = ps.lift || 0;
+    var s = 0.72 * (1 + lift * 0.12);
+    var steer = clamp((p[0] - 880) / 420);
+    var ang = lerp(0.74, 1.40, steer) + Math.sin(T * 6.1) * 0.012 + lift * 0.04;
+
+    g.save();
+    g.setTransform(1, 0, 0, 1, 0, 0);
+
+    g.save();
+    g.translate(p[0] + 7 + lift * 18, p[1] + 11 + lift * 24);
+    g.rotate(ang); g.scale(s, s);
+    g.globalAlpha = ps.alpha * 0.16 * (1 - lift * 0.20);
+    g.filter = 'blur(6px)';
+    g.drawImage(BODY_SHADOW, -26, -50);
+    g.restore();
+
+    g.save();
+    g.translate(p[0], p[1]);
+    g.rotate(ang); g.scale(s, s);
+    g.globalAlpha = ps.alpha;
+    g.drawImage(BODY_IMG, -26, -50);
+    g.restore();
+
+    g.restore();
+  }
+  function pencilState(t, cam){
+    var S = function(x, y){ return w2s(cam, x, y); };
+    var barStart = function(i){ return S(BARX, ROWS[i].cy + 10); };
+    var barEnd = function(i){ return S(BARX + ROWS[i].L, ROWS[i].cy + 10); };
+    var barTip = function(i){ return S(BARX + ROWS[i].L * pBars[i](t), ROWS[i].cy + 10); };
+    var ribTip = function(i){ var q = pathAt(ribPaths[i], pRibs[i](t)); return S(q[0], q[1]); };
+    var ribStart = function(i){ return S(RIB[i].s[0], RIB[i].s[1]); };
+    var ribEnd = function(i){ return S(RIB[i].e[0], RIB[i].e[1]); };
+    var outTip = function(){ var q = pathAt(STACK_PATH, pOutline(t)); return S(q[0], q[1]); };
+    var ringTip = function(){ var q = pathAt(RING_PATH, pRing(t)); return S(q[0], q[1]); };
+
+    var alphaIn = clamp((t - 0.55) / 0.18);
+
+    if (t < 0.55) return { p: [2140, 640], lift: 1, alpha: 0 };
+
+    if (t < 1.30){
+      var u1 = easeInOut(clamp((t - 0.55) / 0.75));
+      var a0 = [2110, 700], b0 = barStart(0);
+      var c0 = [1180, 340];
+      var p0 = qbez(a0, c0, b0, u1);
+      return { p: p0, lift: lerp(0.72, 0.20, u1), alpha: alphaIn };
+    }
+    if (t < 1.60){
+      var u2 = (t - 1.30) / 0.30;
+      var bs = barStart(0);
+      return {
+        p: [bs[0] + Math.sin(u2 * Math.PI * 1.4) * 4, bs[1] - 3 - Math.sin(u2 * Math.PI) * 6],
+        lift: lerp(0.20, 0.01, u2),
+        alpha: 1
+      };
+    }
+    if (t < 2.15) return { p: barTip(0), lift: 0.01, alpha: 1 };
+    if (t < 2.30) return travelTo(barEnd(0), barStart(1), (t - 2.15) / 0.15);
+    if (t < 2.76) return { p: barTip(1), lift: 0.01, alpha: 1 };
+    if (t < 2.90) return travelTo(barEnd(1), barStart(2), (t - 2.76) / 0.14);
+    if (t < 3.26) return { p: barTip(2), lift: 0.01, alpha: 1 };
+    if (t < 3.44) return travelTo(barEnd(2), ribStart(0), (t - 3.26) / 0.18);
+    if (t < 4.16) return { p: ribTip(0), lift: 0.01, alpha: 1 };
+    if (t < 4.30) return travelTo(ribEnd(0), ribStart(1), (t - 4.16) / 0.14);
+    if (t < 4.82) return { p: ribTip(1), lift: 0.01, alpha: 1 };
+    if (t < 4.96) return travelTo(ribEnd(1), ribStart(2), (t - 4.82) / 0.14);
+    if (t < 5.30) return { p: ribTip(2), lift: 0.01, alpha: 1 };
+    if (t < 5.60) {
+      var u3 = easeInOut(clamp((t - 5.30) / 0.30));
+      var e3 = ribEnd(2), s3 = S(STACK.x, STACK.top);
+      return {
+        p: qbez(e3, [(e3[0] + s3[0]) / 2 + 20, Math.min(e3[1], s3[1]) - 120], s3, u3),
+        lift: lerp(0.05, 0.25, Math.sin(u3 * Math.PI)),
+        alpha: 1
+      };
+    }
+    if (t < 5.96) return { p: outTip(), lift: 0.01, alpha: 1 };
+    if (t < 6.10){
+      var u4 = easeInOut(clamp((t - 5.96) / 0.14));
+      var r0 = pathAt(RING_PATH, 0);
+      return travelTo(S(STACK.x, STACK.top), S(r0[0], r0[1]), u4);
+    }
+    if (t < 6.70) return { p: ringTip(), lift: 0.01, alpha: 1 };
+    if (t < 7.32){
+      var u5 = easeInOut(clamp((t - 6.70) / 0.62));
+      var r1 = pathAt(RING_PATH, 1);
+      var from = S(r1[0], r1[1]);
+      var to = [980, 1260];
+      return {
+        p: qbez(from, [1180, 740], to, u5),
+        lift: lerp(0.05, 0.58, u5),
+        alpha: 1 - clamp((t - 6.98) / 0.30)
+      };
+    }
+    return { p: [980, 1260], lift: 1, alpha: 0 };
+  }
+  function qbez(a, b, c, u){
+    var v = 1 - u;
+    return [
+      v * v * a[0] + 2 * v * u * b[0] + u * u * c[0],
+      v * v * a[1] + 2 * v * u * b[1] + u * u * c[1]
+    ];
+  }
+  function travelTo(a, b, uRaw){
+    var u = easeInOut(clamp(uRaw));
+    var mid = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    var dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1;
+    var ctrl = [mid[0] - dy / l * 26, mid[1] + dx / l * 26];
+    return { p: qbez(a, ctrl, b, u), lift: 0.30 * Math.sin(u * Math.PI) + 0.05, alpha: 1 };
+  }
+
+  // ---------------- vignette ----------------
+  function drawVignette(){
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    var vg = g.createRadialGradient(W * 0.5, H * 0.46, H * 0.30, W * 0.5, H * 0.50, H * 0.94);
+    vg.addColorStop(0, 'rgba(80,60,35,0)');
+    vg.addColorStop(1, 'rgba(80,60,35,0.085)');
+    g.fillStyle = vg;
+    g.fillRect(0, 0, W, H);
+  }
+
+  // ---------------- frame ----------------
+  function frame(tRaw){
+    T = clamp(Number(tRaw) * BASE / DUR, 0, BASE);
+    var cam = cameraAt(T);
+
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.globalAlpha = 1;
+    g.filter = 'none';
+
+    drawPaper(cam);
+    applyCam(cam);
+
+    drawTitle();
+    drawSources();
+    drawPlaceholder();
+    drawRibbons();
+    drawStack();
+    drawAnnotations();
+    drawRing();
+    drawCaption();
+
+    var ps = pencilState(T, cam);
+    drawPencil(ps);
+
+    drawVignette();
+  }
+
+  window.film = { frame: frame, duration: DUR };
+  frame(0);
+})();
+</script>
+</body>
+</html>

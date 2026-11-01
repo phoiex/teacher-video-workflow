@@ -1,0 +1,253 @@
+[
+  {
+    "style": "warm",
+    "name": "暖色图解",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "protocol": "chat.completions",
+      "harness": "deepseek",
+      "reasoning_effort": "max"
+    },
+    "duration": 8.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "audio": "silent",
+    "sha256": "2afb68c90003552c69e6e61a7dfb9afbad399802ae0c92a7050f74edf8cd6c5c",
+    "bytes": 733986,
+    "source_sha256": "8e8f2a321a0048898d511da68acebd5ac87eafa658b9e85b0fa0ce13640cb6ec",
+    "technical_check": "passed",
+    "visual_check": {
+      "status": "passed",
+      "scope": "已查看成片解码帧1.2、4.0、7.9秒；暖色卡片、分支汇总和权重标注完整，文字没有出框或重叠。",
+      "full_playback_reviewed": false
+    }
+  },
+  {
+    "style": "ascii",
+    "name": "ASCII 终端科技",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "protocol": "chat.completions",
+      "harness": "deepseek",
+      "reasoning_effort": "max"
+    },
+    "duration": 8.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "audio": "silent",
+    "sha256": "1bf602c9d045a463830b48d1f0c4d7de070c862cb770296984cf928a25317fda",
+    "bytes": 983629,
+    "source_sha256": "c58c862a8be1876b7dc99c04f6b1819116713ace2ae12a393ebcf19a0d611aa7",
+    "technical_check": "passed",
+    "visual_check": {
+      "status": "passed",
+      "scope": "已查看成片解码帧1.2、4.0、7.9秒；字符数据流、终端分区和汇总图完整，中文与数字标注没有出框或重叠。",
+      "full_playback_reviewed": false
+    }
+  },
+  {
+    "style": "openfilm",
+    "name": "空间代码动画",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "protocol": "chat.completions",
+      "harness": "deepseek",
+      "reasoning_effort": "max"
+    },
+    "duration": 8.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "audio": "silent",
+    "sha256": "69e7fd80183c224826dab8b8f936433c6286324a7e81e1f68e3bbb86288f8e6b",
+    "bytes": 1226542,
+    "source_sha256": "1cb418d87b68ad3e8d73201b8be7bdcbb95118f5bea11836a58e10db4bf0f877",
+    "technical_check": "passed",
+    "visual_check": {
+      "status": "passed",
+      "scope": "已查看成片解码帧1.2、4.0、7.9秒；空间几何、汇入路径与结果图完整，中文与权重标注没有出框或重叠。",
+      "full_playback_reviewed": false
+    }
+  },
+  {
+    "style": "chalkboard",
+    "name": "黑板粉笔",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "protocol": "chat.completions",
+      "harness": "deepseek",
+      "reasoning_effort": "max"
+    },
+    "duration": 8.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "audio": "silent",
+    "sha256": "4bf7cd3d15dd1d1972389cd4d3a2f42bb94a14c1de629e73c35e6eb50f748d0a",
+    "bytes": 1096601,
+    "source_sha256": "7f14e7185b9832568326d90b91bd8acfd6ac1469c6d17301322637a06385056b",
+    "technical_check": "passed",
+    "visual_check": {
+      "status": "passed",
+      "scope": "已查看成片解码帧1.2、4.0、6.8、7.9秒，文字与连接关系清楚，未见出框、重叠或缺字。",
+      "full_playback_reviewed": false
+    }
+  },
+  {
+    "style": "whiteboard",
+    "name": "手绘白板",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "protocol": "chat.completions",
+      "harness": "deepseek",
+      "reasoning_effort": "max"
+    },
+    "duration": 8.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "audio": "silent",
+    "sha256": "d66d16caeb601c6f33ebe9a02d57f9076c478413ec59ae0c84c62ab9f1e9aa4b",
+    "bytes": 459670,
+    "source_sha256": "f45d01f15ffe5e8e305a0edcf11ae7d2618bc4191161e4a0d708c36d669409eb",
+    "technical_check": "passed",
+    "visual_check": {
+      "status": "passed",
+      "scope": "已查看成片解码帧1.2、4.0、7.9秒；手绘线条逐步展开，片尾文字完整，未见出框或遮挡。",
+      "full_playback_reviewed": false
+    }
+  },
+  {
+    "style": "miniature-diorama",
+    "name": "立体微缩工坊",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "protocol": "chat.completions",
+      "harness": "deepseek",
+      "reasoning_effort": "max"
+    },
+    "duration": 8.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "audio": "silent",
+    "sha256": "a13fff275fb5ec0047f7d64419d05e4d92c4e9d7d5779d613e02ebd5273f12cb",
+    "bytes": 906655,
+    "source_sha256": "0c0cb84c055e512d132f0fd5ae351bb1781bf1ffe72c36775f9c975eaf435893",
+    "technical_check": "passed",
+    "visual_check": {
+      "status": "passed",
+      "scope": "已查看成片解码帧1.2、4.0、7.9秒；台座、管线、容器和标签完整，最终权重为60%、30%、10%，未见出框或遮挡。",
+      "full_playback_reviewed": false
+    }
+  },
+  {
+    "style": "paper-collage",
+    "name": "纸张拼贴",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "protocol": "chat.completions",
+      "harness": "deepseek",
+      "reasoning_effort": "max"
+    },
+    "duration": 8.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "audio": "silent",
+    "sha256": "61d8747d771d190cfe337ee426670c51834bf6854d189ed06b9f1fcc3bab5a7f",
+    "bytes": 1718700,
+    "source_sha256": "9baec1e2e50439ab6a9f1189d1d86a2fb31a1c4ef498f47d6f17b14d2dd80f97",
+    "technical_check": "passed",
+    "visual_check": {
+      "status": "passed",
+      "scope": "已查看1.2、4.0、7.9秒的原导出画面，以及补齐百分号后重新导出的7.9秒画面。文字完整，卡片与条形图没有出框。",
+      "full_playback_reviewed": false
+    },
+    "manual_adjustment": "片尾等式补齐三个加数的百分号后重新导出。"
+  },
+  {
+    "style": "watercolor-character",
+    "name": "水彩角色动画",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "protocol": "chat.completions",
+      "harness": "deepseek",
+      "reasoning_effort": "max"
+    },
+    "duration": 8.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "audio": "silent",
+    "sha256": "e12a404f145fc4d855c8bf1dbe44ebf20ba69b161de6aa2f16acc7628fd918ac",
+    "bytes": 2958002,
+    "source_sha256": "af03e511460acb1f5f55213f4cb21d635cb1ddf9de6171602e52ce03281244a5",
+    "technical_check": "passed",
+    "visual_check": {
+      "status": "passed",
+      "scope": "已查看成片解码帧1.2、4.0、7.9秒；水彩纹理、角色动作、权重标注和片尾结果完整，未见出框或文字重叠。",
+      "full_playback_reviewed": false
+    }
+  },
+  {
+    "style": "data-storytelling",
+    "name": "数据叙事",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "protocol": "chat.completions",
+      "harness": "deepseek",
+      "reasoning_effort": "max"
+    },
+    "duration": 8.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "audio": "silent",
+    "sha256": "baa63e56cc27c4d008dd74543bab89ae7f2d3210cee889cf4711281ab27fad1f",
+    "bytes": 1920555,
+    "source_sha256": "915ba520256063606342030fe798f1f5e2ced02364bc50282ca67e778f4fe25d",
+    "technical_check": "passed",
+    "visual_check": {
+      "status": "passed",
+      "scope": "已查看成片解码帧1.2、4.0、7.9秒；条形长度、汇总图和百分比对应，片尾文字完整，未见出框或重叠。",
+      "full_playback_reviewed": false
+    }
+  },
+  {
+    "style": "kinetic-typography",
+    "name": "极简动态排版",
+    "model": {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "protocol": "chat.completions",
+      "harness": "deepseek",
+      "reasoning_effort": "max"
+    },
+    "duration": 8.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "audio": "silent",
+    "sha256": "ac29660f09fe246bec0ee400a5256ac6dcf6b6f5c9395330d1563269fded842b",
+    "bytes": 566022,
+    "source_sha256": "fae3e3d8944d3a7da6fd9efb20ea38c994324bd5718658707e5be7f5731dfea5",
+    "technical_check": "passed",
+    "visual_check": {
+      "status": "passed",
+      "scope": "已查看成片解码帧1.2、4.0、7.9秒；数字滚入与文字展开正常，片尾标签完整，未见出框或重叠。",
+      "full_playback_reviewed": false
+    }
+  }
+]

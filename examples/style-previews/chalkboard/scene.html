@@ -1,0 +1,1086 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>信息如何聚焦 · 黑板粉笔</title>
+<style>
+  html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#0d0f0e; }
+  canvas { display:block; width:100vw; height:100vh; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1920" height="1080" aria-label="黑板粉笔动画：三条信息按 60%、30%、10% 的示意权重汇入当前表示"></canvas>
+<script>
+(() => {
+'use strict';
+
+/* ───────────────────────── 基础 ───────────────────────── */
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+const W = 1920, H = 1080;
+const TAU = Math.PI * 2;
+const SCENE = window.SCENE || {
+  duration_seconds: 8,
+  caption: '信息如何聚焦',
+  narration: '注意力把不同信息按相关程度分配权重，再汇总成当前需要的表示。'
+};
+const D = Math.max(2, Number(SCENE.duration_seconds) || 8);
+const K = D / 8;
+const at  = s => s * K;
+const dur = s => s * K;
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const lerp  = (a, b, t) => a + (b - a) * t;
+const smooth = t => { t = clamp(t); return t * t * (3 - 2 * t); };
+const easeIO = t => { t = clamp(t); return t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2; };
+const CAPTION = (SCENE && SCENE.caption) ? String(SCENE.caption) : '信息如何聚焦';
+
+const WHITE  = '#f4efe1';
+const PALE   = '#d7d0bd';
+const ORANGE = '#e59a4e';
+
+const HAND = '"Kaiti SC","STKaiti","KaiTi","TW-Kai","LXGW WenKai","Noto Serif CJK SC","Source Han Serif SC","Songti SC","Noto Sans CJK SC","Microsoft YaHei",serif';
+
+/* ───────────────────────── 可复现随机 ───────────────────────── */
+function rng(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a += 0x6D2B79F5;
+    let t = a;
+    t = Math.imul(t ^ t >>> 15, t | 1);
+    t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function hash(n) {
+  const x = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+/* ───────────────────────── 纹理 ───────────────────────── */
+function makeHoleTile(size, seed) {
+  const cnv = document.createElement('canvas');
+  cnv.width = cnv.height = size;
+  const c = cnv.getContext('2d');
+  const img = c.createImageData(size, size);
+  const r = rng(seed);
+  for (let i = 0; i < size * size; i++) {
+    const v = r();
+    let a = 0;
+    if (v < .085) a = 45 + Math.floor(r() * 120);
+    else if (v < .20) a = Math.floor(r() * 30);
+    const q = i * 4;
+    img.data[q] = 0; img.data[q+1] = 0; img.data[q+2] = 0; img.data[q+3] = a;
+  }
+  c.putImageData(img, 0, 0);
+  return cnv;
+}
+function makeBoardGrain(size, seed) {
+  const cnv = document.createElement('canvas');
+  cnv.width = cnv.height = size;
+  const c = cnv.getContext('2d');
+  const img = c.createImageData(size, size);
+  const r = rng(seed);
+  for (let i = 0; i < size * size; i++) {
+    const v = r();
+    let a = 0, col = 255;
+    if (v < .045) { a = 8 + Math.floor(r() * 22); col = 255; }
+    else if (v < .09) { a = 6 + Math.floor(r() * 18); col = 0; }
+    else if (v < .16) { a = 2 + Math.floor(r() * 7); col = 255; }
+    const q = i * 4;
+    img.data[q] = col; img.data[q+1] = col; img.data[q+2] = col; img.data[q+3] = a;
+  }
+  c.putImageData(img, 0, 0);
+  return cnv;
+}
+function makeFilmGrain(size, seed) {
+  const cnv = document.createElement('canvas');
+  cnv.width = cnv.height = size;
+  const c = cnv.getContext('2d');
+  const img = c.createImageData(size, size);
+  const r = rng(seed);
+  for (let i = 0; i < size * size; i++) {
+    const v = r();
+    let a = 0, col = 255;
+    if (v < .42) { a = 2 + Math.floor(r() * 7); col = 255; }
+    else if (v < .84) { a = 2 + Math.floor(r() * 6); col = 0; }
+    const q = i * 4;
+    img.data[q] = col; img.data[q+1] = col; img.data[q+2] = col; img.data[q+3] = a;
+  }
+  c.putImageData(img, 0, 0);
+  return cnv;
+}
+
+const HOLE = makeHoleTile(256, 9182);
+const BOARD_GRAIN = makeBoardGrain(256, 4411);
+const FILM_GRAIN = makeFilmGrain(512, 7351);
+
+/* ───────────────────────── 几何与粉笔线 ───────────────────────── */
+function polyLength(pts) {
+  let s = 0;
+  for (let i = 1; i < pts.length; i++) s += Math.hypot(pts[i].x - pts[i-1].x, pts[i].y - pts[i-1].y);
+  return s;
+}
+function normals(pts) {
+  return pts.map((p, i) => {
+    const a = pts[Math.max(0, i-1)], b = pts[Math.min(pts.length-1, i+1)];
+    const dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy) || 1;
+    return { x: -dy/l, y: dx/l };
+  });
+}
+function trimPolyline(pts, p) {
+  if (!pts || !pts.length) return [];
+  if (p <= 0) return [pts[0]];
+  if (p >= 1) return pts.slice();
+  const total = polyLength(pts);
+  const target = total * p;
+  let acc = 0;
+  const out = [pts[0]];
+  for (let i = 1; i < pts.length; i++) {
+    const seg = Math.hypot(pts[i].x - pts[i-1].x, pts[i].y - pts[i-1].y);
+    if (acc + seg >= target) {
+      const f = (target - acc) / (seg || 1);
+      out.push({ x: lerp(pts[i-1].x, pts[i].x, f), y: lerp(pts[i-1].y, pts[i].y, f) });
+      return out;
+    }
+    acc += seg;
+    out.push(pts[i]);
+  }
+  return out;
+}
+function revealPolygon(pts, halfW) {
+  if (!pts || pts.length < 2) return pts ? pts.slice() : [];
+  const ns = normals(pts), left = [], right = [];
+  for (let i = 0; i < pts.length; i++) {
+    left.push({ x: pts[i].x + ns[i].x * halfW, y: pts[i].y + ns[i].y * halfW });
+    right.push({ x: pts[i].x - ns[i].x * halfW, y: pts[i].y - ns[i].y * halfW });
+  }
+  return left.concat(right.reverse());
+}
+function pathFromPoints(c, pts) {
+  if (!pts || !pts.length) return;
+  c.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) c.lineTo(pts[i].x, pts[i].y);
+}
+function cubicPoints(p0, p1, p2, p3, n) {
+  const out = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, u = 1 - t;
+    out.push({
+      x: u*u*u*p0[0] + 3*u*u*t*p1[0] + 3*u*t*t*p2[0] + t*t*t*p3[0],
+      y: u*u*u*p0[1] + 3*u*u*t*p1[1] + 3*u*t*t*p2[1] + t*t*t*p3[1]
+    });
+  }
+  return out;
+}
+function yAtX(pts, x) {
+  let best = pts[0], bd = Infinity;
+  for (const p of pts) {
+    const d = Math.abs(p.x - x);
+    if (d < bd) { bd = d; best = p; }
+  }
+  return best.y;
+}
+function wavyLine(x0, y0, x1, y1, n, amp, seed) {
+  const out = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    out.push({
+      x: lerp(x0, x1, t),
+      y: lerp(y0, y1, t) + Math.sin(t * Math.PI * 3.2 + seed * .7) * amp + Math.sin(t * Math.PI * 7.1 + seed) * amp * .35
+    });
+  }
+  return out;
+}
+function chalkPolyline(c, pts, width, color, alpha, seed, powder = true) {
+  if (!pts || pts.length < 2) return;
+  const r = rng(seed);
+  const ns = normals(pts);
+  c.save();
+  c.lineCap = 'round';
+  c.lineJoin = 'round';
+  if (powder) {
+    c.strokeStyle = color;
+    c.globalAlpha = alpha * .05;
+    c.lineWidth = width * 2.05;
+    c.beginPath();
+    pathFromPoints(c, pts);
+    c.stroke();
+  }
+  for (let i = 1; i < pts.length; i++) {
+    const j = (r() - .5) * width * .24;
+    const nx = ns[i].x * j, ny = ns[i].y * j;
+    c.globalAlpha = alpha * (.80 + r() * .20);
+    c.lineWidth = width * (.88 + r() * .24);
+    c.strokeStyle = color;
+    c.beginPath();
+    c.moveTo(pts[i-1].x + nx, pts[i-1].y + ny);
+    c.lineTo(pts[i].x + nx, pts[i].y + ny);
+    c.stroke();
+  }
+  c.fillStyle = color;
+  const step = Math.max(5, Math.floor(pts.length / 18));
+  for (let i = 0; i < pts.length; i += step) {
+    const off = (r() - .5) * width * 1.5;
+    c.globalAlpha = alpha * .42;
+    c.beginPath();
+    c.arc(pts[i].x + ns[i].x * off, pts[i].y + ns[i].y * off, .6 + r() * 1.1, 0, TAU);
+    c.fill();
+  }
+  c.restore();
+}
+function drawTip(x, y, w, color, t, seed) {
+  if (!isFinite(x) || !isFinite(y)) return;
+  ctx.save();
+  ctx.fillStyle = color;
+  for (let i = 0; i < 5; i++) {
+    const a = i * 2.399 + Math.sin(t * 2.1 + i) * .5;
+    const d = w * (.18 + .62 * hash(seed + i * 3.1));
+    ctx.globalAlpha = .32 + .30 * (.5 + .5 * Math.sin(t * 3.0 + i * 1.7));
+    ctx.beginPath();
+    ctx.arc(x + Math.cos(a) * d, y + Math.sin(a) * d * .72, .65 + hash(seed + i * 7.7) * 1.5, 0, TAU);
+    ctx.fill();
+  }
+  ctx.globalAlpha = .13;
+  for (let i = 0; i < 2; i++) {
+    ctx.beginPath();
+    ctx.arc(x + (hash(seed + i * 9.3) - .5) * w * 1.6, y + 4 + hash(seed + i * 4.4) * 8, .7 + hash(seed + i * 6.2), 0, TAU);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/* ───────────────────────── 文字 ───────────────────────── */
+const measureCtx = document.createElement('canvas').getContext('2d');
+function fontStr(weight, size, family) { return weight + ' ' + size + 'px ' + family; }
+function measureLine(text, size, weight, family, spacing) {
+  measureCtx.font = fontStr(weight, size, family);
+  const chars = Array.from(text);
+  let w = 0;
+  for (const ch of chars) w += measureCtx.measureText(ch).width;
+  return w + spacing * Math.max(0, chars.length - 1);
+}
+function buildText(o) {
+  const text = String(o.text);
+  const size = o.size;
+  const family = o.family || HAND;
+  const weight = o.weight == null ? 600 : o.weight;
+  const spacing = o.spacing || 0;
+  const chars = Array.from(text);
+  measureCtx.font = fontStr(weight, size, family);
+  const widths = chars.map(ch => measureCtx.measureText(ch).width);
+  let width = 0;
+  for (const w of widths) width += w;
+  width += spacing * Math.max(0, chars.length - 1);
+
+  const padX = Math.ceil(size * .24);
+  const padTop = Math.ceil(size * .26);
+  const padBottom = Math.ceil(size * .32);
+  const lw = Math.ceil(width + padX * 2);
+  const lh = Math.ceil(size + padTop + padBottom);
+  const sc = 2;
+  const cnv = document.createElement('canvas');
+  cnv.width = Math.max(1, Math.ceil(lw * sc));
+  cnv.height = Math.max(1, Math.ceil(lh * sc));
+  const c = cnv.getContext('2d');
+  c.scale(sc, sc);
+  c.font = fontStr(weight, size, family);
+  c.textBaseline = 'alphabetic';
+  c.fillStyle = o.color || WHITE;
+
+  const baseline = padTop + size * .88;
+  const xs = [];
+  let cx = 0;
+  for (let i = 0; i < chars.length; i++) { xs.push(cx); cx += widths[i] + spacing; }
+
+  const pass = (dx, dy, a) => {
+    c.globalAlpha = a;
+    for (let i = 0; i < chars.length; i++) c.fillText(chars[i], padX + xs[i] + dx, baseline + dy);
+  };
+  pass(0, 0, .84);
+  pass(.55, .28, .28);
+  pass(-.45, -.34, .22);
+
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.globalCompositeOperation = 'destination-out';
+  const pat = c.createPattern(HOLE, 'repeat');
+  c.fillStyle = pat;
+  c.globalAlpha = .60;
+  c.fillRect(0, 0, cnv.width, cnv.height);
+  c.globalAlpha = 1;
+  c.globalCompositeOperation = 'source-over';
+
+  return {
+    cnv, w: lw, h: lh, padX, baseline, width,
+    chars: chars.map((ch, i) => ({ ch, x: xs[i], w: widths[i] })),
+    size, color: o.color || WHITE
+  };
+}
+function makeText(o) {
+  const g = buildText(o);
+  let x = o.x || 0;
+  if (o.align === 'right') x = (o.anchorX != null ? o.anchorX : x) - g.width;
+  else if (o.align === 'center') x = (o.anchorX != null ? o.anchorX : x) - g.width / 2;
+  return Object.assign(g, { x, y: o.y || 0 });
+}
+function drawTextBlock(item, t, start, charDur, stagger, alpha) {
+  if (!item || t < start) return;
+  const path = new Path2D();
+  let active = null, any = false;
+  for (let i = 0; i < item.chars.length; i++) {
+    const ch = item.chars[i];
+    const p = clamp((t - (start + i * stagger)) / charDur);
+    if (p <= 0) continue;
+    any = true;
+    const x0 = item.x + ch.x;
+    const y0 = item.y - item.size * .96;
+    const y1 = item.y + item.size * .20;
+    if (p >= 1) {
+      path.rect(x0 - 1.5, y0 - 1, ch.w + 4, y1 - y0 + 2);
+    } else {
+      const e = x0 + ch.w * p;
+      const slant = item.size * .055;
+      path.moveTo(x0 - 1.5, y0 - 1);
+      path.lineTo(Math.min(x0 + ch.w + 1, e + slant), y0 - 1);
+      path.lineTo(Math.min(x0 + ch.w + 1, e - slant), y1 + 1);
+      path.lineTo(x0 - 1.5, y1 + 1);
+      path.closePath();
+      active = { x: e, y: item.y - item.size * .34 };
+    }
+  }
+  if (!any) return;
+  ctx.save();
+  ctx.clip(path);
+  ctx.globalAlpha = alpha == null ? 1 : alpha;
+  ctx.drawImage(item.cnv, item.x - item.padX, item.y - item.baseline, item.w, item.h);
+  ctx.restore();
+  if (active) drawTip(active.x, active.y, item.size * .10 + 3, item.color, t, start * 17 + 3);
+}
+
+/* ───────────────────────── 静态背景 ───────────────────────── */
+function drawWoodBar(c, x, y, w, h, vertical, seed) {
+  const g = vertical
+    ? c.createLinearGradient(x, 0, x + w, 0)
+    : c.createLinearGradient(0, y, 0, y + h);
+  g.addColorStop(0, '#432b19');
+  g.addColorStop(.18, '#765436');
+  g.addColorStop(.48, '#8b6544');
+  g.addColorStop(.78, '#68482e');
+  g.addColorStop(1, '#3a2414');
+  c.fillStyle = g;
+  c.fillRect(x, y, w, h);
+
+  c.save();
+  c.beginPath(); c.rect(x, y, w, h); c.clip();
+  const r = rng(seed);
+  for (let i = 0; i < 18; i++) {
+    const p = (i + .5) / 18;
+    const off = (r() - .5) * 6;
+    c.beginPath();
+    if (vertical) {
+      const gx = x + p * w + off;
+      c.moveTo(gx, y - 4);
+      for (let yy = y; yy <= y + h + 4; yy += 18) c.lineTo(gx + Math.sin(yy * .06 + i * 1.7) * 1.2, yy);
+    } else {
+      const gy = y + p * h + off;
+      c.moveTo(x - 4, gy);
+      for (let xx = x; xx <= x + w + 4; xx += 26) c.lineTo(xx, gy + Math.sin(xx * .035 + i * 1.3) * 1.3);
+    }
+    c.strokeStyle = i % 3 === 0 ? 'rgba(255,226,184,.10)' : 'rgba(37,21,9,.17)';
+    c.lineWidth = .7 + r() * 1.1;
+    c.stroke();
+  }
+  c.restore();
+  c.strokeStyle = 'rgba(255,229,190,.16)';
+  c.lineWidth = 1;
+  c.strokeRect(x + .5, y + .5, w - 1, h - 1);
+}
+function drawChalkStick(c, x, y, len, hgt, color, rot, seed) {
+  c.save();
+  c.translate(x, y);
+  c.rotate(rot);
+  c.shadowColor = 'rgba(0,0,0,.35)';
+  c.shadowBlur = 4;
+  c.shadowOffsetY = 2;
+  c.fillStyle = color;
+  const rr = hgt / 2;
+  c.beginPath();
+  c.roundRect(-len/2, -hgt/2, len, hgt, rr);
+  c.fill();
+  c.shadowColor = 'transparent';
+  c.globalAlpha = .35;
+  c.fillStyle = '#ffffff';
+  c.beginPath();
+  c.roundRect(-len/2 + 4, -hgt/2 + 2, len - 8, 2.5, 1.2);
+  c.fill();
+  c.globalAlpha = .16;
+  c.fillStyle = '#2a1a10';
+  for (let i = 0; i < 7; i++) {
+    const r = rng(seed + i);
+    c.beginPath();
+    c.arc(-len/2 + r() * len, (r() - .5) * hgt * .7, .6 + r() * 1.1, 0, TAU);
+    c.fill();
+  }
+  c.restore();
+}
+function drawEraser(c, x, y, w, h, seed) {
+  c.save();
+  c.shadowColor = 'rgba(0,0,0,.4)';
+  c.shadowBlur = 5;
+  c.shadowOffsetY = 3;
+  c.fillStyle = '#6b4a30';
+  c.beginPath(); c.roundRect(x - w/2, y - h/2, w, h * .62, 3); c.fill();
+  c.shadowColor = 'transparent';
+  c.fillStyle = '#3e3a35';
+  c.fillRect(x - w/2 + 2, y + h * .10, w - 4, h * .38);
+  c.globalAlpha = .22;
+  c.fillStyle = '#d9d0bd';
+  for (let i = 0; i < 12; i++) {
+    const r = rng(seed + i);
+    c.beginPath();
+    c.arc(x - w/2 + 6 + r() * (w - 12), y + h * .14 + r() * h * .28, .5 + r(), 0, TAU);
+    c.fill();
+  }
+  c.restore();
+}
+function buildBackground() {
+  const BW = 2200, BH = 1260;
+  const cnv = document.createElement('canvas');
+  cnv.width = BW; cnv.height = BH;
+  const c = cnv.getContext('2d');
+  c.translate(140, 90);
+
+  const wg = c.createLinearGradient(-140, -90, 2060, 1170);
+  wg.addColorStop(0, '#c8c0b0');
+  wg.addColorStop(.48, '#bbb3a3');
+  wg.addColorStop(1, '#a29a8b');
+  c.fillStyle = wg;
+  c.fillRect(-140, -90, BW, BH);
+
+  c.save();
+  c.globalCompositeOperation = 'screen';
+  const lgt = c.createLinearGradient(-140, 0, 880, 0);
+  lgt.addColorStop(0, 'rgba(255,237,201,.18)');
+  lgt.addColorStop(1, 'rgba(255,237,201,0)');
+  c.fillStyle = lgt;
+  c.fillRect(-140, -90, BW, BH);
+  c.restore();
+
+  c.save();
+  c.globalAlpha = .26;
+  c.globalCompositeOperation = 'soft-light';
+  c.fillStyle = c.createPattern(BOARD_GRAIN, 'repeat');
+  c.fillRect(-140, -90, BW, BH);
+  c.restore();
+
+  c.save();
+  c.shadowColor = 'rgba(16,12,8,.52)';
+  c.shadowBlur = 34;
+  c.shadowOffsetY = 15;
+  c.fillStyle = '#241a10';
+  c.fillRect(10, -10, 1900, 1100);
+  c.restore();
+
+  const F = 34;
+  drawWoodBar(c, 10, -10, F, 1100, true, 11);
+  drawWoodBar(c, 1876, -10, F, 1100, true, 12);
+  drawWoodBar(c, 10, -10, 1900, F, false, 13);
+  drawWoodBar(c, 10, 1056, 1900, F, false, 14);
+  c.strokeStyle = 'rgba(28,16,8,.55)';
+  c.lineWidth = 1.2;
+  [[10, 24, 44, -10], [1876, -10, 1910, 24], [10, 1056, 44, 1090], [1876, 1090, 1910, 1056]].forEach(q => {
+    c.beginPath(); c.moveTo(q[0], q[1]); c.lineTo(q[2], q[3]); c.stroke();
+  });
+  c.strokeStyle = 'rgba(0,0,0,.62)';
+  c.lineWidth = 4;
+  c.strokeRect(44, 24, 1832, 1032);
+  c.strokeStyle = 'rgba(255,229,190,.13)';
+  c.lineWidth = 1.2;
+  c.strokeRect(40.5, 20.5, 1839, 1039);
+
+  c.save();
+  c.beginPath();
+  c.rect(44, 24, 1832, 1032);
+  c.clip();
+
+  const sg = c.createLinearGradient(44, 24, 1876, 1056);
+  sg.addColorStop(0, '#26493d');
+  sg.addColorStop(.42, '#1d3a31');
+  sg.addColorStop(1, '#142a23');
+  c.fillStyle = sg;
+  c.fillRect(44, 24, 1832, 1032);
+
+  const warm = c.createRadialGradient(520, 250, 40, 520, 250, 980);
+  warm.addColorStop(0, 'rgba(255,243,214,.075)');
+  warm.addColorStop(1, 'rgba(255,243,214,0)');
+  c.fillStyle = warm;
+  c.fillRect(44, 24, 1832, 1032);
+
+  const mot = rng(66);
+  for (let i = 0; i < 12; i++) {
+    const x = 100 + mot() * 1680, y = 80 + mot() * 900, rad = 120 + mot() * 260;
+    const col = i % 2 ? 'rgba(120,160,140,.030)' : 'rgba(0,0,0,.035)';
+    const g = c.createRadialGradient(x, y, 0, x, y, rad);
+    g.addColorStop(0, col);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = g;
+    c.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+  }
+
+  c.save();
+  c.globalAlpha = .58;
+  c.fillStyle = c.createPattern(BOARD_GRAIN, 'repeat');
+  c.fillRect(44, 24, 1832, 1032);
+  c.restore();
+
+  const edge = c.createRadialGradient(960, 540, 420, 960, 540, 1180);
+  edge.addColorStop(0, 'rgba(0,0,0,0)');
+  edge.addColorStop(1, 'rgba(0,0,0,.42)');
+  c.fillStyle = edge;
+  c.fillRect(44, 24, 1832, 1032);
+
+  const topShade = c.createLinearGradient(0, 24, 0, 88);
+  topShade.addColorStop(0, 'rgba(0,0,0,.40)');
+  topShade.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = topShade;
+  c.fillRect(44, 24, 1832, 64);
+
+  const leftShade = c.createLinearGradient(44, 0, 106, 0);
+  leftShade.addColorStop(0, 'rgba(0,0,0,.30)');
+  leftShade.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = leftShade;
+  c.fillRect(44, 24, 62, 1032);
+
+  const sp = rng(67);
+  c.fillStyle = '#f1ead8';
+  for (let i = 0; i < 70; i++) {
+    c.globalAlpha = .018 + sp() * .035;
+    c.beginPath();
+    c.arc(44 + sp() * 1832, 24 + sp() * 1032, .5 + sp() * 1.2, 0, TAU);
+    c.fill();
+  }
+  c.globalAlpha = 1;
+  c.restore();
+
+  c.strokeStyle = 'rgba(205,215,200,.10)';
+  c.lineWidth = 1;
+  c.beginPath(); c.moveTo(44, 24.5); c.lineTo(1876, 24.5); c.stroke();
+
+  c.save();
+  c.shadowColor = 'rgba(0,0,0,.5)';
+  c.shadowBlur = 16;
+  c.shadowOffsetY = 7;
+  c.fillStyle = '#24160c';
+  c.fillRect(10, 1050, 1900, 42);
+  c.restore();
+
+  c.fillStyle = '#2a1b10';
+  c.fillRect(10, 1050, 1900, 10);
+
+  const shelf = c.createLinearGradient(0, 1056, 0, 1080);
+  shelf.addColorStop(0, '#8e6946');
+  shelf.addColorStop(1, '#5a3c24');
+  c.fillStyle = shelf;
+  c.fillRect(10, 1056, 1900, 24);
+
+  drawChalkStick(c, 218, 1069, 94, 13, '#f0ebdc', -.018, 21);
+  drawChalkStick(c, 346, 1070, 88, 13, '#d98b4b', .014, 22);
+  drawChalkStick(c, 466, 1069, 64, 12, '#d8c07c', -.008, 23);
+  drawEraser(c, 1598, 1059, 92, 28, 24);
+
+  const ds = rng(25);
+  c.fillStyle = '#f2ecdc';
+  for (let i = 0; i < 46; i++) {
+    c.globalAlpha = .05 + ds() * .12;
+    c.beginPath();
+    c.arc(40 + ds() * 1840, 1062 + ds() * 14, .4 + ds() * 1.1, 0, TAU);
+    c.fill();
+  }
+  c.globalAlpha = 1;
+
+  const lip = c.createLinearGradient(0, 1078, 0, 1098);
+  lip.addColorStop(0, '#7b5738');
+  lip.addColorStop(.28, '#5a3c24');
+  lip.addColorStop(1, '#382313');
+  c.fillStyle = lip;
+  c.fillRect(10, 1078, 1900, 20);
+  c.strokeStyle = 'rgba(255,226,184,.20)';
+  c.lineWidth = 1;
+  c.beginPath(); c.moveTo(10, 1078.5); c.lineTo(1910, 1078.5); c.stroke();
+
+  const below = c.createLinearGradient(0, 1096, 0, 1160);
+  below.addColorStop(0, 'rgba(40,28,18,.20)');
+  below.addColorStop(1, 'rgba(40,28,18,0)');
+  c.fillStyle = below;
+  c.fillRect(10, 1096, 1900, 64);
+
+  return cnv;
+}
+
+/* ───────────────────────── 预渲染曲线与圆环 ───────────────────────── */
+function buildCurveArt(pts, width, color, seed) {
+  const pad = 26;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const p of pts) {
+    minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+    minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+  }
+  const x0 = Math.floor(minX - pad), y0 = Math.floor(minY - pad);
+  const w = Math.ceil(maxX - minX + pad * 2), h = Math.ceil(maxY - minY + pad * 2);
+  const sc = 2;
+  const cnv = document.createElement('canvas');
+  cnv.width = Math.ceil(w * sc); cnv.height = Math.ceil(h * sc);
+  const c = cnv.getContext('2d');
+  c.scale(sc, sc);
+  c.translate(-x0, -y0);
+
+  chalkPolyline(c, pts, width, color, .96, seed);
+
+  const ns = normals(pts);
+  const offPts = pts.map((p, i) => ({
+    x: p.x + ns[i].x * width * .22,
+    y: p.y + ns[i].y * width * .22
+  }));
+  chalkPolyline(c, offPts, width * .42, color, .38, seed + 7, false);
+
+  c.save();
+  c.fillStyle = color;
+  const r = rng(seed + 31);
+  for (let i = 0; i < 76; i++) {
+    const idx = Math.floor(r() * pts.length);
+    const n = ns[idx];
+    const off = (r() - .5) * width * 2.1;
+    c.globalAlpha = .16 + r() * .44;
+    c.beginPath();
+    c.arc(pts[idx].x + n.x * off, pts[idx].y + n.y * off, .5 + r() * 1.4, 0, TAU);
+    c.fill();
+  }
+  c.restore();
+
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.globalCompositeOperation = 'destination-out';
+  c.fillStyle = c.createPattern(HOLE, 'repeat');
+  c.globalAlpha = .50;
+  c.fillRect(0, 0, cnv.width, cnv.height);
+  c.globalCompositeOperation = 'source-over';
+  c.globalAlpha = 1;
+
+  return { cnv, x0, y0, w, h };
+}
+function buildRingArt(cx, cy, R, width, color, seed) {
+  const pts = [];
+  for (let i = 0; i <= 240; i++) {
+    const a = -Math.PI / 2 - .28 + (i / 240) * TAU;
+    const rr = R * (1 + .011 * Math.sin(a * 3 + 1.15) + .005 * Math.sin(a * 7 + .4));
+    pts.push({ x: cx + Math.cos(a) * rr, y: cy + Math.sin(a) * rr });
+  }
+  const pad = 26;
+  const x0 = Math.floor(cx - R - pad), y0 = Math.floor(cy - R - pad);
+  const w = Math.ceil(2 * (R + pad)), h = w;
+  const sc = 2;
+  const cnv = document.createElement('canvas');
+  cnv.width = Math.ceil(w * sc); cnv.height = Math.ceil(h * sc);
+  const c = cnv.getContext('2d');
+  c.scale(sc, sc);
+  c.translate(-x0, -y0);
+
+  chalkPolyline(c, pts, width, color, .96, seed);
+
+  const ns = normals(pts);
+  const outer = pts.map((p, i) => ({
+    x: p.x + ns[i].x * 1.5,
+    y: p.y + ns[i].y * 1.5
+  }));
+  chalkPolyline(c, outer, width * .44, color, .42, seed + 5, false);
+
+  c.save();
+  c.fillStyle = color;
+  const r = rng(seed + 19);
+  for (let i = 0; i < 56; i++) {
+    const a = r() * TAU;
+    const rr = R + (r() - .5) * width * 2.4;
+    c.globalAlpha = .14 + r() * .36;
+    c.beginPath();
+    c.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, .5 + r() * 1.3, 0, TAU);
+    c.fill();
+  }
+  c.restore();
+
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.globalCompositeOperation = 'destination-out';
+  c.fillStyle = c.createPattern(HOLE, 'repeat');
+  c.globalAlpha = .46;
+  c.fillRect(0, 0, cnv.width, cnv.height);
+  c.globalCompositeOperation = 'source-over';
+  c.globalAlpha = 1;
+
+  return { cnv, x0, y0, w, h };
+}
+
+const BG = buildBackground();
+
+/* ───────────────────────── 本课内容模型 ───────────────────────── */
+const CARD_X = 185, CARD_W = 370, CARD_H = 122;
+const cardDefs = [
+  { cy: 390, label: '题干', icon: 'page',  seed: 3101 },
+  { cy: 565, label: '图表', icon: 'chart', seed: 3102 },
+  { cy: 740, label: '干扰', icon: 'noise', seed: 3103 }
+];
+function addSide(out, ax, ay, bx, by, n, amp, phase) {
+  for (let i = 0; i < n; i++) {
+    const t = i / n;
+    const x = lerp(ax, bx, t), y = lerp(ay, by, t);
+    const nx = -(by - ay), ny = (bx - ax);
+    const l = Math.hypot(nx, ny) || 1;
+    const off = Math.sin(t * Math.PI * 2 + phase) * amp + Math.sin(t * Math.PI * 5 + phase * 1.7) * amp * .35;
+    out.push({ x: x + nx / l * off, y: y + ny / l * off });
+  }
+}
+function cardPerimeter(x, y, w, h, seed) {
+  const pts = [];
+  addSide(pts, x - 2, y + 1, x + w + 2, y - 1, 22, 1.0, seed * .11);
+  addSide(pts, x + w + 1, y - 2, x + w - 1, y + h + 2, 20, 1.0, seed * .17);
+  addSide(pts, x + w + 2, y + h + 1, x - 2, y + h - 1, 22, 1.0, seed * .23);
+  addSide(pts, x - 1, y + h + 2, x + 1, y - 2, 20, 1.0, seed * .29);
+  pts.push(pts[0]);
+  return pts;
+}
+for (const cd of cardDefs) {
+  cd.top = cd.cy - CARD_H / 2;
+  cd.borderPts = cardPerimeter(CARD_X, cd.top, CARD_W, CARD_H, cd.seed);
+  cd.labelItem = makeText({
+    text: cd.label, size: 60, color: WHITE, x: 368, y: cd.cy + 21,
+    spacing: 5, weight: 600
+  });
+}
+
+let titleSize = 84;
+while (titleSize > 56 && measureLine(CAPTION, titleSize, 600, HAND, 6) > 620) titleSize -= 4;
+const titleItem = makeText({ text: CAPTION, size: titleSize, color: WHITE, x: 150, y: 178, spacing: 6, weight: 600 });
+const titleUnder = wavyLine(150, 202, 150 + titleItem.width * .92, 203, 54, 1.0, 5);
+const subItem = makeText({ text: '以一道题为例', size: 34, color: PALE, x: 154, y: 245, spacing: 4, weight: 500 });
+const noteItem = makeText({ text: '注：数字为教学示意', size: 31, color: PALE, x: 150, y: 958, spacing: 2, weight: 600 });
+
+const curveDefs = [
+  {
+    p: [[552, 390], [740, 390], [980, 455], [1270, 545]],
+    width: 14, seed: 4101, start: 1.28, end: 2.55,
+    num: '60%', numSize: 82, numStart: 1.95
+  },
+  {
+    p: [[552, 565], [750, 568], [1010, 558], [1270, 545]],
+    width: 9, seed: 4102, start: 1.55, end: 2.85,
+    num: '30%', numSize: 66, numStart: 2.22
+  },
+  {
+    p: [[552, 740], [740, 740], [980, 652], [1270, 545]],
+    width: 5, seed: 4103, start: 1.82, end: 3.15,
+    num: '10%', numSize: 54, numStart: 2.49
+  }
+];
+for (const ln of curveDefs) {
+  ln.points = cubicPoints(ln.p[0], ln.p[1], ln.p[2], ln.p[3], 300);
+  ln.art = buildCurveArt(ln.points, ln.width, WHITE, ln.seed);
+  const lineY = yAtX(ln.points, 800);
+  ln.numItem = makeText({
+    text: ln.num, size: ln.numSize, color: WHITE, align: 'right', anchorX: 900,
+    y: lineY - 51, family: HAND, weight: 600, spacing: 2
+  });
+}
+
+const nodePts = (() => {
+  const out = [];
+  for (let i = 0; i <= 96; i++) {
+    const a = -Math.PI / 2 + (i / 96) * TAU;
+    const rr = 21 * (1 + .035 * Math.sin(a * 3 + .7) + .02 * Math.sin(a * 7));
+    out.push({ x: 1270 + Math.cos(a) * rr, y: 545 + Math.sin(a) * rr });
+  }
+  return out;
+})();
+const plusPts1 = wavyLine(1257, 545, 1283, 545, 12, .3, 8);
+const plusPts2 = wavyLine(1270, 532, 1270, 558, 12, .3, 9);
+const arrowPts = (() => {
+  const out = [];
+  for (let i = 0; i <= 26; i++) {
+    const t = i / 26;
+    out.push({ x: lerp(1296, 1372, t), y: 545 + Math.sin(t * Math.PI) * 1.4 });
+  }
+  return out;
+})();
+const arrowHead1 = wavyLine(1372, 545, 1352, 534, 8, .25, 10);
+const arrowHead2 = wavyLine(1372, 545, 1352, 556, 8, .25, 11);
+
+const RING_C = [1545, 545], RING_R = 145;
+const ringArt = buildRingArt(RING_C[0], RING_C[1], RING_R, 6.4, ORANGE, 6101);
+const resultItem = makeText({
+  text: '当前表示', size: 50, color: WHITE, align: 'center', anchorX: 1545, y: 566,
+  spacing: 7, weight: 600
+});
+
+const closeA = makeText({ text: '注意力', size: 54, color: ORANGE, x: 1316, y: 782, spacing: 5, weight: 600 });
+const closeB = makeText({ text: '=', size: 50, color: WHITE, x: 1508, y: 782, weight: 600 });
+const closeC = makeText({ text: '加权汇总', size: 48, color: WHITE, x: 1556, y: 782, spacing: 5, weight: 600 });
+const closeUnder = wavyLine(1316, 797, 1488, 797, 42, .8, 13);
+
+/* ───────────────────────── 镜头 ───────────────────────── */
+function cameraAt(t) {
+  const a = smooth(clamp(t / at(.9)));
+  let s = lerp(1.035, 1.0, a);
+  const b = easeIO(clamp((t - at(6.0)) / Math.max(.001, at(7.7) - at(6.0))));
+  s = lerp(s, .915, b);
+  return { s, cx: 960, cy: 540 };
+}
+
+/* ───────────────────────── 分镜绘制 ───────────────────────── */
+function drawCards(t) {
+  cardDefs.forEach((cd, i) => {
+    const p = clamp((t - at(.44 + i * .17)) / dur(.34));
+    if (p > 0) {
+      const pts = trimPolyline(cd.borderPts, p);
+      chalkPolyline(ctx, pts, 2.4, WHITE, .80, cd.seed);
+      if (p < 1) {
+        const tip = pts[pts.length - 1];
+        drawTip(tip.x, tip.y, 2.4, WHITE, t, cd.seed + 2);
+      } else {
+        ctx.save();
+        ctx.fillStyle = WHITE;
+        ctx.globalAlpha = .55;
+        ctx.beginPath(); ctx.arc(cd.borderPts[0].x, cd.borderPts[0].y, 1.6, 0, TAU); ctx.fill();
+        ctx.restore();
+      }
+    }
+    const ip = clamp((t - at(.62 + i * .17)) / dur(.34));
+    if (ip > 0) drawIcon(cd, ip);
+  });
+}
+function drawIcon(cd, p) {
+  const cy = cd.cy;
+  let paths = [], dots = [];
+  if (cd.icon === 'page') {
+    const x0 = 256, x1 = 316, y0 = cy - 39, y1 = cy + 39;
+    paths = [
+      { pts: [{x:x0,y:y0},{x:x1,y:y0},{x:x1,y:y1},{x:x0,y:y1},{x:x0,y:y0}], width: 2.7, alpha: .78 },
+      { pts: [{x:x0+12,y:y0+28},{x:x1-12,y:y0+28}], width: 2.7, alpha: .78 },
+      { pts: [{x:x0+12,y:y0+45},{x:x1-20,y:y0+45}], width: 2.7, alpha: .78 },
+      { pts: [{x:x0+12,y:y0+62},{x:x0+38,y:y0+62}], width: 2.7, alpha: .78 }
+    ];
+  } else if (cd.icon === 'chart') {
+    const bx = 256, by = cy + 39, tx = 256, ty = cy - 39;
+    paths = [
+      { pts: [{x:bx,y:by},{x:tx,y:ty}], width: 3.0, alpha: .78 },
+      { pts: [{x:bx,y:by},{x:bx+71,y:by}], width: 3.0, alpha: .78 },
+      { pts: [{x:bx+15,y:by},{x:bx+15,y:by-29}], width: 10, alpha: .70 },
+      { pts: [{x:bx+35,y:by},{x:bx+35,y:by-49}], width: 10, alpha: .70 },
+      { pts: [{x:bx+55,y:by},{x:bx+55,y:by-37}], width: 10, alpha: .70 }
+    ];
+  } else {
+    const arr = [0, -9, 6, -16, 12, -5, 15, -11, 4, -13, 8, 0];
+    const wave = [];
+    for (let i = 0; i < arr.length; i++) wave.push({ x: 256 + i * 5.8, y: cy + 2 + arr[i] });
+    const wave2 = wave.map((p, i) => ({ x: p.x, y: p.y - 19 + Math.sin(i * 1.4) * 3 }));
+    paths = [
+      { pts: wave, width: 3.2, alpha: .78 },
+      { pts: wave2, width: 2.2, alpha: .48 }
+    ];
+    dots = [{ x: 266, y: cy + 31 }, { x: 314, y: cy + 33 }];
+  }
+
+  const total = paths.reduce((s, a) => s + polyLength(a.pts), 0);
+  let left = total * p;
+  for (const a of paths) {
+    if (left <= 0) break;
+    const len = polyLength(a.pts) || 1;
+    const q = clamp(left / len);
+    if (q > 0) {
+      const pts = trimPolyline(a.pts, q);
+      if (pts.length > 1) chalkPolyline(ctx, pts, a.width, WHITE, a.alpha, cd.seed + Math.floor(len));
+    }
+    left -= len;
+  }
+  for (const d of dots) {
+    if (p > .84) {
+      ctx.save();
+      ctx.fillStyle = WHITE;
+      ctx.globalAlpha = .68;
+      ctx.beginPath(); ctx.arc(d.x, d.y, 2.2, 0, TAU); ctx.fill();
+      ctx.restore();
+    }
+  }
+}
+function drawTitle(t) {
+  drawTextBlock(titleItem, t, at(.06), dur(.18), dur(.085), .97);
+  const up = clamp((t - at(.60)) / dur(.35));
+  if (up > 0) {
+    const pts = trimPolyline(titleUnder, up);
+    chalkPolyline(ctx, pts, 2.8, WHITE, .70, 81);
+    if (up < 1) drawTip(pts[pts.length-1].x, pts[pts.length-1].y, 2.8, WHITE, t, 82);
+  }
+  drawTextBlock(subItem, t, at(.70), dur(.10), dur(.045), .72);
+  drawTextBlock(noteItem, t, at(1.24), dur(.085), dur(.034), .62);
+}
+function drawCardLabels(t) {
+  cardDefs.forEach((cd, i) => {
+    drawTextBlock(cd.labelItem, t, at(.78 + i * .17), dur(.12), dur(.055), .95);
+  });
+}
+function drawLines(t) {
+  curveDefs.forEach(ln => {
+    const p = clamp((t - at(ln.start)) / dur(ln.end - ln.start));
+    if (p <= 0) return;
+    const trimmed = trimPolyline(ln.points, p);
+    if (trimmed.length < 2) {
+      const q = trimmed[0];
+      ctx.save(); ctx.fillStyle = WHITE; ctx.globalAlpha = .8;
+      ctx.beginPath(); ctx.arc(q.x, q.y, 2.2, 0, TAU); ctx.fill(); ctx.restore();
+      return;
+    }
+    const tip = trimmed[trimmed.length - 1];
+    const band = revealPolygon(trimmed, ln.width * 1.22 + 5);
+    ctx.save();
+    ctx.beginPath();
+    pathFromPoints(ctx, band);
+    ctx.closePath();
+    ctx.moveTo(trimmed[0].x + ln.width, trimmed[0].y);
+    ctx.arc(trimmed[0].x, trimmed[0].y, ln.width * .82 + 3, 0, TAU);
+    ctx.moveTo(tip.x + ln.width, tip.y);
+    ctx.arc(tip.x, tip.y, ln.width * .82 + 3, 0, TAU);
+    ctx.clip();
+    ctx.drawImage(ln.art.cnv, ln.art.x0, ln.art.y0, ln.art.w, ln.art.h);
+    ctx.restore();
+
+    if (p > .03) {
+      ctx.save();
+      ctx.fillStyle = WHITE;
+      ctx.globalAlpha = .72;
+      ctx.beginPath(); ctx.arc(ln.points[0].x, ln.points[0].y, 2.3, 0, TAU); ctx.fill();
+      ctx.restore();
+    }
+    if (p < .985) drawTip(tip.x, tip.y, ln.width, WHITE, t, ln.seed + 4);
+  });
+}
+function drawNumbers(t) {
+  curveDefs.forEach(ln => {
+    const start = at(ln.numStart);
+    drawTextBlock(ln.numItem, t, start, dur(.105), dur(.045), .96);
+  });
+}
+function drawNodeArrow(t) {
+  const np = clamp((t - at(3.12)) / dur(.22));
+  if (np > 0) {
+    const pts = trimPolyline(nodePts, np);
+    chalkPolyline(ctx, pts, 3.0, WHITE, .84, 7101);
+    if (np < 1) drawTip(pts[pts.length-1].x, pts[pts.length-1].y, 3, WHITE, t, 7102);
+  }
+  const pp = clamp((t - at(3.26)) / dur(.20));
+  if (pp > 0) {
+    chalkPolyline(ctx, trimPolyline(plusPts1, pp), 3.2, WHITE, .85, 7103);
+    chalkPolyline(ctx, trimPolyline(plusPts2, pp), 3.2, WHITE, .85, 7104);
+  }
+  const ap = clamp((t - at(3.34)) / dur(.32));
+  if (ap > 0) {
+    const pts = trimPolyline(arrowPts, ap);
+    chalkPolyline(ctx, pts, 5.0, WHITE, .86, 7105);
+    if (ap < 1) drawTip(pts[pts.length-1].x, pts[pts.length-1].y, 5, WHITE, t, 7106);
+  }
+  const hp = clamp((t - at(3.58)) / dur(.18));
+  if (hp > 0) {
+    chalkPolyline(ctx, trimPolyline(arrowHead1, hp), 4.2, WHITE, .86, 7107);
+    chalkPolyline(ctx, trimPolyline(arrowHead2, hp), 4.2, WHITE, .86, 7108);
+    if (hp < 1) drawTip(1352, 545, 4.2, WHITE, t, 7109);
+  }
+}
+function drawResult(t) {
+  const p = clamp((t - at(3.52)) / dur(1.0));
+  if (p > 0) {
+    const a0 = -Math.PI / 2 - .28;
+    const a1 = a0 + TAU * 1.03 * p;
+    const tipX = RING_C[0] + Math.cos(a1) * RING_R;
+    const tipY = RING_C[1] + Math.sin(a1) * RING_R;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(RING_C[0], RING_C[1]);
+    ctx.arc(RING_C[0], RING_C[1], RING_R + 20, a0, a1);
+    ctx.closePath();
+    ctx.moveTo(tipX + 8, tipY);
+    ctx.arc(tipX, tipY, 8, 0, TAU);
+    ctx.clip();
+    ctx.drawImage(ringArt.cnv, ringArt.x0, ringArt.y0, ringArt.w, ringArt.h);
+    ctx.restore();
+    if (p < .97) drawTip(tipX, tipY, 6.4, ORANGE, t, 6103);
+  }
+  drawTextBlock(resultItem, t, at(4.54), dur(.13), dur(.065), .97);
+}
+function drawClosing(t) {
+  drawTextBlock(closeA, t, at(5.02), dur(.13), dur(.06), .97);
+  drawTextBlock(closeB, t, at(5.22), dur(.12), dur(0), .95);
+  drawTextBlock(closeC, t, at(5.32), dur(.12), dur(.055), .95);
+  const up = clamp((t - at(5.68)) / dur(.30));
+  if (up > 0) {
+    const pts = trimPolyline(closeUnder, up);
+    chalkPolyline(ctx, pts, 3.0, ORANGE, .82, 6105);
+    if (up < 1) drawTip(pts[pts.length-1].x, pts[pts.length-1].y, 3, ORANGE, t, 6106);
+  }
+}
+function drawPost() {
+  const vig = ctx.createRadialGradient(960, 520, 430, 960, 540, 1160);
+  vig.addColorStop(0, 'rgba(0,0,0,0)');
+  vig.addColorStop(.60, 'rgba(0,0,0,.035)');
+  vig.addColorStop(1, 'rgba(0,0,0,.38)');
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  const warm = ctx.createLinearGradient(0, 0, 940, 0);
+  warm.addColorStop(0, 'rgba(255,225,180,.045)');
+  warm.addColorStop(1, 'rgba(255,225,180,0)');
+  ctx.fillStyle = warm;
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'overlay';
+  ctx.globalAlpha = .36;
+  ctx.fillStyle = ctx.createPattern(FILM_GRAIN, 'repeat');
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+}
+
+/* ───────────────────────── 逐帧 ───────────────────────── */
+function frame(t) {
+  t = clamp(Number(t) || 0, 0, D);
+  const cam = cameraAt(t);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0d0f0e';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.save();
+  ctx.translate(cam.cx, cam.cy);
+  ctx.scale(cam.s, cam.s);
+  ctx.translate(-cam.cx, -cam.cy);
+  ctx.drawImage(BG, -140, -90, 2200, 1260);
+
+  drawCards(t);
+  drawTitle(t);
+  drawCardLabels(t);
+  drawLines(t);
+  drawNumbers(t);
+  drawNodeArrow(t);
+  drawResult(t);
+  drawClosing(t);
+
+  ctx.restore();
+  drawPost();
+}
+
+window.film = { frame, duration: D };
+window.render = frame;
+frame(0);
+window.READY = true;
+})();
+</script>
+</body>
+</html>

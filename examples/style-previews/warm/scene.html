@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, initial-scale=1">
+<title>信息如何聚焦</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:100%;height:100%;overflow:hidden;background:#efe4d3;}
+  body{
+    display:flex;align-items:center;justify-content:center;
+    font-family:"Noto Sans CJK SC","Source Han Sans SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    color:#241d17;
+    -webkit-font-smoothing:antialiased;
+  }
+  #film{
+    position:relative;flex:0 0 auto;width:1920px;height:1080px;overflow:hidden;
+    transform-origin:center center;
+    background:
+      radial-gradient(1180px 820px at 62% 57%, #fcf7ec 0%, #f8f0e2 52%, #f2e6d4 100%);
+  }
+  #wash{
+    position:absolute;inset:0;pointer-events:none;
+    background:
+      radial-gradient(720px 520px at 18% 22%, rgba(255,255,255,.50), rgba(255,255,255,0) 65%),
+      linear-gradient(115deg, rgba(255,255,255,.28), rgba(255,255,255,0) 42%);
+  }
+  #grain{
+    position:absolute;inset:0;pointer-events:none;opacity:.55;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.13'/%3E%3C/svg%3E");
+    background-size:180px 180px;
+  }
+  #vignette{
+    position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(125% 105% at 50% 44%, rgba(120,78,42,0) 55%, rgba(120,78,42,.11) 100%);
+  }
+
+  /* ---------- 标题 ---------- */
+  #head{position:absolute;left:140px;top:72px;right:140px;height:248px;z-index:30;}
+  #kicker{
+    position:absolute;left:0;top:0;display:flex;align-items:center;gap:12px;
+    font-size:19px;letter-spacing:2.2px;color:#756553;opacity:0;
+  }
+  #kicker .dot{width:8px;height:8px;border-radius:50%;background:#c2552d;box-shadow:0 0 0 4px rgba(194,85,45,.10);}
+  #kicker .hot{color:#a8532d;font-weight:700;letter-spacing:2.4px;}
+  #page{
+    position:absolute;right:0;top:4px;font-size:17px;letter-spacing:2px;color:#8b7a66;opacity:0;
+  }
+  #title{
+    position:absolute;left:0;top:48px;
+    font-family:"Noto Serif CJK SC","Source Han Serif SC","Songti SC","STSong","SimSun",serif;
+    font-size:88px;font-weight:700;line-height:1.06;letter-spacing:2px;white-space:nowrap;
+    opacity:0;
+  }
+  #titleText{display:inline-block;}
+  #accent{
+    position:absolute;left:2px;top:158px;width:0;height:5px;border-radius:2.5px;
+    background:#c2552d;opacity:0;
+  }
+  #sub{
+    position:absolute;left:2px;top:180px;font-size:26px;line-height:1.3;letter-spacing:.6px;
+    color:#6c5f50;opacity:0;
+  }
+  #rule{position:absolute;left:0;right:0;top:240px;height:1px;background:rgba(60,40,25,.10);}
+  #ruleInk{width:100%;height:100%;background:rgba(60,40,25,.24);transform:scaleX(0);transform-origin:left center;}
+
+  /* ---------- 画布 ---------- */
+  #stage{
+    position:absolute;left:0;top:0;width:1920px;height:1080px;z-index:5;
+    transform-origin:1015px 625px;
+  }
+
+  /* 结果预留框 */
+  #ghost{
+    position:absolute;left:1330px;top:420px;width:440px;height:410px;z-index:1;
+    border:1.5px dashed rgba(160,110,70,.40);border-radius:26px;
+    background:rgba(255,250,241,.30);
+    display:flex;align-items:center;justify-content:center;opacity:0;
+  }
+  .ghost-label{
+    font-size:21px;letter-spacing:7px;padding-left:7px;color:rgba(120,90,65,.48);
+  }
+
+  /* 连线层 */
+  #wires{position:absolute;left:0;top:0;width:1920px;height:1080px;z-index:2;overflow:visible;pointer-events:none;}
+
+  /* ---------- 信息卡 ---------- */
+  .card{
+    position:absolute;z-index:3;border-radius:20px;
+    background:linear-gradient(158deg,#fffdf7 0%,#fdf6ea 100%);
+    border:1px solid rgba(160,95,55,.13);
+    box-shadow:0 18px 36px rgba(95,60,30,.10),0 2px 5px rgba(95,60,30,.05),inset 0 1px 0 rgba(255,255,255,.85);
+    opacity:0;will-change:transform,opacity;
+  }
+  .card .icon{
+    position:absolute;left:20px;top:16px;width:48px;height:48px;border-radius:13px;
+    background:rgba(194,85,45,.08);border:1px solid rgba(194,85,45,.14);
+    transform-origin:50% 50%;
+  }
+  .card .icon svg{position:absolute;left:10px;top:10px;width:28px;height:28px;overflow:visible;}
+  .card .label{
+    position:absolute;left:80px;top:14px;font-size:27px;font-weight:700;line-height:1.2;letter-spacing:.8px;
+  }
+  .card .desc{
+    position:absolute;left:81px;top:52px;font-size:16px;line-height:1.4;letter-spacing:.2px;color:#7e7061;
+  }
+  .card .pct{
+    position:absolute;right:18px;top:8px;font-family:Georgia,"Times New Roman","Noto Serif CJK SC",serif;
+    font-size:46px;font-weight:700;line-height:1;color:#b24d27;font-variant-numeric:tabular-nums;letter-spacing:-.5px;
+  }
+  .card .pct small{font-size:18px;font-weight:700;margin-left:2px;letter-spacing:0;}
+  .card .track{
+    position:absolute;left:20px;bottom:16px;width:240px;height:6px;border-radius:3px;
+    background:rgba(90,60,35,.11);box-shadow:inset 0 1px 2px rgba(90,60,35,.06);overflow:hidden;
+  }
+  .card .fill{height:100%;width:0;border-radius:3px;}
+  #fillA{background:linear-gradient(90deg,#b84a25,#c2552d);}
+  #fillB{background:linear-gradient(90deg,#c66c3f,#d07a50);}
+  #fillC{background:linear-gradient(90deg,#cd8a5e,#d9a077);}
+  .card .port{
+    position:absolute;right:-4px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;
+    background:#c2552d;box-shadow:0 0 0 4px rgba(194,85,45,.12);opacity:0;
+  }
+
+  /* ---------- 聚焦透镜 ---------- */
+  #lens{
+    position:absolute;left:1015px;top:625px;width:420px;height:420px;z-index:6;
+    transform:translate(-50%,-50%);opacity:0;
+  }
+  #lensGlow{
+    position:absolute;left:-90px;top:-90px;width:600px;height:600px;border-radius:50%;
+    background:radial-gradient(circle at 50% 50%,rgba(194,85,45,.24) 0%,rgba(194,85,45,.08) 44%,rgba(194,85,45,0) 68%);
+    opacity:.2;
+  }
+  #lensSvg{
+    position:absolute;left:0;top:0;width:420px;height:420px;overflow:visible;
+    filter:drop-shadow(0 16px 24px rgba(120,75,40,.12));
+  }
+  #lensLabel{
+    position:absolute;left:1015px;top:816px;z-index:8;
+    transform:translateX(-50%);
+    padding:8px 16px 9px 19px;border-radius:999px;
+    background:rgba(255,250,241,.94);border:1px solid rgba(160,100,60,.22);
+    font-size:16px;letter-spacing:3px;color:#a8532d;
+    box-shadow:0 6px 16px rgba(100,60,30,.07);
+    opacity:0;white-space:nowrap;
+  }
+
+  /* ---------- 结果卡 ---------- */
+  #result{
+    position:absolute;left:1330px;top:420px;width:440px;height:410px;z-index:7;
+    border-radius:26px;overflow:hidden;
+    background:linear-gradient(158deg,#fffaf2 0%,#fcf2e2 100%);
+    border:1px solid rgba(160,95,55,.17);
+    box-shadow:0 28px 60px rgba(95,55,25,.14),0 4px 10px rgba(95,55,25,.06),inset 0 1px 0 rgba(255,255,255,.92);
+    opacity:0;transform-origin:50% 50%;
+  }
+  #result .topline{
+    position:absolute;left:0;top:0;width:100%;height:3px;
+    background:linear-gradient(90deg,#c2552d 0%,#d98a63 42%,rgba(217,138,99,0) 92%);
+    opacity:.85;
+  }
+  #rEyebrow{
+    position:absolute;left:0;right:0;top:32px;text-align:center;
+    font-size:14px;letter-spacing:5px;color:#a8532d;opacity:0;
+  }
+  #rMark{
+    position:absolute;left:50%;top:64px;transform:translateX(-50%) scale(.82);transform-origin:50% 50%;
+    opacity:0;mix-blend-mode:multiply;
+  }
+  #rTitle{
+    position:absolute;left:0;right:0;top:112px;text-align:center;
+    font-family:"Noto Serif CJK SC","Source Han Serif SC","Songti SC","STSong","SimSun",serif;
+    font-size:38px;font-weight:700;line-height:1.15;letter-spacing:2px;opacity:0;
+  }
+  #rSub{
+    position:absolute;left:0;right:0;top:166px;text-align:center;
+    font-size:15.5px;letter-spacing:.6px;color:#7b6a58;opacity:0;
+  }
+  #bar{
+    position:absolute;left:42px;top:224px;width:356px;height:24px;border-radius:9px;overflow:hidden;
+    background:rgba(90,60,35,.07);display:flex;opacity:0;
+  }
+  .seg{height:100%;width:0;flex:0 0 auto;}
+  .seg-a{background:#bf4f2a;box-shadow:inset -1.5px 0 0 rgba(255,250,241,.85);}
+  .seg-b{background:#d38157;box-shadow:inset -1.5px 0 0 rgba(255,250,241,.85);}
+  .seg-c{background:#e3b492;}
+  #barLabels{
+    position:absolute;left:0;top:256px;width:440px;height:18px;
+    font-size:14px;color:#7d6b57;
+  }
+  #barLabels span{
+    position:absolute;top:0;display:flex;align-items:center;gap:5px;
+    transform:translateX(-50%);opacity:0;white-space:nowrap;
+  }
+  #barLabels i{display:block;width:6px;height:6px;border-radius:50%;}
+  #formula{
+    position:absolute;left:0;right:0;top:296px;text-align:center;
+    font-size:16px;letter-spacing:.4px;color:#7a6854;opacity:0;
+  }
+  #rRule{
+    position:absolute;left:42px;right:42px;top:326px;height:1px;
+    background:rgba(120,85,55,.13);opacity:0;
+  }
+  #rNote{
+    position:absolute;left:0;right:0;top:342px;text-align:center;
+    font-size:14.5px;line-height:1.4;letter-spacing:.3px;color:#806c57;
+    font-variant-numeric:tabular-nums;opacity:0;
+  }
+  #sweep{
+    position:absolute;left:0;top:-60px;width:120px;height:530px;pointer-events:none;
+    background:linear-gradient(90deg,rgba(255,252,244,0) 0%,rgba(255,252,244,.72) 50%,rgba(255,252,244,0) 100%);
+    opacity:0;
+  }
+
+  /* ---------- 页脚 ---------- */
+  #foot{
+    position:absolute;left:140px;top:938px;z-index:30;display:flex;align-items:center;gap:10px;
+    font-size:16px;letter-spacing:.6px;color:#7c6a56;opacity:0;
+  }
+  #foot .dot{width:6px;height:6px;border-radius:50%;background:rgba(194,85,45,.55);}
+</style>
+</head>
+<body>
+<div id="film">
+  <div id="wash"></div>
+  <div id="grain"></div>
+  <div id="vignette"></div>
+
+  <div id="head">
+    <div id="kicker"><span class="dot"></span><span><span class="hot">注意力</span>机制 · 权重图解</span></div>
+    <div id="page">示意短片 · 01 / 01</div>
+    <h1 id="title"><span id="titleText">信息如何聚焦</span></h1>
+    <div id="accent"></div>
+    <div id="sub">按相关程度分配权重，汇成当前需要的表示</div>
+    <div id="rule"><div id="ruleInk"></div></div>
+  </div>
+
+  <div id="stage">
+    <div id="ghost"><div class="ghost-label">加权汇总</div></div>
+
+    <svg id="wires" width="1920" height="1080" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="beamGrad" gradientUnits="userSpaceOnUse" x1="1204" y1="632" x2="1332" y2="656">
+          <stop offset="0" stop-color="#c2552d" stop-opacity="0.06"/>
+          <stop offset="0.45" stop-color="#c2552d" stop-opacity="0.52"/>
+          <stop offset="1" stop-color="#c2552d" stop-opacity="0.84"/>
+        </linearGradient>
+        <radialGradient id="packetGrad">
+          <stop offset="0" stop-color="#fff6e6" stop-opacity="1"/>
+          <stop offset="0.34" stop-color="#e8a266" stop-opacity="0.9"/>
+          <stop offset="1" stop-color="#c2552d" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+
+      <path id="ribbonA" d="M542 450 C 690 446, 764 520, 854 594" fill="none" stroke="rgba(184,76,38,.20)" stroke-width="30" stroke-linecap="round"/>
+      <path id="ribbonB" d="M542 658 C 682 658, 764 638, 854 634" fill="none" stroke="rgba(200,110,65,.34)" stroke-width="15" stroke-linecap="round"/>
+      <path id="ribbonC" d="M542 854 C 702 860, 786 744, 854 678" fill="none" stroke="rgba(205,140,95,.46)" stroke-width="5" stroke-linecap="round"/>
+
+      <path id="coreA" d="M542 450 C 690 446, 764 520, 854 594" fill="none" stroke="#b84c26" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="2 12" opacity="0"/>
+      <path id="coreB" d="M542 658 C 682 658, 764 638, 854 634" fill="none" stroke="#c26a3d" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="2 12" opacity="0"/>
+      <path id="coreC" d="M542 854 C 702 860, 786 744, 854 678" fill="none" stroke="#c08a62" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 12" opacity="0"/>
+
+      <g id="particles"></g>
+
+      <path id="beam" d="M1204 632 C 1248 636, 1292 650, 1332 656" fill="none" stroke="url(#beamGrad)" stroke-width="22" stroke-linecap="round" opacity="0"/>
+      <path id="beamCore" d="M1204 632 C 1248 636, 1292 650, 1332 656" fill="none" stroke="#e6a06b" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="2 12" opacity="0"/>
+
+      <circle id="packetGlow" r="22" fill="url(#packetGrad)" opacity="0"/>
+      <circle id="packetCore" r="5" fill="#c2552d" opacity="0"/>
+    </svg>
+
+    <div class="card" id="cardA" style="left:160px;top:372px;width:380px;height:156px;">
+      <div class="icon" id="iconA">
+        <svg viewBox="0 0 34 34" fill="none" stroke="#b34a24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="7" y="5" width="20" height="24" rx="3.2"/>
+          <path d="M12 11h10M12 16h10M12 21h6"/>
+          <circle cx="21.2" cy="24" r="2.2" fill="#c2552d" stroke="none"/>
+        </svg>
+      </div>
+      <div class="label">关键条件</div>
+      <div class="desc">与当前问题直接相关</div>
+      <div class="pct"><span id="pctA">0</span><small>%</small></div>
+      <div class="track"><div class="fill" id="fillA"></div></div>
+      <div class="port" id="portA"></div>
+    </div>
+
+    <div class="card" id="cardB" style="left:200px;top:584px;width:340px;height:148px;">
+      <div class="icon" id="iconB">
+        <svg viewBox="0 0 34 34" fill="none" stroke="#b34a24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7 27.5h20"/>
+          <rect x="8.5" y="17" width="4.5" height="7.5" rx="1.4"/>
+          <rect x="15" y="12" width="4.5" height="12.5" rx="1.4"/>
+          <rect x="21.5" y="7.5" width="4.5" height="17" rx="1.4"/>
+        </svg>
+      </div>
+      <div class="label">补充线索</div>
+      <div class="desc">帮助补全理解</div>
+      <div class="pct"><span id="pctB">0</span><small>%</small></div>
+      <div class="track"><div class="fill" id="fillB"></div></div>
+      <div class="port" id="portB"></div>
+    </div>
+
+    <div class="card" id="cardC" style="left:240px;top:788px;width:300px;height:132px;">
+      <div class="icon" id="iconC">
+        <svg viewBox="0 0 34 34" fill="#b34a24" stroke="none">
+          <circle cx="9" cy="11" r="2.2" opacity=".55"/>
+          <circle cx="18" cy="8" r="1.6" opacity=".35"/>
+          <circle cx="26" cy="13" r="2.6" opacity=".5"/>
+          <circle cx="13" cy="20" r="3" opacity=".45"/>
+          <circle cx="23" cy="22" r="2" opacity=".3"/>
+          <circle cx="8" cy="27" r="1.5" opacity=".3"/>
+          <circle cx="18.5" cy="27" r="2.4" opacity=".4"/>
+        </svg>
+      </div>
+      <div class="label">背景信息</div>
+      <div class="desc">相关程度较低</div>
+      <div class="pct"><span id="pctC">0</span><small>%</small></div>
+      <div class="track"><div class="fill" id="fillC"></div></div>
+      <div class="port" id="portC"></div>
+    </div>
+
+    <div id="lens">
+      <div id="lensGlow"></div>
+      <svg id="lensSvg" viewBox="-210 -210 420 420" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="lensFill">
+            <stop offset="0" stop-color="#fff9ee" stop-opacity="0.96"/>
+            <stop offset="0.55" stop-color="#f8ead7" stop-opacity="0.68"/>
+            <stop offset="0.84" stop-color="#efd8bd" stop-opacity="0.34"/>
+            <stop offset="1" stop-color="#e8ceb1" stop-opacity="0.12"/>
+          </radialGradient>
+          <radialGradient id="coreGrad">
+            <stop offset="0" stop-color="#fff6e7" stop-opacity="1"/>
+            <stop offset="0.42" stop-color="#e8a266" stop-opacity="0.85"/>
+            <stop offset="1" stop-color="#c2552d" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+
+        <circle id="dashRing" r="186" fill="none" stroke="rgba(194,85,45,.26)" stroke-width="1.1" stroke-dasharray="2 10"/>
+        <g id="ticks"></g>
+
+        <circle r="132" fill="url(#lensFill)"/>
+        <circle r="132" fill="none" stroke="rgba(160,95,55,.15)" stroke-width="1.2"/>
+        <circle r="146" fill="none" stroke="rgba(120,75,45,.10)" stroke-width="14"/>
+
+        <circle id="arcA" r="146" fill="none" stroke="#bf4f2a" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 917" opacity="0" transform="rotate(-90)"/>
+        <circle id="arcB" r="146" fill="none" stroke="#c96a3b" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 917" opacity="0" transform="rotate(-90)"/>
+        <circle id="arcC" r="146" fill="none" stroke="#d99a6d" stroke-width="11" stroke-linecap="round" stroke-dasharray="0 917" opacity="0" transform="rotate(-90)"/>
+
+        <circle r="124" fill="none" stroke="rgba(120,85,55,.12)" stroke-width="1"/>
+
+        <g id="crosshair" stroke="rgba(194,85,45,.24)" stroke-width="1" stroke-linecap="round">
+          <line x1="-108" y1="0" x2="-70" y2="0"/>
+          <line x1="70" y1="0" x2="108" y2="0"/>
+          <line x1="0" y1="-108" x2="0" y2="-70"/>
+          <line x1="0" y1="70" x2="0" y2="108"/>
+        </g>
+
+        <circle id="pulse" r="146" fill="none" stroke="#c2552d" stroke-width="2" opacity="0"/>
+        <polygon id="iris" points="0,-96 83,48 -83,48" fill="rgba(194,85,45,.06)" stroke="rgba(150,85,45,.62)" stroke-width="2" stroke-linejoin="round"/>
+        <polygon id="iris2" points="" fill="none" stroke="rgba(150,85,45,.26)" stroke-width="1.2" stroke-linejoin="round"/>
+        <g id="irisDots" fill="#c2552d"></g>
+
+        <circle id="coreHalo" r="32" fill="url(#coreGrad)" opacity=".2"/>
+        <circle id="core" r="5.5" fill="#b84d25" opacity=".3"/>
+      </svg>
+    </div>
+
+    <div id="lensLabel">聚焦</div>
+
+    <div id="result">
+      <div class="topline"></div>
+      <div id="rEyebrow">加权汇总</div>
+      <svg id="rMark" width="74" height="38" viewBox="0 0 74 38" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="19" cy="19" r="13" fill="rgba(191,79,42,.10)" stroke="#bf4f2a" stroke-width="1.4"/>
+        <circle cx="37" cy="19" r="13" fill="rgba(201,106,59,.10)" stroke="#c96a3b" stroke-width="1.4"/>
+        <circle cx="55" cy="19" r="13" fill="rgba(217,154,109,.12)" stroke="#d99a6d" stroke-width="1.4"/>
+      </svg>
+      <div id="rTitle">当前表示</div>
+      <div id="rSub">注意力加权后的结果</div>
+
+      <div id="bar">
+        <div id="segElA" class="seg seg-a"></div>
+        <div id="segElB" class="seg seg-b"></div>
+        <div id="segElC" class="seg seg-c"></div>
+      </div>
+
+      <div id="barLabels">
+        <span style="left:148.8px;"><i style="background:#bf4f2a;"></i>60%</span>
+        <span style="left:309px;"><i style="background:#d38157;"></i>30%</span>
+        <span style="left:380.2px;"><i style="background:#e3b492;"></i>10%</span>
+      </div>
+
+      <div id="formula">0.6 × 关键 + 0.3 × 补充 + 0.1 × 背景</div>
+      <div id="rRule"></div>
+      <div id="rNote">60% + 30% + 10% = 100%</div>
+      <div id="sweep"></div>
+    </div>
+  </div>
+
+  <div id="foot"><span class="dot"></span><span>权重为教学示意，非真实测量</span></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var NS = "http://www.w3.org/2000/svg";
+  var $ = function(id){ return document.getElementById(id); };
+
+  var film = $("film");
+  function fit(){
+    var s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    film.style.transform = "scale(" + s + ")";
+  }
+  window.addEventListener("resize", fit);
+  fit();
+
+  function clamp01(v){ return v < 0 ? 0 : (v > 1 ? 1 : v); }
+  function seg(a, b, x){ return clamp01((x - a) / (b - a)); }
+  function eOutCubic(x){ return 1 - Math.pow(1 - x, 3); }
+  function eInOut(x){ return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
+  function hash(n){
+    var v = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+    return v - Math.floor(v);
+  }
+
+  /* ---------- 透镜刻度 ---------- */
+  var ticks = $("ticks");
+  for (var ti = 0; ti < 36; ti++){
+    var ta = ti * 10 * Math.PI / 180;
+    var major = (ti % 9 === 0);
+    var r1 = 158;
+    var r2 = major ? 173 : 166;
+    var ln = document.createElementNS(NS, "line");
+    ln.setAttribute("x1", (Math.cos(ta) * r1).toFixed(2));
+    ln.setAttribute("y1", (Math.sin(ta) * r1).toFixed(2));
+    ln.setAttribute("x2", (Math.cos(ta) * r2).toFixed(2));
+    ln.setAttribute("y2", (Math.sin(ta) * r2).toFixed(2));
+    ln.setAttribute("stroke", major ? "rgba(194,85,45,.55)" : "rgba(120,85,55,.27)");
+    ln.setAttribute("stroke-width", major ? "1.6" : "1");
+    ticks.appendChild(ln);
+  }
+
+  /* ---------- 六边形光圈 ---------- */
+  var iris = $("iris");
+  var iris2 = $("iris2");
+  var irisDots = $("irisDots");
+  var dotEls = [];
+  for (var di = 0; di < 6; di++){
+    var dc = document.createElementNS(NS, "circle");
+    dc.setAttribute("r", "2.1");
+    dc.setAttribute("opacity", ".55");
+    irisDots.appendChild(dc);
+    dotEls.push(dc);
+  }
+
+  /* ---------- 卡片 ---------- */
+  var cardDefs = [
+    {key:"A", start:0.82, count:1.05, weight:60, sStart:2.35},
+    {key:"B", start:1.02, count:1.25, weight:30, sStart:2.55},
+    {key:"C", start:1.22, count:1.45, weight:10, sStart:2.75}
+  ];
+  cardDefs.forEach(function(c){
+    c.el = $("card" + c.key);
+    c.pct = $("pct" + c.key);
+    c.fill = $("fill" + c.key);
+    c.port = $("port" + c.key);
+    c.icon = $("icon" + c.key);
+  });
+
+  /* ---------- 流线 ---------- */
+  var streams = [
+    {key:"A", path:$("ribbonA"), core:$("coreA"), start:2.35, count:18, sizeMin:3.4, sizeMax:6.4, color:"#b84c26", alpha:0.95},
+    {key:"B", path:$("ribbonB"), core:$("coreB"), start:2.55, count:10, sizeMin:2.8, sizeMax:4.8, color:"#c26a3d", alpha:0.9},
+    {key:"C", path:$("ribbonC"), core:$("coreC"), start:2.75, count:5, sizeMin:2.2, sizeMax:3.6, color:"#c08a62", alpha:0.85}
+  ];
+  var particleLayer = $("particles");
+  streams.forEach(function(st, si){
+    st.len = st.path.getTotalLength();
+    st.particles = [];
+    for (var i = 0; i < st.count; i++){
+      var c = document.createElementNS(NS, "circle");
+      var r = st.sizeMin + hash(i * 3 + si * 17 + 1) * (st.sizeMax - st.sizeMin);
+      c.setAttribute("r", r.toFixed(2));
+      c.setAttribute("fill", st.color);
+      c.setAttribute("opacity", "0");
+      particleLayer.appendChild(c);
+      st.particles.push({
+        el:c,
+        phase:(i + 0.35 + hash(i + si * 23) * 0.22) / st.count,
+        alpha:0.55 + hash(i * 5 + si * 7 + 3) * 0.45
+      });
+    }
+  });
+
+  var ARC_C = 2 * Math.PI * 146;
+  var arcDefs = [
+    {el:$("arcA"), start:2.55, end:3.80, from:0, frac:0.60},
+    {el:$("arcB"), start:2.75, end:4.00, from:0.60, frac:0.30},
+    {el:$("arcC"), start:2.95, end:4.20, from:0.90, frac:0.10}
+  ];
+
+  var beam = $("beam");
+  var beamCore = $("beamCore");
+  var beamLen = beam.getTotalLength();
+
+  var lens = $("lens");
+  var lensGlow = $("lensGlow");
+  var lensLabel = $("lensLabel");
+  var ghost = $("ghost");
+  var result = $("result");
+  var stage = $("stage");
+
+  var rEyebrow = $("rEyebrow");
+  var rMark = $("rMark");
+  var rTitle = $("rTitle");
+  var rSub = $("rSub");
+  var bar = $("bar");
+  var segElA = $("segElA");
+  var segElB = $("segElB");
+  var segElC = $("segElC");
+  var barLabels = $("barLabels").children;
+  var formula = $("formula");
+  var rRule = $("rRule");
+  var rNote = $("rNote");
+  var sweep = $("sweep");
+
+  var titleText = $("titleText");
+  var lastCap = "";
+
+  var core = $("core");
+  var coreHalo = $("coreHalo");
+  var pulse = $("pulse");
+  var crosshair = $("crosshair");
+  var dashRing = $("dashRing");
+
+  function render(t){
+    var scene = window.SCENE || {};
+    var dur = Number(scene.duration_seconds) || 8;
+    if (dur < 0.2) dur = 0.2;
+    var p = Math.min(8, Math.max(0, (t / dur) * 8));
+    var cap = scene.caption || "信息如何聚焦";
+    if (cap !== lastCap){ titleText.textContent = cap; lastCap = cap; }
+
+    /* 标题 */
+    var headIn = eOutCubic(seg(0.06, 0.76, p));
+    var title = $("title");
+    title.style.opacity = headIn.toFixed(3);
+    title.style.transform = "translateY(" + ((1 - headIn) * 24).toFixed(2) + "px)";
+
+    var kick = eOutCubic(seg(0.0, 0.5, p));
+    $("kicker").style.opacity = kick.toFixed(3);
+    var pageIn = eOutCubic(seg(0.14, 0.6, p));
+    $("page").style.opacity = pageIn.toFixed(3);
+
+    var acc = eOutCubic(seg(0.55, 1.12, p));
+    var accent = $("accent");
+    accent.style.width = (62 * acc).toFixed(2) + "px";
+    accent.style.opacity = (acc * 0.9).toFixed(3);
+
+    var subIn = eOutCubic(seg(0.34, 0.94, p));
+    var sub = $("sub");
+    sub.style.opacity = subIn.toFixed(3);
+    sub.style.transform = "translateY(" + ((1 - subIn) * 10).toFixed(2) + "px)";
+
+    $("ruleInk").style.transform = "scaleX(" + eOutCubic(seg(0.28, 1.02, p)).toFixed(4) + ")";
+
+    /* 相机 */
+    var cam = eInOut(seg(0.2, 6.35, p));
+    stage.style.transform = "scale(" + (1 + 0.016 * cam).toFixed(5) + ")";
+
+    /* 预留结果框 */
+    ghost.style.opacity = (0.82 * seg(0.9, 1.6, p) * (1 - seg(5.3, 5.65, p))).toFixed(3);
+
+    /* 卡片 */
+    cardDefs.forEach(function(c, idx){
+      var q = eOutCubic(seg(c.start, c.start + 0.66, p));
+      c.el.style.opacity = q.toFixed(3);
+      c.el.style.transform = "translateY(" + ((1 - q) * 28).toFixed(2) + "px) scale(" + (0.968 + 0.032 * q).toFixed(4) + ")";
+
+      var cnt = eOutCubic(seg(c.count, c.count + 0.9, p));
+      var v = Math.round(c.weight * cnt);
+      c.pct.textContent = String(v);
+      c.fill.style.width = (2.4 * v).toFixed(2) + "px";
+
+      var act = seg(c.sStart, c.sStart + 0.4, p) * (1 - seg(5.0, 5.55, p));
+      c.port.style.opacity = (act * 0.9).toFixed(3);
+      c.icon.style.transform = "scale(" + (1 + 0.055 * act).toFixed(3) + ")";
+      c.el.style.borderColor = "rgba(160,95,55," + (0.13 + 0.10 * act).toFixed(3) + ")";
+    });
+
+    /* 信息流 */
+    streams.forEach(function(st, si){
+      var fade = seg(st.start, st.start + 0.5, p) * (1 - seg(4.85, 5.5, p));
+      st.ribbon = st.ribbon || $("ribbon" + st.key);
+      st.ribbon.style.opacity = (fade * 0.95).toFixed(3);
+      st.core.style.opacity = (fade * 0.9).toFixed(3);
+      st.core.setAttribute("stroke-dashoffset", String(-(p * 68 + si * 13)));
+
+      for (var i = 0; i < st.particles.length; i++){
+        var q = st.particles[i];
+        if (fade <= 0.001){
+          q.el.setAttribute("opacity", "0");
+          continue;
+        }
+        var u = ((p - st.start) * 0.42 + q.phase) % 1;
+        if (u < 0) u += 1;
+        var pt = st.path.getPointAtLength(u * st.len);
+        q.el.setAttribute("cx", pt.x.toFixed(2));
+        q.el.setAttribute("cy", pt.y.toFixed(2));
+        var edge = Math.sin(Math.PI * u);
+        var o = fade * (0.18 + 0.82 * edge) * q.alpha;
+        q.el.setAttribute("opacity", o.toFixed(3));
+      }
+    });
+
+    /* 环形权重 */
+    arcDefs.forEach(function(a){
+      var prog = eInOut(seg(a.start, a.end, p));
+      var gap = prog > 0.002 ? 15 : 0;
+      var len = Math.max(0, ARC_C * a.frac * prog - gap);
+      var start = ARC_C * a.from + gap / 2;
+      a.el.setAttribute("stroke-dasharray", len.toFixed(2) + " " + ARC_C.toFixed(2));
+      a.el.setAttribute("stroke-dashoffset", (-start).toFixed(2));
+      a.el.setAttribute("opacity", prog > 0.001 ? "0.94" : "0");
+    });
+
+    /* 透镜 */
+    var lin = eOutCubic(seg(1.15, 2.05, p));
+    var close = eInOut(seg(3.25, 4.85, p));
+    lens.style.opacity = lin.toFixed(3);
+    lens.style.transform = "translate(-50%,-50%) scale(" + (0.94 + 0.06 * lin + 0.012 * close).toFixed(4) + ")";
+
+    var focus = eOutCubic(seg(3.5, 4.85, p));
+    core.setAttribute("r", (5.5 + 3.5 * focus).toFixed(2));
+    core.setAttribute("opacity", (0.28 + 0.72 * focus).toFixed(3));
+    coreHalo.setAttribute("r", (32 + 10 * focus).toFixed(2));
+    coreHalo.setAttribute("opacity", (0.18 + 0.5 * focus).toFixed(3));
+    lensGlow.style.opacity = (0.18 + 0.55 * eInOut(seg(2.4, 4.9, p)) + 0.12 * focus).toFixed(3);
+
+    var pu = seg(4.25, 5.4, p);
+    var pe = eOutCubic(pu);
+    pulse.setAttribute("r", (146 + 95 * pe).toFixed(2));
+    pulse.setAttribute("opacity", (pu > 0 ? (1 - pe) * 0.55 : 0).toFixed(3));
+
+    var ir = 96 - 54 * close;
+    var irot = (14 + 10 * close) * Math.PI / 180;
+    var pts = [];
+    var pts2 = [];
+    for (var k = 0; k < 6; k++){
+      var ang = irot + k * Math.PI / 3;
+      var px = Math.cos(ang) * ir;
+      var py = Math.sin(ang) * ir;
+      pts.push(px.toFixed(2) + "," + py.toFixed(2));
+      if (dotEls[k]){
+        dotEls[k].setAttribute("cx", px.toFixed(2));
+        dotEls[k].setAttribute("cy", py.toFixed(2));
+      }
+      var ang2 = ang + Math.PI / 6;
+      var r2 = ir * 0.7;
+      pts2.push((Math.cos(ang2) * r2).toFixed(2) + "," + (Math.sin(ang2) * r2).toFixed(2));
+    }
+    iris.setAttribute("points", pts.join(" "));
+    iris2.setAttribute("points", pts2.join(" "));
+    crosshair.setAttribute("opacity", (0.6 * (1 - 0.55 * close)).toFixed(3));
+    ticks.setAttribute("transform", "rotate(" + (-10 + p * 2.5).toFixed(2) + ")");
+    dashRing.setAttribute("transform", "rotate(" + (p * 4).toFixed(2) + ")");
+
+    var lab = eOutCubic(seg(3.4, 3.85, p));
+    lensLabel.style.opacity = lab.toFixed(3);
+    lensLabel.style.transform = "translateX(-50%) translateY(" + ((1 - lab) * 6).toFixed(2) + "px)";
+
+    /* 输出光束 */
+    var bp = eOutCubic(seg(5.12, 5.62, p));
+    var beamOp = seg(5.08, 5.22, p) * (1 - 0.55 * seg(6.2, 6.9, p));
+    beam.style.opacity = beamOp.toFixed(3);
+    beam.setAttribute("stroke-dasharray", beamLen.toFixed(2));
+    beam.setAttribute("stroke-dashoffset", (beamLen * (1 - bp)).toFixed(2));
+
+    var bc = seg(5.45, 5.72, p);
+    beamCore.style.opacity = (bc * 0.85).toFixed(3);
+    beamCore.setAttribute("stroke-dashoffset", String(-(p * 58)));
+
+    var pk = seg(5.16, 5.70, p);
+    if (pk > 0 && pk < 1){
+      var bpnt = beam.getPointAtLength(pk * beamLen);
+      var po = Math.sin(Math.PI * pk) * 0.95;
+      $("packetGlow").setAttribute("cx", bpnt.x.toFixed(2));
+      $("packetGlow").setAttribute("cy", bpnt.y.toFixed(2));
+      $("packetGlow").setAttribute("opacity", po.toFixed(3));
+      $("packetCore").setAttribute("cx", bpnt.x.toFixed(2));
+      $("packetCore").setAttribute("cy", bpnt.y.toFixed(2));
+      $("packetCore").setAttribute("opacity", po.toFixed(3));
+    } else {
+      $("packetGlow").setAttribute("opacity", "0");
+      $("packetCore").setAttribute("opacity", "0");
+    }
+
+    /* 结果卡 */
+    var rv = eOutCubic(seg(5.48, 5.90, p));
+    result.style.opacity = rv.toFixed(3);
+    result.style.transform = "translateY(" + ((1 - rv) * 14).toFixed(2) + "px) scale(" + (0.985 + 0.015 * rv).toFixed(4) + ")";
+
+    rEyebrow.style.opacity = seg(5.50, 5.72, p).toFixed(3);
+
+    var mk = seg(5.52, 5.86, p);
+    rMark.style.opacity = mk.toFixed(3);
+    rMark.style.transform = "translateX(-50%) scale(" + (0.82 + 0.18 * eOutCubic(mk)).toFixed(3) + ")";
+
+    var rt = eOutCubic(seg(5.55, 5.86, p));
+    rTitle.style.opacity = rt.toFixed(3);
+    rTitle.style.transform = "translateY(" + ((1 - rt) * 8).toFixed(2) + "px)";
+
+    rSub.style.opacity = seg(5.65, 5.90, p).toFixed(3);
+    bar.style.opacity = seg(5.68, 5.90, p).toFixed(3);
+
+    var s1 = eOutCubic(seg(5.75, 6.10, p));
+    var s2 = eOutCubic(seg(5.92, 6.26, p));
+    var s3 = eOutCubic(seg(6.08, 6.42, p));
+    segElA.style.width = (213.6 * s1).toFixed(2) + "px";
+    segElB.style.width = (106.8 * s2).toFixed(2) + "px";
+    segElC.style.width = (35.6 * s3).toFixed(2) + "px";
+
+    barLabels[0].style.opacity = seg(5.96, 6.12, p).toFixed(3);
+    barLabels[1].style.opacity = seg(6.12, 6.28, p).toFixed(3);
+    barLabels[2].style.opacity = seg(6.28, 6.44, p).toFixed(3);
+
+    var fm = eOutCubic(seg(6.32, 6.62, p));
+    formula.style.opacity = fm.toFixed(3);
+    formula.style.transform = "translateY(" + ((1 - fm) * 5).toFixed(2) + "px)";
+
+    rRule.style.opacity = seg(6.5, 6.7, p).toFixed(3);
+    rNote.style.opacity = seg(6.55, 6.78, p).toFixed(3);
+
+    var sw = eInOut(seg(6.15, 6.9, p));
+    sweep.style.opacity = (Math.sin(Math.PI * sw) * 0.62).toFixed(3);
+    sweep.style.transform = "translateX(" + (-220 + 700 * sw).toFixed(2) + "px) rotate(9deg)";
+
+    /* 页脚 */
+    var ft = eOutCubic(seg(1.8, 2.4, p));
+    var foot = $("foot");
+    foot.style.opacity = ft.toFixed(3);
+    foot.style.transform = "translateY(" + ((1 - ft) * 6).toFixed(2) + "px)";
+  }
+
+  window.film = { frame: render };
+  render(0);
+})();
+</script>
+</body>
+</html>

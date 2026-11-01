@@ -1,5 +1,9 @@
 # Style reference credits
 
+## 本项目参考短片
+
+`videos/` 中的十段8秒视频、`posters/` 中的封面，以及 `examples/style-previews/` 中的场景由本项目使用 DeepSeek Flash（max）生成，制作日期为2026-11-01。风格参考来源按下方各项保留；视频未使用原作音乐。场景源码与视频按本项目 MIT 许可发布，引用的第三方代码与材料继续遵循对应许可。
+
 Original workspace samples: warm.png, ascii.png, openfilm.png.
 
 ## 黑板粉笔
