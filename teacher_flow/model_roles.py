@@ -10,8 +10,10 @@ CURRENT = ContextVar('course_model_roles', default=None)
 DEFAULT_MODEL_ROLES = {
     'planner': {'provider': 'deepseek', 'model': 'deepseek-flash', 'protocol': 'chat.completions',
                 'harness': 'deepseek', 'reasoning_effort': 'max'},
-    'writer': {'provider': 'qwen', 'model': 'qwen3.8-max', 'protocol': 'chat.completions', 'enable_thinking': True},
-    'editor': {'provider': 'qwen', 'model': 'qwen3.8-max', 'protocol': 'chat.completions', 'enable_thinking': True},
+    'writer': {'provider': 'qwen', 'model': 'qwen3.8-max', 'protocol': 'chat.completions',
+               'enable_thinking': True, 'reasoning_effort': 'xhigh'},
+    'editor': {'provider': 'qwen', 'model': 'qwen3.8-max', 'protocol': 'chat.completions',
+               'enable_thinking': True, 'reasoning_effort': 'xhigh'},
     'producer': {'provider': 'deepseek', 'model': 'deepseek-flash', 'protocol': 'chat.completions',
                  'harness': 'deepseek', 'reasoning_effort': 'max'},
 }

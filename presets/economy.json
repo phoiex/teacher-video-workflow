@@ -10,13 +10,15 @@
     "provider": "qwen",
     "model": "qwen3.8-max",
     "protocol": "chat.completions",
-    "enable_thinking": true
+    "enable_thinking": true,
+    "reasoning_effort": "xhigh"
   },
   "editor": {
     "provider": "qwen",
     "model": "qwen3.8-max",
     "protocol": "chat.completions",
-    "enable_thinking": true
+    "enable_thinking": true,
+    "reasoning_effort": "xhigh"
   },
   "producer": {
     "provider": "deepseek",

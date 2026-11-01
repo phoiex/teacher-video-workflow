@@ -37,8 +37,8 @@ workflow:
     value: '{"planner": {"provider": "deepseek", "model": "deepseek-flash", "protocol":
       "chat.completions", "harness": "deepseek", "reasoning_effort": "max"}, "writer":
       {"provider": "qwen", "model": "qwen3.8-max", "protocol": "chat.completions",
-      "enable_thinking": true}, "editor": {"provider": "qwen", "model": "qwen3.8-max",
-      "protocol": "chat.completions", "enable_thinking": true}, "producer": {"provider":
+      "enable_thinking": true, "reasoning_effort": "xhigh"}, "editor": {"provider": "qwen", "model": "qwen3.8-max",
+      "protocol": "chat.completions", "enable_thinking": true, "reasoning_effort": "xhigh"}, "producer": {"provider":
       "deepseek", "model": "deepseek-flash", "protocol": "chat.completions", "harness":
       "deepseek", "reasoning_effort": "max"}}'
     value_type: string

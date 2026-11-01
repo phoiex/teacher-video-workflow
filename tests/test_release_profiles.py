@@ -43,20 +43,22 @@ class ReleaseProfilesTests(unittest.TestCase):
             self.assertEqual(generate.call_args.args[3], [{'path': 'fixture.png'}])
 
     def test_qwen_thinking_wire_and_cache(self):
-        profile = self.profile('economy')['writer']
-        event = Obj(id='fixture', model=profile['model'], usage=None,
-                    choices=[Obj(delta=Obj(content='{"script":"测试稿"}'), finish_reason='stop')])
-        create = Mock(side_effect=lambda **_: contextlib.nullcontext(iter([event])))
-        client = Obj(chat=Obj(completions=Obj(create=create)))
-        with tempfile.TemporaryDirectory() as tmp, patch.object(model_call, 'RUNTIME', Path(tmp)), \
-             patch.dict(os.environ, {'QWEN_API_KEY': 'fixture-only'}), \
-             patch('openai.OpenAI', side_effect=lambda **_: contextlib.nullcontext(client)):
-            for _ in range(2):
-                self.assertEqual(model_call.generate('draft', '写稿', {}, profile=profile), {'script': '测试稿'})
-            self.assertEqual(create.call_count, 1)
-            self.assertEqual(create.call_args.kwargs['extra_body'], {'enable_thinking': True})
-            self.assertNotIn('reasoning_effort', create.call_args.kwargs)
-            self.assertNotIn('max_tokens', create.call_args.kwargs)
+        for role in ('writer', 'editor'):
+            with self.subTest(role=role):
+                profile = self.profile('economy')[role]
+                event = Obj(id='fixture', model=profile['model'], usage=None,
+                            choices=[Obj(delta=Obj(content='{"script":"测试稿"}'), finish_reason='stop')])
+                create = Mock(side_effect=lambda **_: contextlib.nullcontext(iter([event])))
+                client = Obj(chat=Obj(completions=Obj(create=create)))
+                with tempfile.TemporaryDirectory() as tmp, patch.object(model_call, 'RUNTIME', Path(tmp)), \
+                     patch.dict(os.environ, {'QWEN_API_KEY': 'fixture-only'}), \
+                     patch('openai.OpenAI', side_effect=lambda **_: contextlib.nullcontext(client)):
+                    for _ in range(2):
+                        self.assertEqual(model_call.generate(role, '写稿', {}, profile=profile), {'script': '测试稿'})
+                    self.assertEqual(create.call_count, 1)
+                    self.assertEqual(create.call_args.kwargs['extra_body'], {'enable_thinking': True})
+                    self.assertEqual(create.call_args.kwargs['reasoning_effort'], 'xhigh')
+                    self.assertNotIn('max_tokens', create.call_args.kwargs)
 
     def test_qwen_key_can_share_dashscope_and_gemini_has_own_endpoint(self):
         with patch.dict(os.environ, {'QWEN_API_KEY': '', 'DASHSCOPE_API_KEY': 'fixture-only',

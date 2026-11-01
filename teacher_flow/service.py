@@ -53,7 +53,7 @@ def stream_operation(fn, *args):
 @app.get("/health")
 def health():
     return {"ok":True,"service":"teacher-flow","model":default_roles()['producer']['model'],
-            "version":"0.2.1", "available_harnesses":["codex", "deepseek"],
+            "version":"0.2.2", "available_harnesses":["codex", "deepseek"],
             "generation_on_install":False,"shutting_down":SHUTTING_DOWN,
             "storyboard_model":default_roles()['producer']['model'],
             "storyboard_backend":default_roles()['producer'].get('harness', 'codex')}

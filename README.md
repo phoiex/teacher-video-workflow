@@ -7,7 +7,7 @@
 → 讲稿确认 → 制作分镜 → 分镜确认（可选）→ 配音与渲染 → 下载成片和工程
 ```
 
-**v0.2.1 为十种风格补齐了参考短片。** 两套模型方案的功能相同。 10 种风格预设、图片与视频参考、课件解析、审核弹窗、实时进度、暂停和断点重试都由两套方案共用。老师从 Dify 发布页制作课程，需要编辑节点时进入「流程与测试」。
+**v0.2.2 将千问写稿和独立改写默认设为最高思考档。** 两套模型方案的功能相同。 10 种风格预设、图片与视频参考、课件解析、审核弹窗、实时进度、暂停和断点重试都由两套方案共用。老师从 Dify 发布页制作课程，需要编辑节点时进入「流程与测试」。
 
 [播放十种风格样片](https://phoiex.github.io/teacher-video-workflow/) · [样片与源码](examples/style-previews/README.md)
 
@@ -26,7 +26,7 @@
 
 推荐重视讲稿和画面效果的课程使用 **Gemini 写稿、Claude 制作视频**；日常试课和批量制作可先用 **DeepSeek＋Qwen**。这两套名称表示推荐取向，实际费用随文本量、制作轮数和服务商计费变化。
 
-GPT、Claude 与 DeepSeek 示例设为 `max`；Qwen 开启 `enable_thinking`，未指定额外思考档位；Gemini 使用服务默认值。模型名与参数都可修改。每课保存启动时的分工，旧课重试继续使用原配置。
+GPT、Claude 与 DeepSeek 示例设为 `max`；Qwen3.8-Max 开启思考，写稿和独立改写均设为最高档 `xhigh`；Gemini 使用服务默认值。Qwen 的三个档位是 `low`、`medium`、`xhigh`，兼容值 `max` 也映射到 `xhigh`，见[官方参数说明](https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions/)。模型名与参数都可修改。每课保存启动时的分工，旧课重试继续使用原配置。
 
 ## 需要开通哪些服务
 
