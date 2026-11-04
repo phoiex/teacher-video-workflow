@@ -16,10 +16,12 @@ def main():
     presets = json.loads((ROOT / 'assets/style/catalog.json').read_text())['presets']
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('style', choices=[p['id'] for p in presets if p.get('preview_video')])
+    parser.add_argument('--language', choices=['zh', 'en'], default='zh')
     args = parser.parse_args()
-    source = ROOT / 'examples/style-previews' / args.style
+    variant = Path(args.style) if args.language == 'zh' else Path(args.language) / args.style
+    source = ROOT / 'examples/style-previews' / variant
     scene = json.loads((source / 'scene.json').read_text())
-    output = ROOT / '.runtime/style-previews' / args.style
+    output = ROOT / '.runtime/style-previews' / variant
     output.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source / 'scene.html', output / 'scene.html')
     audio = output / 'silence.wav'

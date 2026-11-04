@@ -154,6 +154,11 @@ const RunOnce: FC<IRunOnceProps> = ({
                           item.type === 'select' && (
                             <StylePreviewOptions
                               options={item.options || []}
+                              courseLanguage={
+                                typeof inputs.course_language === 'string'
+                                  ? inputs.course_language
+                                  : undefined
+                              }
                               value={selectValue ?? defaultSelectValue ?? undefined}
                               onChange={(value) =>
                                 handleInputsChange({ ...inputsRef.current, [item.key]: value })

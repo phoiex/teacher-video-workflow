@@ -1076,6 +1076,8 @@
   "tabs.unconfiguredStartDisabledTip": "ມີໂນດເລີ່ມຕົ້ນທີ່ຍັງບໍ່ໄດ້ຕັ້ງຄ່າໃນ Canvas. ກະລຸນາຕັ້ງຄ່າໃຫ້ສຳເລັດກ່ອນ.",
   "tabs.utilities": "ເຄື່ອງມືອຳນວຍຄວາມສະດວກ",
   "tabs.workflowTool": "Workflow",
+  "teacherStyle.followCourse": "Follow course",
+  "teacherStyle.previewLanguage": "Preview language",
   "tracing.stopBy": "ຢຸດໂດຍ {{user}}",
   "triggerStatus.enabled": "TRIGGER",
   "variableReference.assignedVarsDescription": "ຕົວປ່ຽນທີ່ຖືກກຳນົດຄ່າຕ້ອງເປັນຕົວປ່ຽນທີ່ຂຽນໄດ້ ເຊັ່ນ ຕົວປ່ຽນການສົນທະນາ.",

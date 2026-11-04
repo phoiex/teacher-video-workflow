@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How attention works — Attention</title>
+<style>
+  html,body{margin:0;height:100%;background:#100d09;overflow:hidden}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+  canvas{display:block;width:min(100vw,177.78vh);height:min(56.25vw,100vh);background:#D2B58E}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c" width="1920" height="1080"></canvas></div>
+<script>
+(() => {
+'use strict';
+
+/* ============================================================
+   How attention works — 纸张拼贴 / attention weighting diagram
+   Every pixel is a pure function of t. 12 fps stepped motion,
+   resting pieces boil at 6 fps with a seeded +-1.5 px hand jitter.
+   ============================================================ */
+
+const cv = document.getElementById('c');
+const X  = cv.getContext('2d');
+const W = 1920, H = 1080, TAU = Math.PI * 2, DEG = Math.PI / 180;
+
+const SC = window.SCENE || {};
+const D  = Math.max(2, Number(SC.duration_seconds) || 8);
+const CAPTION = ((SC.caption || 'How attention works') + '').trim();
+const U  = D / 8;                       // all cues are written for 8 s
+
+const INK   = '#1C1711';
+const CREAM = '#F4EEDF';
+const RED   = '#C0271C';
+const BLUE  = '#3A6EA5';
+const KRAFT = '#D2B58E';
+
+const SANS  = '"PingFang SC","Noto Sans SC","Source Han Sans SC","Microsoft YaHei","Hiragino Sans GB",sans-serif';
+const SERIF = '"Songti SC","STSong","Noto Serif SC","Noto Serif CJK SC","Source Han Serif SC","Source Han Serif CN","SimSun",serif';
+const MONO  = '"JetBrains Mono","IBM Plex Mono","SFMono-Regular",Menlo,Consolas,monospace';
+
+/* ---------------- utils ---------------- */
+const clamp = (v,a=0,b=1)=> v<a?a:(v>b?b:v);
+const lerp  = (a,b,u)=> a+(b-a)*u;
+const eOut  = x => 1-Math.pow(1-clamp(x),3);
+
+function hash(a,b=0){
+  a = a|0; b = b|0;
+  let h = (Math.imul(a,374761393) + Math.imul(b,668265263) + 1013904223)|0;
+  h = Math.imul(h^(h>>>13), 1274126177);
+  h ^= h>>>16;
+  return (h>>>0)/4294967296;
+}
+const stepI = t => Math.floor(t*12 + 1e-4);
+function jit(id,t,amp=2,fps=12){
+  const k = Math.floor(t*fps + 1e-4);
+  return [ (hash(id,k)*2-1)*amp, (hash(id+71,k)*2-1)*amp, (hash(id+913,k)*2-1)*amp*0.0016 ];
+}
+function slap(t,t0,pre=3){
+  const k = stepI(t) - Math.round(t0*12);
+  if (k < -pre) return null;
+  if (k < 0){ const u = (-k)/pre; return {s:1+0.30*u*u+0.05*u, lift:u, k}; }
+  if (k === 0) return {s:0.972, lift:0, k, sq:1};
+  if (k === 1) return {s:1.008, lift:0.02, k};
+  return {s:1, lift:0, k};
+}
+function mk(w,h){ const c=document.createElement('canvas'); c.width=w; c.height=h; return c; }
+function bez2(p0,p1,p2,p3,u){
+  const v=1-u;
+  return [ v*v*v*p0[0]+3*v*v*u*p1[0]+3*v*u*u*p2[0]+u*u*u*p3[0],
+           v*v*v*p0[1]+3*v*v*u*p1[1]+3*v*u*u*p2[1]+u*u*u*p3[1] ];
+}
+
+/* ---------------- paper textures ---------------- */
+function makeKraft(){
+  const c = mk(W,H), g = c.getContext('2d');
+  g.fillStyle = KRAFT; g.fillRect(0,0,W,H);
+  for (let i=0;i<900;i++){
+    const x=hash(i,1)*W, y=hash(i,2)*H, r=40+hash(i,3)*190;
+    g.fillStyle = `rgba(${(108+hash(i,4)*50)|0},${(82+hash(i,5)*36)|0},${(50+hash(i,6)*26)|0},${0.012+hash(i,7)*0.022})`;
+    g.beginPath(); g.arc(x,y,r,0,TAU); g.fill();
+  }
+  for (let i=0;i<12000;i++){
+    const x=hash(i,8)*W, y=hash(i,9)*H, a=hash(i,10)*TAU, L=2+hash(i,11)*12;
+    g.strokeStyle = `rgba(${(84+hash(i,12)*66)|0},${(64+hash(i,13)*50)|0},${(36+hash(i,14)*36)|0},${0.04+hash(i,15)*0.09})`;
+    g.lineWidth = 0.7+hash(i,16)*1.1;
+    g.beginPath(); g.moveTo(x,y); g.lineTo(x+Math.cos(a)*L, y+Math.sin(a)*L); g.stroke();
+  }
+  const rg = g.createRadialGradient(W*0.46,H*0.42,160,W*0.5,H*0.5,H*1.02);
+  rg.addColorStop(0,'rgba(255,248,230,0.10)');
+  rg.addColorStop(1,'rgba(58,32,8,0.16)');
+  g.fillStyle = rg; g.fillRect(0,0,W,H);
+  return c;
+}
+
+function makeCreamTex(){
+  const S=256, c=mk(S,S), g=c.getContext('2d');
+  g.fillStyle='#F4EEDF'; g.fillRect(0,0,S,S);
+  for (let i=0;i<2400;i++){
+    const x=hash(i,21)*S, y=hash(i,22)*S;
+    g.fillStyle = `rgba(${(126+hash(i,23)*70)|0},${(106+hash(i,24)*60)|0},${(74+hash(i,25)*52)|0},${0.03+hash(i,26)*0.05})`;
+    g.fillRect(x,y,1+hash(i,27)*2,1+hash(i,28)*2);
+  }
+  for (let i=0;i<90;i++){
+    g.fillStyle='rgba(150,128,96,0.035)';
+    g.fillRect(0, hash(i,29)*S, S, 1);
+  }
+  return c;
+}
+
+function makeNewsTex(){
+  const S=420, c=mk(S,S), g=c.getContext('2d');
+  g.fillStyle='#EDE6D5'; g.fillRect(0,0,S,S);
+  for (let col=0; col<4; col++){
+    const x0 = 10 + col*104;
+    let y = 16;
+    while (y < S-12){
+      const w = 34 + hash(col*31 + (y|0), 31)*58;
+      g.fillStyle = `rgba(30,26,20,${0.24+hash(col*17+(y|0),32)*0.34})`;
+      g.fillRect(x0, y, w, 1.7);
+      g.fillRect(x0, y+3.6, Math.max(8, w*(0.30+hash(col*13+(y|0),33)*0.6)), 1.4);
+      y += 6.4 + hash(col*7+(y|0),34)*2.2;
+    }
+  }
+  g.fillStyle='rgba(24,20,16,0.80)'; g.fillRect(10,8,182,11);
+  g.fillStyle='rgba(24,20,16,0.55)'; g.fillRect(10,24,120,4);
+  for (let i=0;i<260;i++){
+    g.fillStyle='rgba(40,32,22,0.10)';
+    g.fillRect(hash(i,35)*S, hash(i,36)*S, 2, 2);
+  }
+  return c;
+}
+
+function makeRiso(base, seed){
+  const S=220, c=mk(S,S), g=c.getContext('2d');
+  g.fillStyle=base; g.fillRect(0,0,S,S);
+  for (let i=0;i<900;i++){
+    const x=hash(i,seed)*S, y=hash(i,seed+1)*S, r=0.7+hash(i,seed+2)*2.8;
+    g.fillStyle = `rgba(14,10,6,${0.03+hash(i,seed+3)*0.075})`;
+    g.beginPath(); g.arc(x,y,r,0,TAU); g.fill();
+  }
+  for (let y=6;y<S;y+=11) for (let x=6;x<S;x+=11){
+    g.fillStyle = `rgba(18,12,6,${0.05+hash(x*7+y,seed+4)*0.07})`;
+    g.beginPath(); g.arc(x,y,1.8,0,TAU); g.fill();
+  }
+  return c;
+}
+
+function makeNoise(){
+  const S=256, c=mk(S,S), g=c.getContext('2d'), d=g.createImageData(S,S);
+  for (let i=0;i<S*S;i++){
+    const v = (hash(i,9)*255)|0;
+    d.data[i*4]=v; d.data[i*4+1]=v; d.data[i*4+2]=v; d.data[i*4+3]=24;
+  }
+  g.putImageData(d,0,0);
+  return c;
+}
+
+const kraft = makeKraft();
+const PAT = {};
+PAT.cream = X.createPattern(makeCreamTex(),'repeat');
+PAT.news  = X.createPattern(makeNewsTex(),'repeat');
+PAT.red   = X.createPattern(makeRiso(RED, 51),'repeat');
+PAT.blue  = X.createPattern(makeRiso(BLUE, 61),'repeat');
+PAT.ink   = X.createPattern(makeRiso('#221D16', 71),'repeat');
+PAT.grain = X.createPattern(makeNoise(),'repeat');
+
+/* ---------------- shape builders ---------------- */
+function rectPts(cx,cy,w,h){
+  return [[cx-w/2,cy-h/2],[cx+w/2,cy-h/2],[cx+w/2,cy+h/2],[cx-w/2,cy+h/2]];
+}
+function roughen(pts, seed, amp=4, seg=28){
+  const out=[];
+  for (let i=0;i<pts.length;i++){
+    const a=pts[i], b=pts[(i+1)%pts.length];
+    const dx=b[0]-a[0], dy=b[1]-a[1], L=Math.hypot(dx,dy)||1;
+    const n=Math.max(1, Math.round(L/seg));
+    const nx=-dy/L, ny=dx/L;
+    for (let j=0;j<n;j++){
+      const u=j/n, d=(hash(seed+i*17, j*7)-.5)*2*amp;
+      out.push([a[0]+dx*u+nx*d, a[1]+dy*u+ny*d]);
+    }
+  }
+  return out;
+}
+function pathPts(pts){
+  X.beginPath();
+  for (let i=0;i<pts.length;i++){
+    const p=pts[i];
+    i ? X.lineTo(p[0],p[1]) : X.moveTo(p[0],p[1]);
+  }
+  X.closePath();
+}
+function discPts(cx,cy,r,seed,n=54){
+  const out=[];
+  for (let i=0;i<n;i++){
+    const a=i/n*TAU, rr=r+(hash(seed,i)-.5)*4.5;
+    out.push([cx+Math.cos(a)*rr, cy+Math.sin(a)*rr]);
+  }
+  return out;
+}
+
+/* ---------------- paint helpers ---------------- */
+function shadow(lift=0, a=0.24){
+  X.shadowColor = `rgba(36,20,6,${a + 0.12*Math.min(lift,1)})`;
+  X.shadowBlur  = 4 + lift*30;
+  X.shadowOffsetX = 2 + lift*28;
+  X.shadowOffsetY = 4 + lift*36;
+}
+function noShadow(){
+  X.shadowColor='transparent'; X.shadowBlur=0; X.shadowOffsetX=0; X.shadowOffsetY=0;
+}
+function paper(pts, fill, lift=0, rim=7, rimCol=CREAM){
+  shadow(lift);
+  pathPts(pts);
+  X.lineJoin='round';
+  X.strokeStyle=rimCol; X.lineWidth=rim; X.stroke();
+  noShadow();
+  X.fillStyle=fill; X.fill();
+}
+function txt(s,x,y,size,font,color,align='center',ls=0,weight='700'){
+  X.save();
+  X.font = `${weight} ${size}px ${font}`;
+  X.fillStyle = color;
+  X.textAlign = align;
+  X.textBaseline = 'middle';
+  if ('letterSpacing' in X) X.letterSpacing = ls+'px';
+  X.fillText(s,x,y);
+  X.restore();
+}
+function fitSize(s,maxW,font,start){
+  let size=start;
+  while (size>22){
+    X.font = `800 ${size}px ${font}`;
+    if (X.measureText(s).width <= maxW) break;
+    size -= 2;
+  }
+  return size;
+}
+function brad(x,y,r=12){
+  X.save();
+  shadow(0.08,0.40);
+  const g = X.createRadialGradient(x-r*0.35,y-r*0.4,1,x,y,r);
+  g.addColorStop(0,'#FFE9A6'); g.addColorStop(0.45,'#D6A945'); g.addColorStop(1,'#6E4A12');
+  X.beginPath(); X.arc(x,y,r,0,TAU); X.fillStyle=g; X.fill();
+  noShadow();
+  X.strokeStyle='rgba(52,32,6,0.9)'; X.lineWidth=1.5; X.stroke();
+  X.beginPath(); X.arc(x,y,r*0.6,3.4,5.5);
+  X.strokeStyle='rgba(255,245,215,0.85)'; X.lineWidth=1.8; X.stroke();
+  X.restore();
+}
+function tape(x,y,w,rot,a=0.74){
+  X.save(); X.translate(x,y); X.rotate(rot);
+  X.beginPath();
+  X.moveTo(-w/2,-15);
+  for (let i=0;i<=8;i++) X.lineTo(-w/2 + (hash(i,1)-.5)*9, -15 + 30*i/8);
+  for (let i=0;i<=8;i++) X.lineTo( w/2 + (hash(i,2)-.5)*9,  15 - 30*i/8);
+  X.closePath();
+  shadow(0.05,0.18);
+  X.fillStyle=`rgba(228,212,172,${a})`; X.fill();
+  noShadow();
+  X.strokeStyle='rgba(255,250,232,0.35)'; X.lineWidth=1.2; X.stroke();
+  X.restore();
+}
+function flecks(x,y,k,seed,n=5,col=CREAM){
+  if (k<0 || k>1) return;
+  for (let i=0;i<n;i++){
+    const a=hash(seed,i)*TAU, d=(8+hash(seed+1,i)*18)*(k+1);
+    X.save();
+    X.globalAlpha = k ? 0.45 : 0.95;
+    X.translate(x+Math.cos(a)*d, y+Math.sin(a)*d);
+    X.rotate(a + k*0.8);
+    X.fillStyle = (i%3===0) ? CREAM : col;
+    X.fillRect(-4,-2.2,8,4.4);
+    X.restore();
+  }
+}
+
+/* ---------------- motifs (cached) ---------------- */
+function makeMotif(kind,color,dot){
+  const S=200, c=mk(S,S), g=c.getContext('2d');
+  const shape = () => {
+    g.beginPath();
+    if (kind==='disc') g.arc(0,0,86,0,TAU);
+    else if (kind==='square') g.rect(-76,-76,152,152);
+    else { g.moveTo(0,-88); g.lineTo(84,62); g.lineTo(-84,62); g.closePath(); }
+  };
+  g.translate(S/2,S/2);
+  shape(); g.lineJoin='round'; g.lineWidth=15; g.strokeStyle='#F6F0E2'; g.stroke();
+  shape(); g.fillStyle=color; g.fill();
+  g.save(); shape(); g.clip();
+  g.fillStyle = dot;
+  for (let y=-102;y<=102;y+=9){
+    for (let x=-102;x<=102;x+=9){
+      const d = Math.hypot(x,y)/102;
+      const rr = 3.7*(1-d*0.62)*(0.45+0.95*hash(x*13+y*7, 5));
+      if (rr>0.4){ g.beginPath(); g.arc(x,y,rr,0,TAU); g.fill(); }
+    }
+  }
+  g.restore();
+  return c;
+}
+const MOT = {
+  A: makeMotif('disc',   RED,   'rgba(18,10,6,0.55)'),
+  B: makeMotif('square', BLUE,  'rgba(12,16,26,0.45)'),
+  C: makeMotif('tri',    '#221D16', 'rgba(244,238,223,0.42)')
+};
+
+/* ---------------- timing ---------------- */
+const C = {
+  title:   0.08*U,
+  scrap:   0.00*U,
+  cA:      0.42*U, cB:0.70*U, cC:0.98*U,
+  chipA:   0.72*U, chipB:1.00*U, chipC:1.28*U,
+  arrow:   1.58*U,
+  brad:    1.88*U,
+  how:     2.00*U,
+  panel:   2.26*U,
+  disc:    2.62*U,
+  rA:      2.88*U, rB:3.55*U, rC:4.20*U,
+  sum:     5.15*U,
+  chipSum: 5.40*U,
+  note:    5.75*U,
+  brad2:   5.83*U,
+  tape2:   5.93*U
+};
+
+/* ---------------- geometry ---------------- */
+const TITLE_PTS = roughen(rectPts(0,0,660,122), 1101, 3.0, 28);
+const SCRAP_PTS = roughen(rectPts(0,0,330,214), 1301, 4.0, 26);
+const PANEL_PTS = roughen(rectPts(0,0,540,470), 1203, 3.0, 30);
+const DISC_PTS  = discPts(0,0,238,1209);
+
+const ARROW_X = 1040, ARROW_Y = 318;
+const ARROW_PTS = (() => {
+  const L=720, sh=112, hl=210, hh=250;
+  return roughen([[-L/2,-sh/2],[L/2-hl,-sh/2],[L/2-hl,-hh/2],[L/2,0],
+                  [L/2-hl,hh/2],[L/2-hl,sh/2],[-L/2,sh/2]], 771, 2.6, 26);
+})();
+
+const PL = { x:1560, y:665, rot:-0.9*DEG };
+function panelPt(lx,ly){
+  const c=Math.cos(PL.rot), s=Math.sin(PL.rot);
+  return [ PL.x + lx*c - ly*s, PL.y + lx*s + ly*c ];
+}
+
+/* cards */
+const CARDS = [
+  { id:1, x:340, y:560, w:440, h:160, rot:-1.2*DEG, t:C.cA, seed:21, mot:'A', mx:-150, mr:56,
+    label:'Input A', sub:'High relevance', tx:-72, ty:-12, sy:30, fs:36, ss:20 },
+  { id:2, x:295, y:727, w:350, h:128, rot: 0.9*DEG, t:C.cB, seed:22, mot:'B', mx:-118, mr:42,
+    label:'Input B', sub:'Some relevance', tx:-52, ty:-10, sy:24, fs:31, ss:19 },
+  { id:3, x:250, y:857, w:260, h:100, rot:-0.6*DEG, t:C.cC, seed:23, mot:'C', mx:-84,  mr:34,
+    label:'Input C', sub:'Less relevant', tx:-32, ty:-8,  sy:18, fs:27, ss:17 }
+];
+CARDS.forEach(c => { c.pts = roughen(rectPts(0,0,c.w,c.h), 1400+c.id, 3.0, 28); });
+
+/* weight chips */
+const CHIPS = [
+  { x:526, y:494, w:104, h:58, rot: 7*DEG, t:C.chipA, seed:31, fill:PAT.red,  label:'60%', fs:30 },
+  { x:441, y:669, w: 92, h:52, rot:-6*DEG, t:C.chipB, seed:32, fill:PAT.blue, label:'30%', fs:28 },
+  { x:354, y:811, w: 82, h:48, rot: 5*DEG, t:C.chipC, seed:33, fill:PAT.ink,  label:'10%', fs:26 }
+];
+CHIPS.forEach(c => { c.pts = roughen(rectPts(0,0,c.w,c.h), 1500+c.seed, 2.4, 22); });
+
+/* three weighted streams: card edge -> its slot in the result card */
+const RIB = [
+  { id:1, dep:C.rA, dur:0.78, p0:[556,560], c1:[790,476], c2:[1120,612], p1:panelPt(-212,  15),
+    w0:30, w1:38, fill:PAT.red, col:RED, y0:-66, h:162, label:'60%', seed:141 },
+  { id:2, dep:C.rB, dur:0.72, p0:[466,727], c1:[770,688], c2:[1120,796], p1:panelPt(-212, 136.5),
+    w0:24, w1:30, fill:PAT.blue, col:BLUE, y0: 96, h: 81, label:'30%', seed:142 },
+  { id:3, dep:C.rC, dur:0.66, p0:[376,857], c1:[700,900], c2:[1080,892], p1:panelPt(-212, 190.5),
+    w0:16, w1:20, fill:PAT.ink, col:'#221D16', y0:177, h: 27, label:'10%', seed:143 }
+];
+
+const HOW_PTS = roughen(rectPts(0,0,400,58), 1601, 2.6, 24);
+const SUM_CHIP_PTS = roughen(rectPts(0,0,150,46), 1701, 2.4, 20);
+
+/* ---------------- camera ---------------- */
+function cam(t){
+  const q = Math.floor(t*6 + 1e-4)/6;
+  const u = clamp((q - 0.63*D) / (0.30*D));
+  const e = u<0.5 ? 4*u*u*u : 1-Math.pow(-2*u+2,3)/2;
+  return { z: 1 + 0.026*e, px: 1320, py: 630 };
+}
+
+/* ============================================================
+   ELEMENTS
+   ============================================================ */
+
+/* the arrow is pasted under the masthead: it falls out from beneath the title strip */
+function drawArrow(t){
+  const k = stepI(t) - Math.round(C.arrow*12);
+  if (k < -3) return;
+  let dy=0, lift=0, rot=0, s=1, sqy=1;
+  if (k === -3){ dy=-150; lift=1.2; rot=-2.6*DEG; }
+  else if (k === -2){ dy=-88; lift=0.85; rot=-1.5*DEG; }
+  else if (k === -1){ dy=-32; lift=0.45; rot=-0.5*DEG; }
+  else if (k === 0){ s=1.008; sqy=0.978; }
+  const j = jit(9,t,k<2?1.8:1.0,k<2?12:6);
+  X.save();
+  X.translate(ARROW_X+j[0], ARROW_Y+dy+j[1]);
+  X.rotate(9*DEG+rot+j[2]);
+  X.scale(s, sqy);
+  paper(ARROW_PTS, PAT.red, lift, 9);
+  txt('Attention', -105, 1, 43, SERIF, CREAM, 'center', 1, '800');
+  X.restore(); noShadow();
+
+  /* the paper fastener on the head joint */
+  const kb = stepI(t) - Math.round(C.brad*12);
+  if (kb >= 0){
+    const c = Math.cos(9*DEG), s2 = Math.sin(9*DEG);
+    const lx = 165, ly = 0;
+    brad(ARROW_X + lx*c - ly*s2 + j[0], ARROW_Y + lx*s2 + ly*c + j[1], 13);
+  }
+}
+
+function drawScrap(t){
+  const sp = slap(t, C.scrap, 2);
+  if (!sp) return;
+  const j = jit(3,t,sp.lift>0?2:1.1,sp.lift>0?12:6);
+  X.save();
+  X.translate(1748+j[0], 138+j[1]-40*sp.lift);
+  X.rotate(-4.2*DEG+j[2]);
+  X.scale(sp.s,sp.s);
+  paper(SCRAP_PTS, PAT.news, sp.lift, 7);
+  tape(-122,-92,146,-38*DEG,0.72);
+  X.restore(); noShadow();
+}
+
+function drawTitle(t){
+  const sp = slap(t, C.title, 3);
+  if (!sp) return;
+  const j = jit(11,t,sp.lift>0?2:1.1,sp.lift>0?12:6);
+  X.save();
+  X.translate(418+j[0]+46*sp.lift, 142+j[1]-56*sp.lift);
+  X.rotate(-1.6*DEG+j[2]);
+  X.scale(sp.s,sp.s);
+  paper(TITLE_PTS, PAT.cream, sp.lift, 8);
+  X.fillStyle = PAT.red;
+  X.fillRect(-292,-34,26,68);
+  const fs = fitSize(CAPTION, 528, SERIF, 62);
+  txt(CAPTION, -252, 2, fs, SERIF, INK, 'left', 2, '800');
+  X.restore(); noShadow();
+}
+
+function drawMono(t){
+  const k = stepI(t) - Math.round(C.title*12);
+  if (k < 2) return;
+  txt('01 — ATTENTION', 102, 232, 19, MONO, 'rgba(28,22,16,.62)', 'left', 2.5, '500');
+  X.save();
+  X.fillStyle = 'rgba(28,22,16,.26)';
+  X.fillRect(102, 248, 176, 1.6);
+  X.restore();
+}
+
+function drawDisc(t){
+  const sp = slap(t, C.disc, 3);
+  if (!sp) return;
+  const j = jit(8,t,sp.lift>0?2:1.1,sp.lift>0?12:6);
+  X.save();
+  X.translate(1730+j[0]+60*sp.lift, 610+j[1]-30*sp.lift);
+  X.rotate(-3*DEG+j[2]);
+  X.scale(sp.s,sp.s);
+  paper(DISC_PTS, PAT.red, sp.lift, 8);
+  X.restore(); noShadow();
+}
+
+/* ---------- result card ---------- */
+function drawPanelBase(t){
+  const k = stepI(t) - Math.round(C.panel*12);
+  if (k < -3) return;
+  let s=1, dy=0, lift=0, sqy=1;
+  if (k < 0){ const u=(-k)/3; s=1+0.22*u*u; dy=-96*u; lift=u; }
+  else if (k === 0){ s=0.982; sqy=0.986; }
+  else if (k === 1){ s=1.005; }
+  const j = jit(5,t,1.1,6);
+  X.save();
+  X.translate(PL.x+j[0], PL.y+dy+j[1]);
+  X.rotate(PL.rot+j[2]);
+  X.scale(s, s*sqy);
+  paper(PANEL_PTS, PAT.cream, lift, 9);
+  X.restore(); noShadow();
+}
+
+function drawPanelContent(t){
+  if (stepI(t) < Math.round(C.panel*12)) return;
+  const j = jit(6,t,0.9,6);
+  X.save();
+  X.translate(PL.x+j[0], PL.y+j[1]);
+  X.rotate(PL.rot+j[2]);
+
+  /* empty weighted slots */
+  X.save();
+  X.strokeStyle='rgba(28,22,16,.26)'; X.lineWidth=2; X.setLineDash([9,8]);
+  X.strokeRect(-235,-66,375,264);
+  X.beginPath();
+  [96,177].forEach(y=>{ X.moveTo(-235,y); X.lineTo(140,y); });
+  X.stroke();
+  X.restore();
+
+  /* weighted bands */
+  RIB.forEach(r=>{
+    const land = r.dep + r.dur;
+    const kg = stepI(t) - Math.round(land*12);
+    if (kg < 0) return;
+    const hf = kg===0?0.38 : kg===1?0.80 : kg===2?1.05 : 1;
+    const h = Math.max(3, r.h*hf - 3);
+    const cy = r.y0 + r.h/2;
+    const pts = roughen(rectPts(-47.5,cy,375,h), r.seed, 2.6, 24);
+    paper(pts, r.fill, kg<2?0.5:0.18, 4, CREAM);
+    /* printed shadow at the cut edge */
+    X.save();
+    pathPts(pts); X.clip();
+    const gTop = X.createLinearGradient(0, cy-h/2, 0, cy-h/2+12);
+    gTop.addColorStop(0,'rgba(0,0,0,0.16)'); gTop.addColorStop(1,'rgba(0,0,0,0)');
+    X.fillStyle = gTop; X.fillRect(-240, cy-h/2, 390, 14);
+    X.restore();
+    X.save();
+    pathPts(pts);
+    X.strokeStyle='rgba(26,20,14,.28)'; X.lineWidth=1.5; X.stroke();
+    X.restore();
+  });
+
+  /* landing dust */
+  RIB.forEach(r=>{
+    const kg = stepI(t) - Math.round((r.dep+r.dur)*12);
+    if (kg>=0 && kg<=1) flecks(-235, r.y0+r.h/2, kg, r.id*19, 4, CREAM);
+  });
+
+  /* percentages */
+  RIB.forEach(r=>{
+    const land = r.dep + r.dur;
+    const kg = stepI(t) - Math.round((land+0.10)*12);
+    if (kg < 0) return;
+    X.save();
+    X.globalAlpha = clamp((kg+1)/2);
+    txt(r.label, 170, r.y0+r.h/2, 30, SANS, 'rgba(26,20,14,.90)', 'left', 1, '800');
+    X.restore();
+  });
+
+  /* headline */
+  txt('Combined result', -235, -128, 38, SERIF, INK, 'left', 2, '800');
+  X.fillStyle='rgba(26,20,14,.72)';
+  X.fillRect(-235,-78,470,2.2);
+
+  /* sum line */
+  const ks = stepI(t) - Math.round(C.sum*12);
+  if (ks >= 0){
+    X.save();
+    X.globalAlpha = clamp((ks+1)/3);
+    txt('60% + 30% + 10% = 100%', -235, -96, 21, MONO, 'rgba(26,20,14,.60)', 'left', 0.5, '500');
+    X.restore();
+  }
+
+  /* Weighted sum chip */
+  const kc = stepI(t) - Math.round(C.chipSum*12);
+  if (kc >= -3){
+    const u = kc<0 ? (-kc)/3 : 0;
+    const s = kc<0 ? 1+0.3*u*u : kc===0 ? 0.972 : 1;
+    const jj = jit(17,t,kc<2?1.8:1,6);
+    X.save();
+    X.translate(-158+jj[0]+26*u, -198+jj[1]-36*u);
+    X.rotate(-2.4*DEG+jj[2]);
+    X.scale(s,s);
+    paper(SUM_CHIP_PTS, PAT.red, u, 6);
+    txt('Weighted sum', 0, 2, 19, SANS, CREAM, 'center', 1, '800');
+    X.restore(); noShadow();
+  }
+
+  X.restore(); noShadow();
+}
+
+/* ---------- printed guide left by each stream ---------- */
+function drawTrails(t){
+  RIB.forEach(r=>{
+    const land = r.dep + r.dur;
+    const kg = stepI(t) - Math.round(land*12);
+    if (kg < -2) return;
+    const a = clamp((kg+2)/3) * 0.42;
+    X.save();
+    X.globalAlpha = a;
+    X.strokeStyle = r.col;
+    X.lineWidth = 2.8;
+    X.lineCap = 'round';
+    X.setLineDash([2.5,10]);
+    X.beginPath();
+    for (let i=0;i<=44;i++){
+      const u = i/44;
+      const p = bez2(r.p0,r.c1,r.c2,r.p1,u);
+      i ? X.lineTo(p[0],p[1]) : X.moveTo(p[0],p[1]);
+    }
+    X.stroke();
+    X.restore();
+  });
+}
+
+/* ---------- ribbons ---------- */
+function drawRibbon(r,t){
+  const k = stepI(t) - Math.round(r.dep*12);
+  const total = Math.round(r.dur*12);
+  if (k < 0 || k >= total) return;
+  const uu = eOut((k+1)/total);
+  const j = jit(r.id*3,t,1.6,12);
+  const N = 40, A=[], B=[];
+  for (let i=0;i<=N;i++){
+    const u = i/N*uu;
+    const p  = bez2(r.p0,r.c1,r.c2,r.p1,u);
+    const p2 = bez2(r.p0,r.c1,r.c2,r.p1,Math.min(1,u+0.02));
+    let nx = -(p2[1]-p[1]), ny = (p2[0]-p[0]);
+    const nl = Math.hypot(nx,ny)||1; nx/=nl; ny/=nl;
+    const w = lerp(r.w0,r.w1,Math.pow(u,0.6))/2;
+    const e1 = (hash(r.seed, i)-.5)*3.0;
+    const e2 = (hash(r.seed+9, i)-.5)*3.0;
+    A.push([p[0]+nx*(w+e1)+j[0], p[1]+ny*(w+e1)+j[1]]);
+    B.push([p[0]-nx*(w+e2)+j[0], p[1]-ny*(w+e2)+j[1]]);
+  }
+  X.beginPath();
+  A.forEach((p,i)=> i?X.lineTo(p[0],p[1]):X.moveTo(p[0],p[1]));
+  const la=A[A.length-1], lb=B[B.length-1];
+  X.lineTo((la[0]+lb[0])/2 + (hash(r.seed,k)-.5)*9, (la[1]+lb[1])/2 + (hash(r.seed+4,k)-.5)*9);
+  for (let i=B.length-1;i>=0;i--){ const p=B[i]; X.lineTo(p[0],p[1]); }
+  X.closePath();
+  shadow(0.42,0.26);
+  X.lineJoin='round';
+  X.lineWidth=7; X.strokeStyle=CREAM; X.stroke();
+  noShadow();
+  X.fillStyle=r.fill; X.fill();
+
+  if (k<=1) flecks(r.p0[0], r.p0[1], k, r.seed*3, 4, CREAM);
+}
+
+/* ---------- info cards ---------- */
+function drawCard(card,t){
+  const sp = slap(t, card.t, 3);
+  if (!sp) return;
+  const j = jit(card.seed,t,sp.lift>0?2:1.1,sp.lift>0?12:6);
+  X.save();
+  X.translate(card.x+j[0]+52*sp.lift, card.y+j[1]-92*sp.lift);
+  X.rotate(card.rot+j[2]);
+  X.scale(sp.s, sp.s*(sp.lift>0?1.02:1));
+  paper(card.pts, PAT.cream, sp.lift, 8);
+
+  const r = card.mr;
+  X.save();
+  X.translate(card.mx,0);
+  X.rotate(card.id===2?6*DEG:0);
+  X.drawImage(MOT[card.mot], -r, -r, 2*r, 2*r);
+  X.restore();
+
+  txt(card.label, card.tx, card.ty, card.fs, SANS, INK, 'left', 1, '800');
+  txt(card.sub,   card.tx, card.sy, card.ss, SANS, 'rgba(28,22,16,.60)', 'left', 1, '500');
+
+  X.restore(); noShadow();
+}
+
+function drawChip(ch,t){
+  const sp = slap(t, ch.t, 3);
+  if (!sp) return;
+  const j = jit(ch.seed,t,sp.lift>0?2:1.1,sp.lift>0?12:6);
+  X.save();
+  /* chips are tossed in from the right edge of their card, not dropped over the card above */
+  X.translate(ch.x+j[0]+64*sp.lift, ch.y+j[1]-16*sp.lift);
+  X.rotate(ch.rot+j[2]);
+  X.scale(sp.s,sp.s);
+  paper(ch.pts, ch.fill, sp.lift, 6);
+  txt(ch.label, 0, 2, ch.fs, SANS, CREAM, 'center', 1, '800');
+  X.restore(); noShadow();
+}
+
+/* ---------- Weight by relevance ---------- */
+function drawHow(t){
+  const sp = slap(t, C.how, 3);
+  if (!sp) return;
+  const j = jit(13,t,sp.lift>0?2:1.1,sp.lift>0?12:6);
+  X.save();
+  X.translate(830+j[0]+34*sp.lift, 432+j[1]-44*sp.lift);
+  X.rotate(1.2*DEG+j[2]);
+  X.scale(sp.s,sp.s);
+  paper(HOW_PTS, PAT.cream, sp.lift, 7);
+  X.fillStyle = PAT.red;
+  X.fillRect(-182,-7,14,14);
+  txt('Weight by relevance', 14, 1, 25, SANS, INK, 'center', 1, '700');
+  X.restore(); noShadow();
+}
+
+/* ---------- panel hardware ---------- */
+function drawPanelExtras(t){
+  const kb = stepI(t) - Math.round(C.brad2*12);
+  if (kb >= 0){
+    const p = panelPt(-235,-215);
+    brad(p[0], p[1], 13);
+  }
+  const kt = stepI(t) - Math.round(C.tape2*12);
+  if (kt >= 0){
+    const p = panelPt(196,-236);
+    tape(p[0], p[1], 170, -36*DEG, 0.76);
+  }
+}
+
+function drawNote(t){
+  const k = stepI(t) - Math.round(C.note*12);
+  if (k < -2) return;
+  const u = k<0 ? (-k)/2 : 0;
+  const j = jit(23,t,1.2,6);
+  X.save();
+  X.translate(112+j[0]+24*u, 942+j[1]-18*u);
+  X.rotate(0.6*DEG+j[2]);
+  X.globalAlpha = 1-u*0.4;
+  X.fillStyle = PAT.red;
+  X.fillRect(-13,-6,12,12);
+  txt('Illustrative weights', 12, 1, 22, SANS, 'rgba(28,22,16,.62)', 'left', 1, '500');
+  X.restore();
+}
+
+/* ---------- finishing ---------- */
+function finish(t){
+  const k = stepI(t);
+  X.save();
+  X.globalCompositeOperation='overlay';
+  X.globalAlpha = 0.11;
+  X.translate(-Math.floor(hash(k,3)*256), -Math.floor(hash(k,4)*256));
+  X.fillStyle = PAT.grain;
+  X.fillRect(0,0,W+256,H+256);
+  X.restore();
+
+  const g = X.createRadialGradient(W*0.5,H*0.47,H*0.34,W*0.5,H*0.5,H*1.02);
+  g.addColorStop(0,'rgba(40,22,6,0)');
+  g.addColorStop(1,'rgba(40,22,6,0.24)');
+  X.save();
+  X.globalCompositeOperation='multiply';
+  X.fillStyle=g; X.fillRect(0,0,W,H);
+  X.restore();
+
+  noShadow();
+}
+
+/* ---------- scene ---------- */
+function drawScene(t){
+  X.drawImage(kraft, -60, -60, W+120, H+120);
+
+  drawArrow(t);                          // arrow is pasted under the masthead
+  drawScrap(t);
+  drawTitle(t);
+  drawMono(t);
+  drawDisc(t);
+
+  drawTrails(t);                         // printed guide lines remain on the page
+  drawPanelBase(t);
+  RIB.forEach(r => drawRibbon(r,t));     // streams slide over the paper edge
+  drawPanelContent(t);
+
+  CARDS.forEach(c => drawCard(c,t));
+  CHIPS.forEach(c => drawChip(c,t));
+
+  drawHow(t);
+  drawPanelExtras(t);
+  drawNote(t);
+}
+
+function frame(t){
+  t = Number(t);
+  if (!isFinite(t)) t = 0;
+  t = clamp(t, 0, D-1e-4);
+
+  X.setTransform(1,0,0,1,0,0);
+  X.globalAlpha = 1;
+  X.globalCompositeOperation = 'source-over';
+  noShadow();
+
+  X.fillStyle = KRAFT;
+  X.fillRect(0,0,W,H);
+
+  const c = cam(t);
+  X.save();
+  X.translate(c.px, c.py);
+  X.scale(c.z, c.z);
+  X.translate(-c.px, -c.py);
+
+  drawScene(t);
+
+  X.restore();
+  finish(t);
+}
+
+window.film = { frame, duration: D, width: W, height: H };
+window.renderAt = frame;
+window.__ready = true;
+
+frame(0);
+})();
+</script>
+</body>
+</html>

@@ -1076,6 +1076,8 @@
   "tabs.unconfiguredStartDisabledTip": "На холст добавлен ненастроенный начальный узел. Завершите настройку, прежде чем продолжить.",
   "tabs.utilities": "Утилиты",
   "tabs.workflowTool": "Рабочий процесс",
+  "teacherStyle.followCourse": "Follow course",
+  "teacherStyle.previewLanguage": "Preview language",
   "tracing.stopBy": "Остановлено {{user}}",
   "triggerStatus.enabled": "СПУСКОВОЙ МЕХАНИЗМ",
   "variableReference.assignedVarsDescription": "Назначаемые переменные должны быть доступными для записи, например переменными беседы.",

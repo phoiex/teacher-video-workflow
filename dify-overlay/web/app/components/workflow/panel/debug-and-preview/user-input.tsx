@@ -40,6 +40,9 @@ const UserInput = () => {
             {variable.variable === 'style_preset' && (
               <StylePreviewOptions
                 options={variable.options || []}
+                courseLanguage={
+                  typeof inputs.course_language === 'string' ? inputs.course_language : undefined
+                }
                 value={inputs[variable.variable] as string}
                 onChange={(value) => handleValueChange(variable.variable, value)}
               />

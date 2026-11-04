@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1920,height=1080" />
+<title>How attention works</title>
+<style>
+  html, body { margin:0; padding:0; background:#f5f5f7; overflow:hidden; }
+  #stage{
+    position:relative; width:1920px; height:1080px; overflow:hidden; background:#f5f5f7;
+    font-family:"PingFang SC","Hiragino Sans GB","Source Han Sans SC","Noto Sans CJK SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+    color:#1d1d1f; -webkit-font-smoothing:antialiased; text-rendering:geometricPrecision;
+  }
+  #cam{position:absolute; left:0; top:0; width:1920px; height:1080px; transform-origin:960px 540px; will-change:transform;}
+  #wires{position:absolute; left:0; top:0; width:1920px; height:1080px;}
+
+  #caption,#disclaimer,#colHead,#colRule,.row,#resRule,#resLabel,#resWord,#mixbar,#formula{position:absolute;}
+
+  #caption{left:150px; top:92px; font-size:52px; font-weight:600; line-height:1.15; letter-spacing:-0.01em; white-space:nowrap;}
+  #disclaimer{left:152px; top:172px; font-size:21px; font-weight:400; color:#86868b; letter-spacing:0.08em; white-space:nowrap;}
+
+  #colHead{left:150px; top:266px; font-size:24px; font-weight:500; color:#86868b; letter-spacing:0.05em; white-space:nowrap;}
+  #colRule{left:150px; top:312px; width:232px; height:1px; background:#d2d2d7; transform-origin:0 50%;}
+
+  .row{left:150px; width:420px;}
+  #row0{top:343px;} #row1{top:503px;} #row2{top:663px;}
+  .lab{font-size:26px; line-height:1.35; font-weight:500; color:#86868b; letter-spacing:0.05em; white-space:nowrap;}
+  .val{margin-top:6px; height:112px; line-height:112px; font-size:112px; font-weight:600; letter-spacing:-0.03em; white-space:nowrap;
+       font-variant-numeric:tabular-nums; -webkit-font-feature-settings:"tnum" 1; font-feature-settings:"tnum" 1;}
+  .num{display:inline-block; margin-right:6px;}
+  .pct{font-size:52px; line-height:1; font-weight:500; color:#86868b; letter-spacing:0; position:relative; top:-36px;}
+
+  #resRule{left:1328px; top:466px; width:2px; height:242px; background:#1d1d1f; transform-origin:50% 0;}
+  #resLabel{left:1366px; top:466px; font-size:26px; line-height:1.35; font-weight:500; color:#86868b; letter-spacing:0.05em; white-space:nowrap;}
+  #resWord{left:1366px; top:512px; height:150px; line-height:150px; font-size:150px; font-weight:600; letter-spacing:-0.02em; white-space:nowrap;}
+  #mixbar{left:1366px; top:696px; height:12px; display:flex; gap:8px;}
+  .seg{height:12px; width:0; display:block;}
+  #seg0{background:#1d1d1f;} #seg1{background:#86868b;} #seg2{background:#a1a1a6;}
+
+  #formula{left:150px; top:852px; font-size:36px; line-height:1.4; font-weight:500; white-space:nowrap; color:#1d1d1f;}
+  .f-k{font-weight:600;}
+  .f-op{color:#b0b0b5; font-weight:400; margin:0 12px;}
+  .f-n{font-weight:600; font-variant-numeric:tabular-nums;}
+  .f-t{font-weight:500; color:#48484a;}
+#resWord{font-size:108px}#formula{font-size:33px}</style>
+</head>
+<body>
+<div id="stage">
+  <div id="cam">
+    <svg id="wires" viewBox="0 0 1920 1080" width="1920" height="1080">
+      <path id="w0" d="M 400 440 H 900 C 1030 440 1100 600 1328 600" fill="none" stroke="#1d1d1f" stroke-width="14" stroke-linecap="round" style="opacity:0"/>
+      <path id="w1" d="M 400 600 H 1328" fill="none" stroke="#1d1d1f" stroke-width="8" stroke-linecap="round" style="opacity:0"/>
+      <path id="w2" d="M 400 760 H 900 C 1030 760 1100 600 1328 600" fill="none" stroke="#1d1d1f" stroke-width="3.2" stroke-linecap="round" style="opacity:0"/>
+      <circle id="ring2" cx="1328" cy="600" r="12" fill="none" stroke="#1d1d1f" stroke-width="1" opacity="0"/>
+      <circle id="ring1" cx="1328" cy="600" r="12" fill="none" stroke="#1d1d1f" stroke-width="2" opacity="0"/>
+      <circle id="dot" cx="1328" cy="600" r="0" fill="#1d1d1f"/>
+    </svg>
+
+    <div id="caption">How attention works</div>
+    <div id="disclaimer">Illustrative weights</div>
+
+    <div id="colHead">Weight by relevance</div>
+    <div id="colRule"></div>
+
+    <div class="row" id="row0">
+      <div class="lab" id="lab0">Text</div>
+      <div class="val" id="val0"><span class="num" id="num0">00</span><span class="pct" id="pct0">%</span></div>
+    </div>
+    <div class="row" id="row1">
+      <div class="lab" id="lab1">Notes</div>
+      <div class="val" id="val1"><span class="num" id="num1">00</span><span class="pct" id="pct1">%</span></div>
+    </div>
+    <div class="row" id="row2">
+      <div class="lab" id="lab2">Noise</div>
+      <div class="val" id="val2"><span class="num" id="num2">00</span><span class="pct" id="pct2">%</span></div>
+    </div>
+
+    <div id="resRule"></div>
+    <div id="resLabel">Combine into a</div>
+    <div id="resWord">result</div>
+    <div id="mixbar">
+      <div class="seg" id="seg0"></div>
+      <div class="seg" id="seg1"></div>
+      <div class="seg" id="seg2"></div>
+    </div>
+
+    <div id="formula"><span class="f-k">Attention</span><span class="f-op">=</span><span class="f-n">60%</span><span class="f-op">×</span><span class="f-t">Text</span><span class="f-op">+</span><span class="f-n">30%</span><span class="f-op">×</span><span class="f-t">Notes</span><span class="f-op">+</span><span class="f-n">10%</span><span class="f-op">×</span><span class="f-t">Noise</span></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var S0 = window.SCENE || {};
+  var D = (typeof S0.duration_seconds === 'number' && S0.duration_seconds > 0) ? S0.duration_seconds : 8;
+  var S = D / 8; /* 8 秒设计时间轴的整体缩放 */
+
+  function $(id){ return document.getElementById(id); }
+  function clamp01(v){ return v < 0 ? 0 : (v > 1 ? 1 : v); }
+  function eOutCubic(v){ return 1 - Math.pow(1 - v, 3); }
+  function eOutQuint(v){ return 1 - Math.pow(1 - v, 5); }
+  function eInOutCubic(v){ return v < 0.5 ? 4*v*v*v : 1 - Math.pow(-2*v + 2, 3) / 2; }
+  function eOutSine(v){ return Math.sin(v * Math.PI / 2); }
+  function outBack(v, c1){ var c3 = c1 + 1; return 1 + c3 * Math.pow(v - 1, 3) + c1 * Math.pow(v - 1, 2); }
+  function seg(t, start, dur){ return clamp01((t - start * S) / (dur * S)); }
+
+  var cam = $('cam');
+  var caption = $('caption'), disclaimer = $('disclaimer');
+  var colHead = $('colHead'), colRule = $('colRule');
+  var rows = [0, 1, 2].map(function(i){
+    return { lab: $('lab' + i), val: $('val' + i), num: $('num' + i), pct: $('pct' + i) };
+  });
+  var resRule = $('resRule'), resLabel = $('resLabel'), resWord = $('resWord');
+  var segs = [0, 1, 2].map(function(i){ return $('seg' + i); });
+  var formula = $('formula');
+  var dot = $('dot'), ring1 = $('ring1'), ring2 = $('ring2');
+  var wires = [0, 1, 2].map(function(i){ return $('w' + i); });
+
+  var wireLens = wires.map(function(p){
+    var L = 0;
+    try { L = p.getTotalLength(); } catch(e) {}
+    if (!L || !isFinite(L)) L = 1200;
+    p.style.strokeDasharray = L + ' ' + L;
+    p.style.strokeDashoffset = L;
+    return L;
+  });
+
+  if (S0.caption) { caption.textContent = String(S0.caption); }
+
+  /* 遮罩上移入场：底边先行揭开，同时轻微上移 */
+  function reveal(node, p, dist){
+    var e = eOutQuint(clamp01(p));
+    var clip = 'inset(' + ((1 - e) * 100).toFixed(2) + '% 0% 0% 0%)';
+    node.style.clipPath = clip;
+    node.style.webkitClipPath = clip;
+    node.style.transform = 'translateY(' + ((1 - e) * dist).toFixed(2) + 'px)';
+  }
+
+  var targets = [60, 30, 10];
+  var rowT = [0.72, 0.90, 1.08];
+  var rollT = [1.22, 1.35, 1.48];
+  var wireT = [2.15, 2.28, 2.41];
+  var barT = [3.95, 4.07, 4.19];
+  var barW = [170.4, 85.2, 28.4];
+
+  function frame(t){
+    if (typeof t !== 'number' || !isFinite(t)) t = 0;
+    t = Math.max(0, Math.min(D, t));
+    var u = t / S;
+
+    /* 极缓的单向推镜，给静止画面留一口气 */
+    var cp = clamp01(u / 8);
+    cam.style.transform = 'scale(' + (1 + 0.024 * (0.5 - 0.5 * Math.cos(Math.PI * cp))).toFixed(5) + ')';
+
+    reveal(caption, seg(u, 0.15, 0.50), 26);
+    reveal(disclaimer, seg(u, 0.42, 0.45), 18);
+    reveal(colHead, seg(u, 0.55, 0.45), 18);
+    colRule.style.transform = 'scaleX(' + eInOutCubic(seg(u, 0.62, 0.50)).toFixed(4) + ')';
+
+    for (var i = 0; i < 3; i++){
+      var r = rows[i];
+      reveal(r.lab, seg(u, rowT[i], 0.40), 20);
+      reveal(r.val, seg(u, rowT[i] + 0.06, 0.44), 24);
+
+      var rp = seg(u, rollT[i], 0.58);
+      var v = rp >= 1 ? targets[i] : Math.round(targets[i] * eOutCubic(rp));
+      r.num.textContent = (v < 10 ? '0' : '') + v;
+
+      var pp = clamp01((rp - 0.60) / 0.40);
+      r.pct.style.opacity = pp.toFixed(3);
+      r.pct.style.transform = 'translateY(' + ((1 - eOutCubic(pp)) * 10).toFixed(2) + 'px)';
+    }
+
+    for (var j = 0; j < 3; j++){
+      var pr = eInOutCubic(seg(u, wireT[j], 0.65));
+      wires[j].style.strokeDashoffset = (wireLens[j] * (1 - pr)).toFixed(2);
+      wires[j].style.opacity = pr > 0 ? '1' : '0';
+    }
+
+    var dp = clamp01(seg(u, 3.04, 0.24));
+    dot.setAttribute('r', Math.max(0, 12 * outBack(dp, 1.6)).toFixed(2));
+
+    var r1 = seg(u, 3.06, 0.60);
+    ring1.setAttribute('r', (12 + 72 * eOutCubic(r1)).toFixed(2));
+    ring1.setAttribute('stroke-width', (2.2 * (1 - r1) + 0.3).toFixed(2));
+    ring1.setAttribute('opacity', r1 > 0 ? (0.5 * (1 - r1)).toFixed(3) : '0');
+
+    var r2 = seg(u, 6.30, 1.50);
+    ring2.setAttribute('r', (12 + 200 * eOutSine(r2)).toFixed(2));
+    ring2.setAttribute('opacity', (0.16 * Math.sin(Math.PI * r2)).toFixed(3));
+
+    resRule.style.transform = 'scaleY(' + eInOutCubic(seg(u, 3.16, 0.42)).toFixed(4) + ')';
+    reveal(resLabel, seg(u, 3.30, 0.45), 20);
+    reveal(resWord, seg(u, 3.40, 0.60), 30);
+
+    for (var k = 0; k < 3; k++){
+      segs[k].style.width = (barW[k] * eOutCubic(seg(u, barT[k], 0.45))).toFixed(2) + 'px';
+    }
+
+    reveal(formula, seg(u, 4.98, 0.55), 24);
+  }
+
+  window.film = { frame: frame };
+  frame(0);
+})();
+</script>
+</body>
+</html>

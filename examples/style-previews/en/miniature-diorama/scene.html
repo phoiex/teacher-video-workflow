@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920,height=1080">
+<title>How attention works</title>
+<style>
+  html,body{margin:0;padding:0;background:#FAF8F3;overflow:hidden;}
+  #stage{width:1920px;height:1080px;overflow:hidden;position:relative;}
+  canvas{display:block;}
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="c" width="1920" height="1080"></canvas></div>
+<script>
+(function(){
+'use strict';
+
+/* =========================================================
+   How attention works · 立体微缩工坊
+   8s · 1920x1080 · 静音
+   三个信息对象按 60/30/10 的示意权重汇入一个结果
+   ========================================================= */
+
+const W = 1920, H = 1080, TAU = Math.PI * 2;
+const SCENE = window.SCENE || {};
+const DUR   = Math.max(1, Number(SCENE.duration_seconds) || 8);
+const CAPTION = SCENE.caption || 'How attention works';
+const U = DUR / 8;                       // 时间轴以 8s 为基准，随实际时长等比伸缩
+
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+
+/* ---------------- 缓动 ---------------- */
+const clamp = (x, a = 0, b = 1) => x < a ? a : x > b ? b : x;
+const lerp  = (a, b, k) => a + (b - a) * k;
+const seg   = (t, a, b) => clamp((t - a) / (b - a));
+const eIO   = k => { k = clamp(k); return k < .5 ? 4*k*k*k : 1 - Math.pow(-2*k+2, 3)/2; };
+const eOut  = k => 1 - Math.pow(1 - clamp(k), 3);
+const eIn   = k => Math.pow(clamp(k), 3);
+const spring = k => { k = clamp(k); return k <= 0 ? 0 : k >= 1 ? 1 : 1 - Math.exp(-6*k) * Math.cos(10*k); };
+
+/* ---------------- 颜色 ---------------- */
+const C = {
+  bg:'#FAF8F3', ink:'#2B2C3E', sub:'#8E8778', faint:'#B3AB9B',
+  amber:'#F2A63B', coral:'#EF6B5A', mint:'#3BBFA1', gold:'#EEA945'
+};
+const H2 = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+const A  = (h,a) => { const [r,g,b] = H2(h); return `rgba(${r},${g},${b},${a})`; };
+const SH = (h,f,a=1) => {
+  const [r,g,b] = H2(h);
+  return `rgba(${Math.min(255,r*f)|0},${Math.min(255,g*f)|0},${Math.min(255,b*f)|0},${a})`;
+};
+const FONT = '"PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Noto Sans SC","Source Han Sans SC","Microsoft YaHei",sans-serif';
+const f = (w,s) => `${w} ${s}px ${FONT}`;
+
+function rr(x,y,w,h,r){
+  r = Math.min(r, w/2, h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+/* ---------------- 相机（正交环绕） ---------------- */
+let CAM = {s:60, tx:0, ty:2.5, tz:0, ca:1, sa:0, ce:1, se:0};
+function setCam(azDeg, elDeg, s, tx, ty, tz){
+  const a = azDeg * Math.PI/180, e = elDeg * Math.PI/180;
+  CAM = { s, tx, ty, tz, ca:Math.cos(a), sa:Math.sin(a), ce:Math.cos(e), se:Math.sin(e) };
+}
+function prj(x,y,z){
+  const px = x - CAM.tx, py = y - CAM.ty, pz = z - CAM.tz;
+  return {
+    x: W/2 + (px*CAM.ca - pz*CAM.sa) * CAM.s,
+    y: H/2 - (-px*CAM.sa*CAM.se + py*CAM.ce - pz*CAM.ca*CAM.se) * CAM.s
+  };
+}
+function camAt(t){
+  const k = eIO(clamp(t / DUR));
+  setCam(21 + 13*k, 34 - 6.5*k, 54 + 14*k, -0.2 + 0.5*k, 2.8 - 0.3*k, 0);
+}
+
+/* ---------------- 场景常量 ---------------- */
+const CST = {
+  R: 9.5, discH: 0.62,
+  cards: [
+    { x:-7.2, y:3.4, z:-3.0, pct:60, col:C.amber, role:'High', icon:'text', scale:1.00 },
+    { x:-5.6, y:2.4, z: 1.5, pct:30, col:C.coral, role:'Medium', icon:'img',  scale:0.95 },
+    { x:-4.0, y:1.2, z: 4.5, pct:10, col:C.mint,  role:'Low', icon:'wave', scale:0.90 }
+  ],
+  funnel: { x:1.2, z:1.6, rimY:4.4, tipY:1.5, rimR:1.9, tipR:0.30 },
+  prism:  { x:7.1, z:1.7, baseY:0.55, w:2.5, h:3.4, d:1.85 }
+};
+
+/* ---------------- 时间轴 ---------------- */
+const T = {
+  disc:   0.0,
+  title:  0.06 * U,
+  hopper: 0.16 * U,
+  cards:  [0.95*U, 1.22*U, 1.49*U],
+  nums:   [1.11*U, 1.38*U, 1.65*U],
+  rails:  [2.05*U, 2.25*U, 2.45*U],
+  prism:  1.75 * U,
+  flow:   2.95 * U,
+  out:    4.45 * U,
+  fill:   [4.75*U, 4.98*U, 5.21*U],
+  label:  5.45 * U,
+  ripple: 6.20 * U
+};
+
+/* ---------------- 静态噪点纹理 ---------------- */
+const noisePat = (() => {
+  const n = 256, c = document.createElement('canvas');
+  c.width = c.height = n;
+  const g = c.getContext('2d');
+  const img = g.createImageData(n,n);
+  let seed = 20240607;
+  const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  for (let i = 0; i < n*n; i++){
+    const v = 205 + rnd()*50;
+    img.data[i*4] = v;
+    img.data[i*4+1] = v - 2;
+    img.data[i*4+2] = v - 9;
+    img.data[i*4+3] = rnd() * 24;
+  }
+  g.putImageData(img,0,0);
+  return ctx.createPattern(c,'repeat');
+})();
+
+/* =========================================================
+   背景 / 地面
+   ========================================================= */
+function drawBG(){
+  ctx.fillStyle = C.bg;
+  ctx.fillRect(0,0,W,H);
+  const g = ctx.createRadialGradient(1010, 430, 60, 1010, 430, 1250);
+  g.addColorStop(0,'#FFFDF8');
+  g.addColorStop(0.52,'#FAF7F0');
+  g.addColorStop(1,'#F0ECE3');
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,W,H);
+  if (noisePat){
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = noisePat;
+    ctx.fillRect(0,0,W,H);
+    ctx.restore();
+  }
+}
+
+function drawDisc(t){
+  const k = spring(seg(t, T.disc, T.disc + 0.95*U));
+  const p  = 0.94 + 0.06 * k;
+  const R  = CST.R * p, h = CST.discH * p;
+
+  const top = prj(0,0,0);
+  const bot = prj(0,-h,0);
+  const rx = R * CAM.s;
+  const ry = R * CAM.se * CAM.s;
+
+  // 侧壁
+  ctx.beginPath();
+  ctx.ellipse(top.x, top.y, rx, ry, 0, 0, TAU);
+  ctx.rect(top.x - rx, top.y, rx*2, Math.max(1, bot.y - top.y));
+  ctx.ellipse(bot.x, bot.y, rx, ry, 0, 0, TAU);
+  const gs = ctx.createLinearGradient(0, top.y, 0, bot.y + ry);
+  gs.addColorStop(0,'#E5DFD3');
+  gs.addColorStop(0.55,'#D8D2C5');
+  gs.addColorStop(1,'#C9C2B4');
+  ctx.fillStyle = gs;
+  ctx.fill('nonzero');
+
+  // 顶面
+  ctx.beginPath();
+  ctx.ellipse(top.x, top.y, rx, ry, 0, 0, TAU);
+  const gt = ctx.createLinearGradient(top.x - rx*0.6, top.y - ry, top.x + rx*0.4, top.y + ry);
+  gt.addColorStop(0,'#F6F2EB');
+  gt.addColorStop(0.45,'#EFEBE3');
+  gt.addColorStop(1,'#E5E0D6');
+  ctx.fillStyle = gt;
+  ctx.fill();
+
+  // 台面同心圆
+  ctx.strokeStyle = 'rgba(255,255,255,0.42)';
+  ctx.lineWidth = 2;
+  [6.2, 3.3].forEach(function(r0){
+    ctx.beginPath();
+    ctx.ellipse(top.x, top.y, r0*p*CAM.s, r0*p*CAM.se*CAM.s, 0, 0, TAU);
+    ctx.stroke();
+  });
+
+  // 边缘高光
+  ctx.beginPath();
+  ctx.ellipse(top.x, top.y, rx, ry, 0, 0, TAU);
+  ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+  ctx.lineWidth = 2.4;
+  ctx.stroke();
+
+  // 前缘暗部
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(top.x, top.y, rx, ry, 0, 0, TAU);
+  ctx.clip();
+  const gv = ctx.createLinearGradient(0, top.y + ry*0.15, 0, top.y + ry);
+  gv.addColorStop(0,'rgba(90,74,50,0)');
+  gv.addColorStop(1,'rgba(90,74,50,0.10)');
+  ctx.fillStyle = gv;
+  ctx.fillRect(top.x-rx, top.y+ry*0.1, rx*2, ry);
+  ctx.restore();
+
+  // 铆钉
+  for (let i = 0; i < 10; i++){
+    const a = i / 10 * TAU + 0.22;
+    const rx0 = (R - 0.42) * Math.cos(a) * CAM.s;
+    const ry0 = (R - 0.42) * Math.sin(a) * CAM.se * CAM.s;
+    ctx.beginPath();
+    ctx.ellipse(top.x + rx0, top.y + ry0, 4.2, 2.4, 0, 0, TAU);
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(top.x + rx0, top.y + ry0 + 1.4, 2.6, 1.2, 0, 0, TAU);
+    ctx.fillStyle = 'rgba(120,104,80,0.10)';
+    ctx.fill();
+  }
+}
+
+function groundShadow(x, z, r, alpha){
+  if (alpha <= 0.001) return;
+  const p = prj(x, 0, z);
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.scale(1, CAM.se);
+  const g = ctx.createRadialGradient(0,0,0,0,0,r*CAM.s);
+  g.addColorStop(0, `rgba(74,58,38,${alpha})`);
+  g.addColorStop(0.55, `rgba(74,58,38,${alpha*0.55})`);
+  g.addColorStop(1, 'rgba(74,58,38,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(0,0,r*CAM.s,0,TAU);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawGroundShadows(t, fun){
+  const fk = fun.k;
+  groundShadow(fun.F.x, fun.F.z, 2.4, 0.075 * clamp(fk*1.4));
+
+  const pk = spring(seg(t, T.prism, T.prism + 0.75*U));
+  groundShadow(CST.prism.x, CST.prism.z, 2.2, 0.15 * clamp(pk*1.4));
+
+  for (let i = 0; i < 3; i++){
+    const c = CST.cards[i];
+    const ck = clamp((t - T.cards[i] + 0.12) * 4);
+    groundShadow(c.x, c.z, 1.5 + c.y*0.10, Math.max(0.03, 0.10 - c.y*0.01) * ck);
+  }
+
+  // 漏斗悬浮光晕
+  const k = clamp(seg(t, T.hopper, T.hopper + 0.8*U));
+  const p = prj(fun.F.x, 0, fun.F.z);
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.scale(1, CAM.se);
+  const g = ctx.createRadialGradient(0,0,0,0,0,1.9*CAM.s);
+  g.addColorStop(0, `rgba(242,166,59,${0.07*k})`);
+  g.addColorStop(0.6, `rgba(242,166,59,${0.022*k})`);
+  g.addColorStop(1,'rgba(242,166,59,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(0,0,1.9*CAM.s,0,TAU);
+  ctx.fill();
+  ctx.restore();
+
+  // 结果落地光环（收束）
+  const rk = seg(t, T.ripple, T.ripple + 1.15*U);
+  if (rk > 0 && rk < 1){
+    const rp = prj(CST.prism.x, 0, CST.prism.z);
+    ctx.save();
+    ctx.translate(rp.x, rp.y);
+    ctx.scale(1, CAM.se);
+    ctx.beginPath();
+    ctx.arc(0, 0, lerp(1.2, 3.9, eOut(rk)) * CAM.s, 0, TAU);
+    ctx.strokeStyle = `rgba(238,169,69,${0.30*(1-rk)})`;
+    ctx.lineWidth = 3.2*(1-rk) + 0.6;
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+/* =========================================================
+   立体小工具
+   ========================================================= */
+const LIGHT = { x:-0.42, y:0.78, z:0.46 };
+
+function rrPath(cx, cz, w, d, r, segN){
+  const hw = Math.max(0, w/2 - r), hd = Math.max(0, d/2 - r);
+  const pts = [];
+  const corners = [
+    [ hw,  hd, 0,            Math.PI/2],
+    [-hw,  hd, Math.PI/2,    Math.PI],
+    [-hw, -hd, Math.PI,      Math.PI*1.5],
+    [ hw, -hd, Math.PI*1.5,  Math.PI*2]
+  ];
+  for (let c = 0; c < 4; c++){
+    const ox = corners[c][0], oz = corners[c][1], a0 = corners[c][2], a1 = corners[c][3];
+    for (let i = 0; i <= segN; i++){
+      const a = a0 + (a1 - a0) * i / segN;
+      pts.push({
+        x: cx + ox + Math.cos(a)*r,
+        z: cz + oz + Math.sin(a)*r,
+        nx: Math.cos(a), nz: Math.sin(a)
+      });
+    }
+  }
+  return pts;
+}
+
+function polyPath(list){
+  ctx.beginPath();
+  ctx.moveTo(list[0].x, list[0].y);
+  for (let i = 1; i < list.length; i++) ctx.lineTo(list[i].x, list[i].y);
+  ctx.closePath();
+}
+
+/* 圆角方块：侧面 + 顶面 */
+function box3d(cx, cy, cz, w, h, d, r, col, opt){
+  if (h <= 0.001) return;
+  opt = opt || {};
+  const pts = rrPath(cx, cz, w, d, Math.min(r, w/2, d/2), 4);
+  const topAlpha = opt.topAlpha == null ? 1 : opt.topAlpha;
+  const sideAlpha = opt.sideAlpha == null ? 1 : opt.sideAlpha;
+
+  for (let i = 0; i < pts.length; i++){
+    const a = pts[i], b = pts[(i+1) % pts.length];
+    const nxi = (a.nx + b.nx) * 0.5, nzi = (a.nz + b.nz) * 0.5;
+    if (nxi*CAM.sa + nzi*CAM.ca <= 0.002) continue;
+    const p1 = prj(a.x, cy + h, a.z);
+    const p2 = prj(b.x, cy + h, b.z);
+    const p3 = prj(b.x, cy,     b.z);
+    const p4 = prj(a.x, cy,     a.z);
+    const sh = 0.70 + 0.32 * Math.max(0, nxi*LIGHT.x + nzi*LIGHT.z);
+    ctx.beginPath();
+    ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y);
+    ctx.lineTo(p3.x,p3.y); ctx.lineTo(p4.x,p4.y);
+    ctx.closePath();
+    ctx.fillStyle = SH(col, sh, sideAlpha);
+    ctx.fill();
+  }
+
+  const topPts = pts.map(function(p){ return prj(p.x, cy + h, p.z); });
+  polyPath(topPts);
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (let i = 0; i < topPts.length; i++){
+    if (topPts[i].x < minX) minX = topPts[i].x;
+    if (topPts[i].x > maxX) maxX = topPts[i].x;
+    if (topPts[i].y < minY) minY = topPts[i].y;
+    if (topPts[i].y > maxY) maxY = topPts[i].y;
+  }
+  const g = ctx.createLinearGradient(minX, minY, maxX, maxY);
+  g.addColorStop(0, SH(col, 1.20, topAlpha));
+  g.addColorStop(1, SH(col, 1.04, topAlpha));
+  ctx.fillStyle = g;
+  ctx.fill();
+}
+
+/* 圆柱 */
+function cylinder(cx, cy, cz, r, h, topCol, sideCol){
+  const top = prj(cx, cy + h, cz);
+  const bot = prj(cx, cy, cz);
+  const rx = r * CAM.s;
+  const ry = r * CAM.se * CAM.s;
+  ctx.beginPath();
+  ctx.ellipse(top.x, top.y, rx, ry, 0, 0, TAU);
+  ctx.rect(top.x - rx, top.y, rx*2, Math.max(1, bot.y - top.y));
+  ctx.ellipse(bot.x, bot.y, rx, ry, 0, 0, TAU);
+  const gs = ctx.createLinearGradient(0, top.y, 0, bot.y + ry);
+  gs.addColorStop(0, SH(sideCol, 1.06));
+  gs.addColorStop(1, SH(sideCol, 0.86));
+  ctx.fillStyle = gs;
+  ctx.fill('nonzero');
+  ctx.beginPath();
+  ctx.ellipse(top.x, top.y, rx, ry, 0, 0, TAU);
+  const gt = ctx.createLinearGradient(top.x-rx, top.y-ry, top.x+rx, top.y+ry);
+  gt.addColorStop(0, SH(topCol, 1.05));
+  gt.addColorStop(1, SH(topCol, 0.92));
+  ctx.fillStyle = gt;
+  ctx.fill();
+}
+
+/* =========================================================
+   三张信息卡
+   ========================================================= */
+function cardScale(){
+  return clamp(0.9 + (CAM.s - 54) / 14 * 0.2, 0.86, 1.12);
+}
+
+function cardAnchor(i, t){
+  const c = CST.cards[i];
+  const p = prj(c.x, c.y, c.z);
+  return { x:p.x, y:p.y + Math.sin(t*1.7 + i*1.3)*4.5 };
+}
+
+function drawIcon(kind, cx, cy, col){
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.fillStyle = col;
+  ctx.strokeStyle = col;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  if (kind === 'text'){
+    const bars = [[36,6,-14],[27,6,0],[31,6,14]];
+    for (let i = 0; i < bars.length; i++){
+      const v = bars[i];
+      rr(-v[0]/2, v[2]-v[1]/2, v[0], v[1], v[1]/2);
+      ctx.fill();
+    }
+  } else if (kind === 'img'){
+    rr(-19,-14,38,28,7);
+    ctx.lineWidth = 2.8;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(8,-5,3.4,0,TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-14,9);
+    ctx.lineTo(-4,-2);
+    ctx.lineTo(4,7);
+    ctx.lineTo(10,2);
+    ctx.lineTo(15,9);
+    ctx.closePath();
+    ctx.fillStyle = A(col,0.9);
+    ctx.fill();
+  } else {
+    const hs = [15,27,39,25,13];
+    for (let i = 0; i < hs.length; i++){
+      rr(-17 + i*8.2, -hs[i]/2, 4.6, hs[i], 2.3);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+function drawCard(t, i){
+  const c = CST.cards[i], t0 = T.cards[i];
+  const k = spring(seg(t, t0, t0 + 0.62*U));
+  if (k <= 0.001) return;
+  const a = cardAnchor(i, t);
+  const sc = c.scale * cardScale() * (0.56 + 0.44*k);
+  const rot = (i-1)*0.022 + Math.sin(t*1.05 + i*1.7)*0.008;
+  const al = clamp((t - t0) * 6);
+
+  ctx.save();
+  ctx.globalAlpha = al;
+  ctx.translate(a.x, a.y);
+  ctx.rotate(rot);
+  ctx.scale(sc, sc);
+
+  // 投影
+  ctx.save();
+  ctx.shadowColor = 'rgba(74,56,32,0.20)';
+  ctx.shadowBlur = 26;
+  ctx.shadowOffsetY = 15;
+  rr(-112,-73,224,146,28);
+  ctx.fillStyle = '#FFFDF8';
+  ctx.fill();
+  ctx.restore();
+
+  // 卡面
+  rr(-112,-73,224,146,28);
+  ctx.fillStyle = '#FFFDF8';
+  ctx.fill();
+
+  ctx.save();
+  rr(-112,-73,224,146,28);
+  ctx.clip();
+
+  const gt = ctx.createLinearGradient(-112,-73,54,52);
+  gt.addColorStop(0, A(c.col,0.12));
+  gt.addColorStop(1, A(c.col,0));
+  ctx.fillStyle = gt;
+  ctx.fillRect(-112,-73,224,146);
+
+  // 权重条
+  ctx.fillStyle = 'rgba(43,44,62,0.07)';
+  rr(-96,42,192,7,3.5);
+  ctx.fill();
+  const bw = 192 * (c.pct/100) * spring(seg(t, t0 + 0.10*U, t0 + 0.95*U));
+  if (bw > 1){
+    ctx.fillStyle = c.col;
+    rr(-96,42,Math.max(7,bw),7,3.5);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // 描边
+  rr(-112,-73,224,146,28);
+  ctx.strokeStyle = A(c.col,0.45);
+  ctx.lineWidth = 2.4;
+  ctx.stroke();
+
+  // 图标块
+  rr(-96,-40,78,78,20);
+  ctx.fillStyle = A(c.col,0.13);
+  ctx.fill();
+  ctx.strokeStyle = A(c.col,0.20);
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
+  drawIcon(c.icon, -57, -1, c.col);
+
+  // 相关度
+  ctx.fillStyle = '#9A9384';
+  ctx.font = f(600,21);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(c.role, -4, -16);
+
+  // 权重数字
+  const num = Math.round(c.pct * eOut(seg(t, T.nums[i], T.nums[i] + 0.75*U)));
+  ctx.fillStyle = c.col;
+  ctx.font = f(800,50);
+  ctx.fillText(num + '%', -6, 30);
+
+  ctx.restore();
+}
+
+function drawCards(t){
+  for (let i = 0; i < 3; i++) drawCard(t, i);
+}
+
+/* =========================================================
+   漏斗（Weighted sum器）
+   ========================================================= */
+function funnelGeom(t){
+  const F = CST.funnel;
+  const k = spring(seg(t, T.hopper, T.hopper + 0.8*U));
+  const bob = Math.sin(t*1.6)*0.045 + Math.sin(t*0.73 + 1.1)*0.022;
+  const rimY = F.rimY + bob, tipY = F.tipY + bob;
+  const rimC = prj(F.x, rimY, F.z);
+  const tipC = prj(F.x, tipY, F.z);
+  return {
+    F: F, k: k, bob: bob, rimY: rimY, tipY: tipY,
+    rimC: rimC, tipC: tipC,
+    rxR: F.rimR * CAM.s,
+    ryR: F.rimR * CAM.se * CAM.s,
+    rxT: F.tipR * CAM.s,
+    ryT: F.tipR * CAM.se * CAM.s,
+    mouth: { x: rimC.x, y: rimC.y + F.rimR * CAM.se * CAM.s * 0.18 }
+  };
+}
+
+function drawFunnel(t, g){
+  if (g.k <= 0.003) return;
+  const rimC = g.rimC, tipC = g.tipC;
+  const rxR = g.rxR, ryR = g.ryR, rxT = g.rxT, ryT = g.ryT;
+  const cy = (rimC.y + tipC.y) / 2;
+
+  ctx.save();
+  ctx.globalAlpha = clamp(g.k * 2.2);
+  ctx.translate(rimC.x, cy);
+  ctx.scale(0.72 + 0.28*g.k, 0.72 + 0.28*g.k);
+  ctx.translate(-rimC.x, -cy);
+
+  // 锥体：实体材质
+  const gBody = ctx.createLinearGradient(rimC.x - rxR, 0, rimC.x + rxR*0.9, 0);
+  gBody.addColorStop(0,   '#FFFEF9');
+  gBody.addColorStop(0.28,'#F7F1E3');
+  gBody.addColorStop(0.60,'#E2D9C5');
+  gBody.addColorStop(1,   '#C6BBA3');
+
+  // 底口
+  ctx.beginPath();
+  ctx.ellipse(tipC.x, tipC.y, rxT, ryT, 0, 0, TAU);
+  ctx.fillStyle = gBody;
+  ctx.fill();
+
+  // 锥面
+  ctx.beginPath();
+  ctx.moveTo(rimC.x - rxR, rimC.y);
+  ctx.lineTo(tipC.x - rxT, tipC.y + ryT*0.4);
+  ctx.lineTo(tipC.x + rxT, tipC.y + ryT*0.4);
+  ctx.lineTo(rimC.x + rxR, rimC.y);
+  ctx.closePath();
+  ctx.fillStyle = gBody;
+  ctx.fill();
+
+  // 锥面轮廓
+  ctx.beginPath();
+  ctx.moveTo(rimC.x - rxR, rimC.y);
+  ctx.lineTo(tipC.x - rxT, tipC.y + ryT*0.4);
+  ctx.moveTo(rimC.x + rxR, rimC.y);
+  ctx.lineTo(tipC.x + rxT, tipC.y + ryT*0.4);
+  ctx.strokeStyle = 'rgba(150,134,104,0.42)';
+  ctx.lineWidth = 1.8;
+  ctx.stroke();
+
+  // 顶部口沿面
+  ctx.beginPath();
+  ctx.ellipse(rimC.x, rimC.y, rxR, ryR, 0, 0, TAU);
+  ctx.fillStyle = gBody;
+  ctx.fill();
+
+  // 锥体暗部（底部）
+  const gShade = ctx.createLinearGradient(0, rimC.y + (tipC.y - rimC.y)*0.30, 0, tipC.y + ryT);
+  gShade.addColorStop(0,'rgba(104,86,56,0)');
+  gShade.addColorStop(1,'rgba(104,86,56,0.30)');
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(rimC.x - rxR, rimC.y);
+  ctx.lineTo(tipC.x - rxT, tipC.y + ryT*0.4);
+  ctx.lineTo(tipC.x + rxT, tipC.y + ryT*0.4);
+  ctx.lineTo(rimC.x + rxR, rimC.y);
+  ctx.closePath();
+  ctx.clip();
+  ctx.fillStyle = gShade;
+  ctx.fillRect(rimC.x-rxR, rimC.y, rxR*2, tipC.y - rimC.y + 30);
+  ctx.restore();
+
+  // 口径内部
+  const inR = 0.845;
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(rimC.x, rimC.y, rxR*inR, ryR*inR, 0, 0, TAU);
+  const gi = ctx.createLinearGradient(0, rimC.y - ryR*inR, 0, rimC.y + ryR*inR);
+  gi.addColorStop(0, '#DDD6C6');
+  gi.addColorStop(0.55,'#CCC3B1');
+  gi.addColorStop(1, '#ADA28C');
+  ctx.fillStyle = gi;
+  ctx.fill();
+  ctx.clip();
+
+  // 三色漩涡
+  const inten = clamp(0.24 + 0.76 * eOut(seg(t, T.flow - 0.35*U, T.flow + 1.05*U)));
+  const cols = [C.amber, C.coral, C.mint];
+  const spd = 1.25;
+  for (let i = 0; i < 3; i++){
+    const a = t*spd + i*TAU/3;
+    const r = rxR*0.28;
+    const x = rimC.x + Math.cos(a)*r;
+    const y = rimC.y + Math.sin(a)*r*0.62;
+    const rad = rxR*0.60;
+    const gg = ctx.createRadialGradient(x,y,0,x,y,rad);
+    gg.addColorStop(0, A(cols[i], 0.94*inten));
+    gg.addColorStop(0.5, A(cols[i], 0.48*inten));
+    gg.addColorStop(1, A(cols[i], 0));
+    ctx.fillStyle = gg;
+    ctx.beginPath();
+    ctx.arc(x,y,rad,0,TAU);
+    ctx.fill();
+  }
+  // 汇聚亮点
+  const cg = ctx.createRadialGradient(rimC.x, rimC.y+ryR*0.15, 0, rimC.x, rimC.y+ryR*0.15, rxR*0.55);
+  cg.addColorStop(0, `rgba(255,246,222,${0.72*inten})`);
+  cg.addColorStop(1, 'rgba(255,246,222,0)');
+  ctx.fillStyle = cg;
+  ctx.beginPath();
+  ctx.arc(rimC.x, rimC.y+ryR*0.15, rxR*0.55, 0, TAU);
+  ctx.fill();
+  ctx.restore();
+
+  // 口沿（陶瓷 + 高光）
+  const rimW = Math.max(4, 0.12*CAM.s);
+  ctx.beginPath();
+  ctx.ellipse(rimC.x, rimC.y, rxR, ryR, 0, 0, TAU);
+  ctx.strokeStyle = 'rgba(182,168,142,0.95)';
+  ctx.lineWidth = rimW + 3.4;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(rimC.x, rimC.y - 0.8, rxR, ryR, 0, 0, TAU);
+  ctx.strokeStyle = '#FFFDF6';
+  ctx.lineWidth = rimW;
+  ctx.stroke();
+
+  // 釉面高光
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(rimC.x - rxR, rimC.y);
+  ctx.lineTo(tipC.x - rxT, tipC.y + ryT*0.4);
+  ctx.lineTo(tipC.x + rxT, tipC.y + ryT*0.4);
+  ctx.lineTo(rimC.x + rxR, rimC.y);
+  ctx.closePath();
+  ctx.clip();
+  const gSt = ctx.createLinearGradient(rimC.x - rxR, 0, rimC.x + rxR, 0);
+  gSt.addColorStop(0,'rgba(255,255,255,0)');
+  gSt.addColorStop(0.22,'rgba(255,255,255,0.78)');
+  gSt.addColorStop(0.34,'rgba(255,255,255,0)');
+  gSt.addColorStop(0.76,'rgba(255,255,255,0.30)');
+  gSt.addColorStop(0.88,'rgba(255,255,255,0)');
+  ctx.fillStyle = gSt;
+  ctx.fillRect(rimC.x - rxR - 10, rimC.y - ryR, rxR*2 + 20, (tipC.y - rimC.y) + ryR*2 + 20);
+  ctx.restore();
+
+  // 底部光点（随输出光带）
+  const tipGlow = eOut(seg(t, T.out - 0.1*U, T.out + 0.35*U));
+  if (tipGlow > 0.01){
+    const tg = ctx.createRadialGradient(tipC.x, tipC.y, 0, tipC.x, tipC.y, 27);
+    tg.addColorStop(0, `rgba(255,232,176,${0.62*tipGlow})`);
+    tg.addColorStop(1, 'rgba(255,232,176,0)');
+    ctx.fillStyle = tg;
+    ctx.beginPath();
+    ctx.arc(tipC.x, tipC.y, 27, 0, TAU);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+/* =========================================================
+   光流轨道（三次贝塞尔：水平出卡，自上而下入漏斗）
+   ========================================================= */
+function bez3(p0,c1,c2,p1,k){
+  const u = 1-k;
+  return {
+    x: u*u*u*p0.x + 3*u*u*k*c1.x + 3*u*k*k*c2.x + k*k*k*p1.x,
+    y: u*u*u*p0.y + 3*u*u*k*c1.y + 3*u*k*k*c2.y + k*k*k*p1.y
+  };
+}
+
+function drawRails(t, g){
+  const widths = [20, 12, 5.4];
+
+  for (let i = 0; i < 3; i++){
+    const c = CST.cards[i];
+    const rk = eOut(seg(t, T.rails[i], T.rails[i] + 0.58*U));
+    if (rk <= 0.001) continue;
+
+    const a = cardAnchor(i, t);
+    const p0 = { x: a.x + 112*c.scale*cardScale(), y: a.y + 8 };
+    const p1 = { x: g.mouth.x + [-26,-8,14][i], y: g.mouth.y + [-10,2,12][i] };
+    const c1 = { x: p0.x + 86, y: p0.y - 4 };
+    const c2 = { x: p1.x - 74, y: p1.y - 104 };
+
+    const N = 44;
+    const pts = [];
+    const shown = Math.max(2, Math.round(N * rk));
+    for (let j = 0; j <= shown; j++){
+      pts.push(bez3(p0, c1, c2, p1, j / N));
+    }
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let j = 1; j < pts.length; j++) ctx.lineTo(pts[j].x, pts[j].y);
+
+    // 槽底
+    ctx.strokeStyle = 'rgba(196,188,174,0.45)';
+    ctx.lineWidth = widths[i] + 8;
+    ctx.stroke();
+
+    // 光带
+    ctx.shadowColor = A(c.col, 0.45);
+    ctx.shadowBlur = widths[i]*1.9;
+    ctx.strokeStyle = A(c.col, 0.94);
+    ctx.lineWidth = widths[i];
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // 芯线
+    ctx.strokeStyle = 'rgba(255,255,255,0.76)';
+    ctx.lineWidth = Math.max(1.4, widths[i]*0.30);
+    ctx.stroke();
+    ctx.restore();
+
+    // 流动光点
+    if (rk > 0.985 && t > T.rails[i] + 0.4*U){
+      const period = 0.78;
+      const n = 3;
+      for (let q = 0; q < n; q++){
+        const ph = ((t / period) + q/n + i*0.11) % 1;
+        const p = bez3(p0, c1, c2, p1, eOut(ph));
+        const rad = 5 + widths[i]*0.42;
+        const alpha = Math.sin(Math.PI * ph) * 0.9;
+        const pg = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,rad*2.1);
+        pg.addColorStop(0, `rgba(255,255,255,${alpha})`);
+        pg.addColorStop(0.35, A(c.col, alpha*0.8));
+        pg.addColorStop(1, A(c.col, 0));
+        ctx.fillStyle = pg;
+        ctx.beginPath();
+        ctx.arc(p.x,p.y,rad*2.1,0,TAU);
+        ctx.fill();
+      }
+    }
+  }
+}
+
+/* =========================================================
+   结果：玻璃展示柱 + 三层加权内容
+   ========================================================= */
+function prismPoints(P){
+  const hw = P.w/2, hd = P.d/2;
+  const y0 = P.baseY + 0.2, y1 = P.baseY + P.h;
+  const rows = [];
+  for (let sy = 0; sy < 2; sy++){
+    const y = sy === 0 ? y0 : y1;
+    const row = [];
+    row.push(prj(P.x-hw, y, P.z-hd));
+    row.push(prj(P.x+hw, y, P.z-hd));
+    row.push(prj(P.x+hw, y, P.z+hd));
+    row.push(prj(P.x-hw, y, P.z+hd));
+    rows.push(row);
+  }
+  return { bot: rows[0], top: rows[1] };
+}
+
+function drawPrism(t){
+  const P = CST.prism;
+  const pop = spring(seg(t, T.prism, T.prism + 0.75*U));
+  if (pop <= 0.003) return;
+
+  const base = prj(P.x, 0, P.z);
+
+  ctx.save();
+  ctx.translate(base.x, base.y);
+  ctx.scale(0.74 + 0.26*pop, 0.74 + 0.26*pop);
+  ctx.translate(-base.x, -base.y);
+
+  // 底座
+  cylinder(P.x, 0, P.z, 1.5, 0.42, '#EFEAE0', '#DDD6C9');
+  cylinder(P.x, 0.42, P.z, 1.3, 0.14, '#F7F3EA', '#E5DED1');
+
+  // 玻璃柱内阴影
+  const baseC = prj(P.x, P.baseY + 0.2, P.z);
+  ctx.save();
+  ctx.translate(baseC.x, baseC.y);
+  ctx.scale(1, CAM.se);
+  const gBase = ctx.createRadialGradient(0,0,0,0,0,1.35*CAM.s);
+  gBase.addColorStop(0,'rgba(90,74,50,0.14)');
+  gBase.addColorStop(1,'rgba(90,74,50,0)');
+  ctx.fillStyle = gBase;
+  ctx.beginPath();
+  ctx.arc(0,0,1.35*CAM.s,0,TAU);
+  ctx.fill();
+  ctx.restore();
+
+  const innerW = P.w - 0.7, innerD = P.d - 0.58;
+  const innerBase = P.baseY + 0.26;
+  const innerH = P.h - 0.64;
+
+  // 空腔底板
+  box3d(P.x, innerBase - 0.06, P.z, innerW + 0.1, 0.06, innerD + 0.1, 0.04, '#E7E2D6');
+
+  // 内容层
+  const shares = [0.6, 0.3, 0.1];
+  const cols = [C.amber, C.coral, C.mint];
+  let acc = innerBase;
+  for (let i = 0; i < 3; i++){
+    const k = spring(seg(t, T.fill[i], T.fill[i] + 0.62*U));
+    if (k > 0.001){
+      const h = innerH * shares[i] * k;
+      box3d(P.x, acc, P.z, innerW, h, innerD, 0.05, cols[i]);
+      // 层间亮线
+      const linePts = rrPath(P.x, P.z, innerW, innerD, 0.05, 3).map(function(p){
+        return prj(p.x, acc + h, p.z);
+      });
+      polyPath(linePts);
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      acc += h;
+    }
+  }
+
+  // 玻璃
+  const pts = prismPoints(P);
+  const top = pts.top, bot = pts.bot;
+
+  // 顶面
+  ctx.beginPath();
+  ctx.moveTo(top[0].x, top[0].y);
+  for (let i = 1; i < 4; i++) ctx.lineTo(top[i].x, top[i].y);
+  ctx.closePath();
+  const gTop = ctx.createLinearGradient(top[0].x, top[0].y, top[2].x, top[2].y);
+  gTop.addColorStop(0,'rgba(255,255,255,0.42)');
+  gTop.addColorStop(1,'rgba(255,255,255,0.14)');
+  ctx.fillStyle = gTop;
+  ctx.fill();
+
+  // 前面（薄玻璃）
+  ctx.beginPath();
+  ctx.moveTo(top[3].x, top[3].y);
+  ctx.lineTo(top[2].x, top[2].y);
+  ctx.lineTo(bot[2].x, bot[2].y);
+  ctx.lineTo(bot[3].x, bot[3].y);
+  ctx.closePath();
+  const gF = ctx.createLinearGradient(0, top[3].y, 0, bot[3].y);
+  gF.addColorStop(0,'rgba(255,255,255,0.14)');
+  gF.addColorStop(0.5,'rgba(255,255,255,0.03)');
+  gF.addColorStop(1,'rgba(198,208,200,0.18)');
+  ctx.fillStyle = gF;
+  ctx.fill();
+
+  // 右面
+  ctx.beginPath();
+  ctx.moveTo(top[2].x, top[2].y);
+  ctx.lineTo(top[1].x, top[1].y);
+  ctx.lineTo(bot[1].x, bot[1].y);
+  ctx.lineTo(bot[2].x, bot[2].y);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.fill();
+
+  // 玻璃反光
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(top[3].x, top[3].y);
+  ctx.lineTo(top[2].x, top[2].y);
+  ctx.lineTo(bot[2].x, bot[2].y);
+  ctx.lineTo(bot[3].x, bot[3].y);
+  ctx.closePath();
+  ctx.clip();
+  const sweep = eIO(seg(t, 5.45*U, 6.35*U));
+  const sx = lerp(top[3].x - 120, top[2].x + 150, sweep);
+  const gSp = ctx.createLinearGradient(sx - 80, 0, sx + 80, 0);
+  gSp.addColorStop(0,'rgba(255,255,255,0)');
+  gSp.addColorStop(0.5,'rgba(255,255,255,0.48)');
+  gSp.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle = gSp;
+  ctx.fillRect(top[3].x - 220, top[3].y, 640, bot[3].y - top[3].y + 40);
+  ctx.restore();
+
+  // 棱边
+  function edge(a, b, alpha, wd){
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+    ctx.lineWidth = wd;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+  edge(bot[0], top[0], 0.30, 1.3);
+  edge(bot[1], top[1], 0.30, 1.3);
+  edge(top[0], top[1], 0.42, 1.4);
+  edge(top[1], top[2], 0.72, 1.8);
+  edge(top[2], top[3], 0.92, 2.2);
+  edge(top[3], top[0], 0.55, 1.7);
+  edge(top[3], bot[3], 0.95, 2.2);
+  edge(top[2], bot[2], 0.95, 2.2);
+  edge(top[1], bot[1], 0.40, 1.5);
+  edge(top[0], bot[0], 0.32, 1.3);
+  edge(bot[3], bot[2], 0.62, 1.7);
+  edge(bot[2], bot[1], 0.34, 1.3);
+  edge(bot[1], bot[0], 0.22, 1.2);
+
+  // 内部暖光
+  const glow = clamp(seg(t, T.fill[0], T.fill[0] + 1.4*U));
+  if (glow > 0.01){
+    const gx = (top[0].x + top[2].x)/2, gy = (top[0].y + bot[2].y)/2;
+    const gg = ctx.createRadialGradient(gx, gy, 0, gx, gy, P.w*CAM.s*0.8);
+    const pulse = 1 + 0.06*Math.sin((t - T.fill[0])*3.2);
+    gg.addColorStop(0, `rgba(255,226,164,${0.20*glow*pulse})`);
+    gg.addColorStop(1, 'rgba(255,226,164,0)');
+    ctx.fillStyle = gg;
+    ctx.beginPath();
+    ctx.arc(gx, gy, P.w*CAM.s*0.8, 0, TAU);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+/* =========================================================
+   输出光带
+   ========================================================= */
+function drawOutput(t, g){
+  const P = CST.prism;
+  const rk = eOut(seg(t, T.out, T.out + 0.45*U));
+  if (rk <= 0.001) return;
+
+  const p0 = { x: g.tipC.x, y: g.tipC.y + 6 };
+  const target = prj(P.x - P.w/2, P.baseY + P.h*0.55, P.z + P.d/2);
+  const c1 = { x: p0.x + 10, y: p0.y + 62 };
+  const c2 = { x: target.x - 96, y: target.y + 26 };
+
+  const N = 42;
+  const pts = [];
+  const shown = Math.max(2, Math.round(N*rk));
+  for (let j = 0; j <= shown; j++) pts.push(bez3(p0,c1,c2,target, j/N));
+
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let j = 1; j < pts.length; j++) ctx.lineTo(pts[j].x, pts[j].y);
+
+  ctx.shadowColor = 'rgba(238,169,69,0.55)';
+  ctx.shadowBlur = 32;
+  ctx.strokeStyle = 'rgba(238,169,69,0.95)';
+  ctx.lineWidth = 17;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  ctx.strokeStyle = 'rgba(255,247,226,0.92)';
+  ctx.lineWidth = 7;
+  ctx.stroke();
+  ctx.restore();
+
+  if (rk > 0.98){
+    const period = 0.62;
+    for (let q = 0; q < 3; q++){
+      const ph = ((t/period) + q/3) % 1;
+      const p = bez3(p0,c1,c2,target, eOut(ph));
+      const rad = 14;
+      const a = Math.sin(Math.PI*ph)*0.9;
+      const pg = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,rad);
+      pg.addColorStop(0, `rgba(255,255,255,${a})`);
+      pg.addColorStop(0.4, `rgba(255,228,160,${a*0.7})`);
+      pg.addColorStop(1, 'rgba(255,228,160,0)');
+      ctx.fillStyle = pg;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,rad,0,TAU);
+      ctx.fill();
+    }
+  }
+}
+
+/* =========================================================
+   标签 / 标题 / 角注
+   ========================================================= */
+function drawPill(x, y, text, opt){
+  opt = opt || {};
+  const fs = opt.fs || 27;
+  const pop = opt.pop == null ? 1 : opt.pop;
+  const alpha = opt.alpha == null ? 1 : opt.alpha;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(x,y);
+  ctx.scale(pop,pop);
+  ctx.font = f(700,fs);
+  const tw = ctx.measureText(text).width;
+  const padX = 24, hgt = fs*2.0, wid = tw + padX*2 + (opt.dot ? 28 : 0);
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(74,56,32,0.16)';
+  ctx.shadowBlur = 20;
+  ctx.shadowOffsetY = 8;
+  rr(-wid/2, -hgt/2, wid, hgt, hgt/2);
+  ctx.fillStyle = '#FFFDF8';
+  ctx.fill();
+  ctx.restore();
+
+  rr(-wid/2, -hgt/2, wid, hgt, hgt/2);
+  ctx.strokeStyle = 'rgba(43,44,62,0.10)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  let tx = -wid/2 + padX;
+  if (opt.dot){
+    ctx.beginPath();
+    ctx.arc(tx + 7, 0, 7, 0, TAU);
+    ctx.fillStyle = opt.dot;
+    ctx.fill();
+    tx += 28;
+  }
+  ctx.fillStyle = C.ink;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, tx, 1);
+  ctx.restore();
+}
+
+function drawPrismLabel(t){
+  const P = CST.prism;
+  if (t < T.label) return;
+  const k = spring(seg(t, T.label, T.label + 0.55*U));
+  const back = prj(P.x, P.baseY + P.h, P.z);
+  drawPill(back.x, back.y - 52 + (1-k)*18, 'Combined result', {
+    dot: C.gold, fs: 27, pop: 0.86 + 0.14*k, alpha: clamp((t - T.label)*5)
+  });
+}
+
+function drawTitle(t){
+  const t0 = T.title;
+  const k = spring(seg(t, t0, t0 + 0.7*U));
+  if (k <= 0.001) return;
+  const alpha = clamp((t - t0)*5);
+  const X = 72, Y = 32, WD = 690, HT = 132;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(0, (1-k)*-24);
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(74,56,32,0.16)';
+  ctx.shadowBlur = 30;
+  ctx.shadowOffsetY = 12;
+  rr(X, Y, WD, HT, 30);
+  ctx.fillStyle = '#FFFDF8';
+  ctx.fill();
+  ctx.restore();
+
+  rr(X, Y, WD, HT, 30);
+  ctx.strokeStyle = 'rgba(43,44,62,0.07)';
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
+
+  // 徽标
+  const bx = X + 62, by = Y + 66;
+  ctx.save();
+  const gb = ctx.createLinearGradient(bx-27, by-27, bx+27, by+27);
+  gb.addColorStop(0, C.amber);
+  gb.addColorStop(1, C.coral);
+  ctx.beginPath();
+  ctx.arc(bx, by, 27, 0, TAU);
+  ctx.fillStyle = gb;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(bx, by, 23, 0, TAU);
+  ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
+  // 汇聚符号
+  ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+  ctx.lineWidth = 2.4;
+  ctx.lineCap = 'round';
+  const rays = [[-14,-11],[-17,0],[-14,11]];
+  for (let i = 0; i < rays.length; i++){
+    ctx.beginPath();
+    ctx.moveTo(bx + rays[i][0], by + rays[i][1]);
+    ctx.lineTo(bx + 1, by);
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.arc(bx + 8, by, 5.6, 0, TAU);
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fill();
+  ctx.restore();
+
+  // 标题
+  ctx.fillStyle = C.ink;
+  ctx.font = f(800, 50);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(CAPTION, X + 110, Y + 64);
+
+  // 副标题
+  ctx.fillStyle = '#9A9384';
+  ctx.font = f(500, 23);
+  ctx.fillText('ATTENTION · WEIGHT BY RELEVANCE', X + 112, Y + 104);
+
+  // 小色点
+  const dots = [C.amber, C.coral, C.mint];
+  for (let i = 0; i < 3; i++){
+    ctx.beginPath();
+    ctx.arc(X + 116 + i*22, Y + 118, 4.2, 0, TAU);
+    ctx.fillStyle = A(dots[i], 0.85);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+function drawFootnote(t){
+  const k = clamp((t - 0.8*U)/(0.6*U));
+  if (k <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = 0.9 * k;
+  ctx.fillStyle = C.faint;
+  ctx.font = f(500, 22);
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Illustrative weights', 1848, 1032);
+  ctx.restore();
+}
+
+function drawVignette(){
+  const g = ctx.createRadialGradient(960, 520, 430, 960, 520, 1180);
+  g.addColorStop(0, 'rgba(60,48,30,0)');
+  g.addColorStop(0.72, 'rgba(60,48,30,0.02)');
+  g.addColorStop(1, 'rgba(60,48,30,0.075)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,W,H);
+}
+
+/* =========================================================
+   主帧
+   ========================================================= */
+function frame(tRaw){
+  const t = clamp(Number(tRaw) || 0, 0, DUR);
+  camAt(t);
+
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.globalAlpha = 1;
+  ctx.clearRect(0,0,W,H);
+
+  drawBG();
+  drawDisc(t);
+
+  const fun = funnelGeom(t);
+  drawGroundShadows(t, fun);
+  drawRails(t, fun);
+  drawFunnel(t, fun);
+  drawOutput(t, fun);
+  drawPrism(t);
+  drawPrismLabel(t);
+  drawCards(t);
+  drawTitle(t);
+  drawFootnote(t);
+  drawVignette();
+}
+
+function showError(err){
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#FAF8F3';
+  ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = '#C0392B';
+  ctx.font = '28px monospace';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('ERR: ' + (err && err.message ? err.message : String(err)), 60, 80);
+}
+
+window.film = { frame: frame };
+try { frame(0); }
+catch (err){ showError(err); }
+
+})();
+</script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "presets": [
     {
       "id": "warm",
@@ -10,7 +10,16 @@
       "preview_video": "videos/warm.mp4",
       "preview_poster": "posters/warm.jpg",
       "preview_captions": "captions/warm.vtt",
-      "preview_seconds": 8
+      "preview_seconds": 8,
+      "preview_languages": {
+        "en": {
+          "video": "videos/en/warm.mp4",
+          "poster": "posters/en/warm.jpg",
+          "captions": "captions/en/warm.vtt"
+        }
+      },
+      "name_en": "Warm diagrams",
+      "description_en": "Warm paper, clear type and simple animated diagrams."
     },
     {
       "id": "ascii",
@@ -21,7 +30,16 @@
       "preview_video": "videos/ascii.mp4",
       "preview_poster": "posters/ascii.jpg",
       "preview_captions": "captions/ascii.vtt",
-      "preview_seconds": 8
+      "preview_seconds": 8,
+      "preview_languages": {
+        "en": {
+          "video": "videos/en/ascii.mp4",
+          "poster": "posters/en/ascii.jpg",
+          "captions": "captions/en/ascii.vtt"
+        }
+      },
+      "name_en": "ASCII terminal",
+      "description_en": "Character grids, terminal panels and flowing data."
     },
     {
       "id": "openfilm",
@@ -32,7 +50,16 @@
       "preview_video": "videos/openfilm.mp4",
       "preview_poster": "posters/openfilm.jpg",
       "preview_captions": "captions/openfilm.vtt",
-      "preview_seconds": 8
+      "preview_seconds": 8,
+      "preview_languages": {
+        "en": {
+          "video": "videos/en/openfilm.mp4",
+          "poster": "posters/en/openfilm.jpg",
+          "captions": "captions/en/openfilm.vtt"
+        }
+      },
+      "name_en": "Spatial code animation",
+      "description_en": "Geometric objects, depth, lighting and camera movement."
     },
     {
       "id": "chalkboard",
@@ -74,7 +101,16 @@
       "preview_video": "videos/chalkboard.mp4",
       "preview_poster": "posters/chalkboard.jpg",
       "preview_captions": "captions/chalkboard.vtt",
-      "preview_seconds": 8
+      "preview_seconds": 8,
+      "preview_languages": {
+        "en": {
+          "video": "videos/en/chalkboard.mp4",
+          "poster": "posters/en/chalkboard.jpg",
+          "captions": "captions/en/chalkboard.vtt"
+        }
+      },
+      "name_en": "Chalkboard",
+      "description_en": "Chalk textures, handwritten steps and highlights."
     },
     {
       "id": "whiteboard",
@@ -124,7 +160,16 @@
       "preview_video": "videos/whiteboard.mp4",
       "preview_poster": "posters/whiteboard.jpg",
       "preview_captions": "captions/whiteboard.vtt",
-      "preview_seconds": 8
+      "preview_seconds": 8,
+      "preview_languages": {
+        "en": {
+          "video": "videos/en/whiteboard.mp4",
+          "poster": "posters/en/whiteboard.jpg",
+          "captions": "captions/en/whiteboard.vtt"
+        }
+      },
+      "name_en": "Hand-drawn whiteboard",
+      "description_en": "Drawn shapes, arrows and labels reveal an idea step by step."
     },
     {
       "id": "miniature-diorama",
@@ -174,7 +219,16 @@
       "preview_video": "videos/miniature-diorama.mp4",
       "preview_poster": "posters/miniature-diorama.jpg",
       "preview_captions": "captions/miniature-diorama.vtt",
-      "preview_seconds": 8
+      "preview_seconds": 8,
+      "preview_languages": {
+        "en": {
+          "video": "videos/en/miniature-diorama.mp4",
+          "poster": "posters/en/miniature-diorama.jpg",
+          "captions": "captions/en/miniature-diorama.vtt"
+        }
+      },
+      "name_en": "Miniature workshop",
+      "description_en": "Small models and moving parts explain a system."
     },
     {
       "id": "paper-collage",
@@ -216,7 +270,16 @@
       "preview_video": "videos/paper-collage.mp4",
       "preview_poster": "posters/paper-collage.jpg",
       "preview_captions": "captions/paper-collage.vtt",
-      "preview_seconds": 8
+      "preview_seconds": 8,
+      "preview_languages": {
+        "en": {
+          "video": "videos/en/paper-collage.mp4",
+          "poster": "posters/en/paper-collage.jpg",
+          "captions": "captions/en/paper-collage.vtt"
+        }
+      },
+      "name_en": "Paper collage",
+      "description_en": "Layered paper, cutouts and stop-motion movement."
     },
     {
       "id": "watercolor-character",
@@ -282,7 +345,16 @@
       "preview_video": "videos/watercolor-character.mp4",
       "preview_poster": "posters/watercolor-character.jpg",
       "preview_captions": "captions/watercolor-character.vtt",
-      "preview_seconds": 8
+      "preview_seconds": 8,
+      "preview_languages": {
+        "en": {
+          "video": "videos/en/watercolor-character.mp4",
+          "poster": "posters/en/watercolor-character.jpg",
+          "captions": "captions/en/watercolor-character.vtt"
+        }
+      },
+      "name_en": "Watercolor characters",
+      "description_en": "Painted textures and characters guide the explanation."
     },
     {
       "id": "data-storytelling",
@@ -324,7 +396,16 @@
       "preview_video": "videos/data-storytelling.mp4",
       "preview_poster": "posters/data-storytelling.jpg",
       "preview_captions": "captions/data-storytelling.vtt",
-      "preview_seconds": 8
+      "preview_seconds": 8,
+      "preview_languages": {
+        "en": {
+          "video": "videos/en/data-storytelling.mp4",
+          "poster": "posters/en/data-storytelling.jpg",
+          "captions": "captions/en/data-storytelling.vtt"
+        }
+      },
+      "name_en": "Data storytelling",
+      "description_en": "Charts and annotations reveal relationships in the data."
     },
     {
       "id": "kinetic-typography",
@@ -374,7 +455,16 @@
       "preview_video": "videos/kinetic-typography.mp4",
       "preview_poster": "posters/kinetic-typography.jpg",
       "preview_captions": "captions/kinetic-typography.vtt",
-      "preview_seconds": 8
+      "preview_seconds": 8,
+      "preview_languages": {
+        "en": {
+          "video": "videos/en/kinetic-typography.mp4",
+          "poster": "posters/en/kinetic-typography.jpg",
+          "captions": "captions/en/kinetic-typography.vtt"
+        }
+      },
+      "name_en": "Kinetic typography",
+      "description_en": "Words, numbers and movement carry the explanation."
     },
     {
       "id": "free",

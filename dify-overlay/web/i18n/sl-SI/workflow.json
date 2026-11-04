@@ -1076,6 +1076,8 @@
   "tabs.unconfiguredStartDisabledTip": "Na platno je bilo dodano nekonfigurirano začetno vozlišče. Pred nadaljevanjem dokončajte nastavitev.",
   "tabs.utilities": "Komunalne storitve",
   "tabs.workflowTool": "Potek dela",
+  "teacherStyle.followCourse": "Follow course",
+  "teacherStyle.previewLanguage": "Preview language",
   "tracing.stopBy": "Ohranjaj se pri {{user}}",
   "triggerStatus.enabled": "SPROŽILEC",
   "variableReference.assignedVarsDescription": "Dodeljene spremenljivke morajo biti spremenljivke, ki jih je mogoče pisati, kot so spremenljivke za pogovor.",

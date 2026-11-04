@@ -1076,6 +1076,8 @@
   "tabs.unconfiguredStartDisabledTip": "未設定の開始ノードがキャンバスに追加されています。続行する前に設定を完了してください。",
   "tabs.utilities": "ツール",
   "tabs.workflowTool": "ワークフロー",
+  "teacherStyle.followCourse": "Follow course",
+  "teacherStyle.previewLanguage": "Preview language",
   "tracing.stopBy": "{{user}}によって停止",
   "triggerStatus.enabled": "トリガー",
   "variableReference.assignedVarsDescription": "代入される変数は、会話変数などの書き込み可能な変数である必要があります。",

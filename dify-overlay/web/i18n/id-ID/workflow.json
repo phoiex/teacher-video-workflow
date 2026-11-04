@@ -1076,6 +1076,8 @@
   "tabs.unconfiguredStartDisabledTip": "Node awal yang belum dikonfigurasi telah ditambahkan ke kanvas. Selesaikan penyiapan sebelum melanjutkan.",
   "tabs.utilities": "Utilitas",
   "tabs.workflowTool": "Alur kerja",
+  "teacherStyle.followCourse": "Follow course",
+  "teacherStyle.previewLanguage": "Preview language",
   "tracing.stopBy": "Singgah di {{user}}",
   "triggerStatus.enabled": "PEICU",
   "variableReference.assignedVarsDescription": "Variabel yang ditetapkan harus berupa variabel yang dapat ditulis, seperti variabel percakapan.",

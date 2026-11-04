@@ -1076,6 +1076,8 @@
   "tabs.unconfiguredStartDisabledTip": "یک گره شروع پیکربندی‌نشده به بوم اضافه شده است. پیش از ادامه، تنظیمات را کامل کنید.",
   "tabs.utilities": "ابزارهای کاربردی",
   "tabs.workflowTool": "گردش کار",
+  "teacherStyle.followCourse": "Follow course",
+  "teacherStyle.previewLanguage": "Preview language",
   "tracing.stopBy": "متوقف‌شده توسط {{user}}",
   "triggerStatus.enabled": "تریگر",
   "variableReference.assignedVarsDescription": "متغیرهای تخصیص‌یافته باید قابل‌نوشتن باشند (مانند متغیرهای مکالمه).",

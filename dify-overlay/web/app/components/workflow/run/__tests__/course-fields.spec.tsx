@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import CourseKnowledge from '../course-knowledge'
 import { parseKnowledgeChoice } from '../course-knowledge-data'
@@ -65,5 +66,55 @@ describe('course material selection', () => {
     fireEvent.play(first)
     fireEvent.play(second)
     expect(pause).toHaveBeenCalledOnce()
+  })
+
+  it('follows the course language for video, poster and captions', () => {
+    const { rerender } = render(
+      <StylePreviewOptions options={['暖色图解']} courseLanguage="English" onChange={vi.fn()} />,
+    )
+    const english = screen.getByLabelText('暖色图解', { selector: 'video' })
+    expect(english).toHaveAttribute('src', '/teacher-style/videos/en/warm.mp4')
+    expect(english).toHaveAttribute('poster', '/teacher-style/posters/en/warm.jpg')
+    expect(english.querySelector('track')).toHaveAttribute('srcLang', 'en')
+    rerender(
+      <StylePreviewOptions
+        options={['暖色图解']}
+        courseLanguage="中文（普通话）"
+        onChange={vi.fn()}
+      />,
+    )
+    expect(screen.getByLabelText('暖色图解', { selector: 'video' })).toHaveAttribute(
+      'src',
+      '/teacher-style/videos/warm.mp4',
+    )
+  })
+
+  it('switches the preview without changing style, and can follow the course again', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <StylePreviewOptions
+        options={['暖色图解']}
+        value="暖色图解"
+        courseLanguage="zh"
+        onChange={onChange}
+      />,
+    )
+    const first = screen.getByLabelText('暖色图解', { selector: 'video' }) as HTMLVideoElement
+    const pause = vi.spyOn(first, 'pause').mockImplementation(() => {})
+    fireEvent.play(first)
+    await user.click(screen.getByRole('radio', { name: 'English' }))
+    expect(pause).toHaveBeenCalled()
+    expect(screen.getByLabelText('暖色图解', { selector: 'video' })).toHaveAttribute(
+      'src',
+      '/teacher-style/videos/en/warm.mp4',
+    )
+    expect(onChange).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: '暖色图解' })).toHaveAttribute('aria-pressed', 'true')
+    await user.click(screen.getByRole('radio', { name: 'workflow.teacherStyle.followCourse' }))
+    expect(screen.getByLabelText('暖色图解', { selector: 'video' })).toHaveAttribute(
+      'src',
+      '/teacher-style/videos/warm.mp4',
+    )
   })
 })

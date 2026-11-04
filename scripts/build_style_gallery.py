@@ -12,15 +12,25 @@ CSS = '''
 '''
 
 
-def page(presets, prefix):
+def page(presets, prefix, language='zh'):
+    en = language == 'en'
+    title = 'Video style previews' if en else '画面风格参考'
+    intro = 'Ten eight-second animations, with the same example in each style.' if en else '十种风格都有中英文样片，每段 8 秒，使用同一个例子比较画面效果。'
+    meta = '8 seconds · 1080p · Silent' if en else '8 秒 · 1080p · 静音'
+    download = 'Download video' if en else '下载视频'
+    credit = 'Original animations generated with DeepSeek Flash. English text and layouts adapted from the Chinese versions.' if en else '原动画由 DeepSeek Flash 生成，英文版沿用动画并调整文字与排版。'
+    project = 'Project and instructions' if en else '项目与使用说明'
     cards = []
     for index, p in enumerate(presets, 1):
-        name = html.escape(p['name'])
-        video = prefix + p['preview_video']
-        poster = prefix + p['preview_poster']
-        captions = prefix + p['preview_captions']
-        cards.append(f'''<article><div class="caption"><h2>{index:02d} · {name}</h2><p>{html.escape(p['description'])}</p></div><video aria-label="{name}" controls playsinline preload="none" poster="{poster}"><source src="{video}" type="video/mp4"><track kind="captions" src="{captions}" srclang="zh-CN"></video><div class="meta"><span>8 秒 · 1080p · 静音</span><a href="{video}" download>下载视频</a></div></article>''')
-    return '''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>画面风格参考 · 教师微课工作流</title><style>''' + CSS + '''</style></head><body><main><header><h1>画面风格参考</h1><p>十种 8 秒样片，使用同一个例子比较画面效果。</p></header><div class="grid">''' + '\n'.join(cards) + '''</div><footer>样片由 DeepSeek Flash 生成。<a href="https://github.com/phoiex/teacher-video-workflow">项目与使用说明</a></footer></main><script>document.querySelectorAll('video').forEach(v=>v.addEventListener('play',()=>document.querySelectorAll('video').forEach(other=>{if(other!==v)other.pause()})));</script></body></html>'''
+        name = html.escape(p['name_en'] if en else p['name'])
+        description = html.escape(p['description_en'] if en else p['description'])
+        variant = p['preview_languages']['en'] if en else {
+            'video': p['preview_video'], 'poster': p['preview_poster'], 'captions': p['preview_captions']}
+        video, poster, captions = (prefix + variant[key] for key in ('video', 'poster', 'captions'))
+        cards.append(f'''<article><div class="caption"><h2>{index:02d} · {name}</h2><p>{description}</p></div><video aria-label="{name}" controls playsinline preload="none" poster="{poster}"><source src="{video}" type="video/mp4"><track kind="captions" src="{captions}" srclang="{'en' if en else 'zh-CN'}"></video><div class="meta"><span>{meta}</span><a href="{video}" download>{download}</a></div></article>''')
+    navigation = f'''<nav aria-label="{'Preview language' if en else '样片语言'}"><a href="index.html" lang="zh-CN" {'aria-current="page"' if not en else ''}>中文</a><a href="en.html" lang="en" {'aria-current="page"' if en else ''}>English</a></nav>'''
+    styles = CSS + 'nav{display:flex;gap:8px;margin-top:20px}nav a{padding:6px 16px;border:1px solid var(--line);border-radius:20px}nav a[aria-current]{font-weight:650;border-color:var(--accent)}'
+    return f'''<!doctype html><html lang="{'en' if en else 'zh-CN'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{title} · Teacher Video Workflow</title><style>{styles}</style></head><body><main><header><h1>{title}</h1><p>{intro}</p>{navigation}</header><div class="grid">''' + '\n'.join(cards) + f'''</div><footer>{credit} <a href="https://github.com/phoiex/teacher-video-workflow">{project}</a></footer></main><script>document.querySelectorAll('video').forEach(v=>v.addEventListener('play',()=>document.querySelectorAll('video').forEach(other=>{{if(other!==v)other.pause()}})));</script></body></html>'''
 
 
 def main():
@@ -29,11 +39,15 @@ def main():
         for key in ('preview_video', 'preview_poster', 'preview_captions'):
             if not (ROOT / 'assets/style' / p[key]).is_file():
                 raise FileNotFoundError(p[key])
-    (ROOT / 'index.html').write_text(page(presets, 'assets/style/'))
-    live = page(presets, '')
-    (ROOT / 'assets/style/index.html').write_text(live)
-    (ROOT / 'dify-overlay/web/public/teacher-style/index.html').write_text(live)
-    print(f'已生成 {len(presets)} 种风格的试看页。')
+        for asset in p['preview_languages']['en'].values():
+            if not (ROOT / 'assets/style' / asset).is_file():
+                raise FileNotFoundError(asset)
+    for language, filename in (('zh', 'index.html'), ('en', 'en.html')):
+        (ROOT / filename).write_text(page(presets, 'assets/style/', language))
+        live = page(presets, '', language)
+        (ROOT / 'assets/style' / filename).write_text(live)
+        (ROOT / 'dify-overlay/web/public/teacher-style' / filename).write_text(live)
+    print(f'已生成 {len(presets)} 种风格的中英文试看页。')
 
 
 if __name__ == '__main__':

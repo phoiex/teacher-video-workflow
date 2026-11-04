@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>How attention works · ASCII Attention</title>
+<style>
+  :root{
+    --bg:#081012;
+    --ink:#eef4ef;
+    --ink2:#c3d1cc;
+    --dim:#7d928f;
+    --dim2:#556b69;
+    --teal:#74d6c4;
+    --teal-dim:#2f8277;
+    --amber:#e8b46b;
+    --amber-hi:#ffd79d;
+    --line:rgba(126,178,170,.28);
+    --line-soft:rgba(126,178,170,.15);
+    --a:#e8b46b;
+    --b:#6fd0bf;
+    --c:#a4b6b3;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;width:100%;height:100%;background:#040607;overflow:hidden;}
+  body{
+    font-family:"Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    user-select:none;
+  }
+  #stage{
+    position:absolute;left:0;top:0;width:1920px;height:1080px;
+    background:var(--bg);overflow:hidden;transform-origin:0 0;
+  }
+  canvas{display:block;}
+  #bg,#flow,#front{position:absolute;left:0;top:0;width:1920px;height:1080px;}
+  #flow{z-index:2;pointer-events:none;}
+  .ui{position:absolute;inset:0;z-index:3;pointer-events:none;}
+  #front{z-index:4;pointer-events:none;}
+  .scanlines{
+    position:absolute;inset:0;z-index:5;pointer-events:none;
+    background:repeating-linear-gradient(to bottom,rgba(0,0,0,.065) 0px,rgba(0,0,0,.065) 1px,transparent 1px,transparent 4px);
+  }
+  .vignette{
+    position:absolute;inset:0;z-index:6;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 47%,transparent 49%,rgba(0,0,0,.26) 100%);
+  }
+
+  /* header */
+  .brand{
+    position:absolute;left:72px;top:32px;display:flex;align-items:center;gap:12px;
+    font-size:16px;letter-spacing:.18em;color:#cfdcd7;opacity:0;
+  }
+  .brand .sq{width:7px;height:7px;background:var(--amber);box-shadow:0 0 12px rgba(232,180,107,.55);}
+  .brand .en{font-family:"JetBrains Mono",Menlo,Consolas,monospace;font-size:9px;color:var(--dim);letter-spacing:.22em;}
+  .topright{
+    position:absolute;right:72px;top:34px;font-family:"JetBrains Mono",Menlo,Consolas,monospace;
+    font-size:10px;letter-spacing:.18em;color:var(--dim2);opacity:0;
+  }
+  .topright b{font-weight:400;color:var(--teal);}
+  .topright .sep{color:var(--dim2);margin:0 8px;}
+
+  h1#title{
+    position:absolute;left:70px;top:70px;margin:0;font-size:60px;line-height:1.15;
+    font-weight:600;letter-spacing:.025em;color:var(--ink);white-space:nowrap;opacity:0;
+  }
+  #titleCursor{
+    display:inline-block;width:15px;height:42px;background:var(--amber);margin-left:9px;
+    vertical-align:-5px;box-shadow:0 0 16px rgba(232,180,107,.45);opacity:0;
+  }
+  .kicker{
+    position:absolute;left:74px;top:148px;font-family:"JetBrains Mono",Menlo,Consolas,monospace;
+    font-size:12px;letter-spacing:.13em;color:var(--teal);opacity:0;
+  }
+  .kicker .slash{color:var(--dim2);margin:0 4px;}
+  .kicker .cn{
+    font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:13px;letter-spacing:.1em;color:#a8bdb8;
+  }
+  .nav{
+    position:absolute;right:72px;top:94px;display:flex;gap:30px;
+    font-family:"JetBrains Mono","Noto Sans SC",monospace;font-size:12px;letter-spacing:.08em;color:var(--dim2);opacity:0;
+  }
+  .nav-item{display:flex;align-items:center;gap:8px;padding-bottom:7px;border-bottom:1px solid transparent;}
+  .nav-item .num{font-size:10px;color:var(--dim2);}
+  .nav-item .n-dot{width:4px;height:4px;background:var(--dim2);}
+  .nav-item.on{color:var(--ink);border-bottom-color:rgba(232,180,107,.65);}
+  .nav-item.on .num{color:var(--amber);}
+  .nav-item.on .n-dot{background:var(--amber);box-shadow:0 0 8px var(--amber);}
+  .rule{position:absolute;left:72px;right:72px;top:186px;height:1px;background:var(--line-soft);opacity:0;}
+  .rule-fill{
+    position:absolute;left:0;top:0;height:1px;width:100%;
+    background:linear-gradient(90deg,var(--amber) 0 92px,var(--line) 92px,var(--line));
+    transform:scaleX(0);transform-origin:left;
+  }
+
+  /* stage labels */
+  .stage-label{
+    position:absolute;left:120px;top:215px;display:flex;align-items:center;gap:12px;
+    font-family:"JetBrains Mono",Menlo,Consolas,monospace;font-size:11px;letter-spacing:.14em;
+    color:var(--teal-dim);opacity:0;
+  }
+  .stage-label .tag{color:var(--teal);}
+  .stage-label .cn{
+    font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:13px;letter-spacing:.06em;color:var(--dim);
+  }
+  .stage-label .tick{width:26px;height:1px;background:var(--line);}
+
+  /* cards */
+  .card{
+    position:absolute;left:120px;width:470px;height:140px;opacity:0;
+    background:linear-gradient(100deg,rgba(19,31,33,.96),rgba(10,18,20,.88));
+    border:1px dashed var(--line-soft);
+  }
+  #cardA{top:248px;--c:#e8b46b;}
+  #cardB{top:410px;--c:#6fd0bf;}
+  #cardC{top:572px;--c:#a4b6b3;}
+  .card::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--c);opacity:.65;
+  }
+  .card .topline{
+    position:absolute;left:0;top:0;height:1px;width:100%;
+    background:linear-gradient(90deg,var(--c),transparent 82%);
+    transform:scaleX(0);transform-origin:left;opacity:.75;
+  }
+  .card .plus{
+    position:absolute;font-family:"JetBrains Mono",monospace;font-size:12px;line-height:1;
+    color:var(--line);z-index:3;
+  }
+  .card .plus.tl{left:-5px;top:-7px;}
+  .card .plus.tr{right:-5px;top:-7px;}
+  .card .plus.bl{left:-5px;bottom:-7px;}
+  .card .plus.br{right:-5px;bottom:-7px;}
+  .card .port{
+    position:absolute;right:-1px;top:65px;width:2px;height:10px;background:var(--c);
+    opacity:.65;box-shadow:0 0 8px var(--c);
+  }
+  .card-inner{position:absolute;inset:0;opacity:0;}
+  .card-idx{
+    position:absolute;left:18px;top:11px;font-family:"JetBrains Mono",monospace;
+    font-size:9px;letter-spacing:.16em;color:#5f7775;
+  }
+  .card-name{
+    position:absolute;left:18px;top:24px;font-size:27px;font-weight:700;letter-spacing:.02em;color:#f7faf6;
+  }
+  .card-name::before{
+    content:"";display:inline-block;width:3px;height:22px;background:var(--c);
+    margin-right:10px;vertical-align:-3px;opacity:.9;
+  }
+  .card-rel{
+    position:absolute;right:18px;top:32px;font-size:13px;letter-spacing:.03em;color:var(--c);
+  }
+  .card-rel .dot{
+    display:inline-block;width:5px;height:5px;background:var(--c);margin-right:7px;vertical-align:1px;
+    box-shadow:0 0 7px var(--c);
+  }
+  .card-glyph{
+    position:absolute;left:18px;top:57px;width:132px;font-family:"JetBrains Mono","Noto Sans SC",monospace;
+    font-size:15px;line-height:17px;white-space:pre;color:var(--c);opacity:.82;
+  }
+  .metric{position:absolute;left:160px;top:47px;width:292px;}
+  .pct{font-family:"JetBrains Mono",monospace;font-size:35px;line-height:1;color:var(--c);letter-spacing:.01em;}
+  .pct .num{display:inline-block;min-width:2ch;text-align:right;}
+  .pct .unit{font-size:17px;opacity:.65;margin-left:2px;}
+  .meter{
+    position:relative;margin-top:15px;width:100%;height:7px;
+    background:rgba(126,178,170,.12);overflow:visible;
+  }
+  .meter .fill{
+    position:absolute;left:0;top:0;height:100%;transform:scaleX(0);transform-origin:left;
+    opacity:.95;box-shadow:0 0 12px var(--c);
+  }
+  .meter .tick{position:absolute;top:-2px;width:1px;height:11px;background:rgba(232,238,233,.15);}
+  .card-meta{
+    margin-top:10px;font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.14em;
+    color:#647c7a;
+  }
+  .card-ok{
+    position:absolute;right:18px;bottom:9px;font-family:"JetBrains Mono",monospace;
+    font-size:9px;letter-spacing:.12em;color:var(--c);opacity:0;
+  }
+
+  /* node */
+  .node{
+    position:absolute;left:980px;top:480px;width:106px;height:106px;
+    transform:translate(-50%,-50%);opacity:0;
+  }
+  .node-box{
+    position:absolute;inset:0;background:rgba(8,15,17,.92);border:1px solid var(--line);
+    box-shadow:inset 0 0 24px rgba(0,0,0,.25);transform-origin:center;
+  }
+  .node-box::after{
+    content:"";position:absolute;inset:7px;border:1px dashed rgba(126,178,170,.16);
+  }
+  .node-sigma{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-family:"JetBrains Mono",monospace;font-size:42px;line-height:1;color:var(--ink);
+  }
+  .node-label{
+    position:absolute;left:50%;top:-42px;transform:translateX(-50%);white-space:nowrap;
+    font-family:"JetBrains Mono","Noto Sans SC",monospace;font-size:12px;letter-spacing:.1em;
+    color:#8ee4d5;opacity:0;
+  }
+  .node-label .num{color:var(--amber);}
+  .node .plus{
+    position:absolute;font-family:"JetBrains Mono",monospace;font-size:12px;line-height:1;color:var(--line);
+  }
+  .node .plus.tl{left:-5px;top:-7px;}
+  .node .plus.tr{right:-5px;top:-7px;}
+  .node .plus.bl{left:-5px;bottom:-7px;}
+  .node .plus.br{right:-5px;bottom:-7px;}
+
+  /* multipliers */
+  .mult{
+    position:absolute;font-family:"JetBrains Mono",monospace;font-size:15px;letter-spacing:.02em;
+    color:var(--c);opacity:0;padding:2px 7px;background:rgba(7,11,12,.82);
+    border:1px solid var(--line-soft);white-space:nowrap;
+  }
+  #multA{left:742px;top:346px;--c:#e8b46b;}
+  #multB{left:742px;top:448px;--c:#6fd0bf;}
+  #multC{left:742px;top:600px;--c:#a4b6b3;}
+
+  /* output panel */
+  .panel{
+    position:absolute;left:1140px;top:248px;width:660px;height:468px;opacity:0;
+    background:
+      radial-gradient(ellipse at 50% 74%,rgba(45,92,84,.17),transparent 62%),
+      linear-gradient(180deg,rgba(14,25,27,.96),rgba(8,15,17,.91));
+    border:1px dashed rgba(126,178,170,.24);
+  }
+  .panel::before{
+    content:"";position:absolute;left:0;top:0;width:180px;height:1px;
+    background:linear-gradient(90deg,var(--teal),transparent);opacity:.55;
+  }
+  .panel .plus{
+    position:absolute;font-family:"JetBrains Mono",monospace;font-size:12px;line-height:1;color:var(--line);
+  }
+  .panel .plus.tl{left:-5px;top:-7px;}
+  .panel .plus.tr{right:-5px;top:-7px;}
+  .panel .plus.bl{left:-5px;bottom:-7px;}
+  .panel .plus.br{right:-5px;bottom:-7px;}
+  .panel .port{
+    position:absolute;left:-1px;top:227px;width:2px;height:10px;background:var(--teal);
+    opacity:.65;box-shadow:0 0 10px rgba(111,208,191,.7);
+  }
+  .p-head{position:absolute;left:26px;top:17px;}
+  .p-code{
+    font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.16em;color:var(--teal-dim);
+  }
+  .p-title{
+    margin-top:7px;font-size:28px;font-weight:700;letter-spacing:.03em;color:#f7faf6;line-height:1.1;
+  }
+  .p-title::before{
+    content:"";display:inline-block;width:6px;height:6px;background:var(--amber);
+    margin-right:11px;vertical-align:5px;box-shadow:0 0 10px rgba(232,180,107,.55);
+  }
+  .p-sub{
+    margin-top:5px;font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.15em;color:#5f7775;
+  }
+  .p-status{
+    position:absolute;right:26px;top:24px;font-family:"JetBrains Mono",monospace;
+    font-size:10px;letter-spacing:.14em;color:var(--teal);
+  }
+  .p-status .dot{
+    display:inline-block;width:5px;height:5px;background:currentColor;margin-right:7px;
+    vertical-align:1px;box-shadow:0 0 8px currentColor;
+  }
+  .reticle{position:absolute;left:36px;top:92px;width:588px;height:250px;--off:14px;}
+  #spec{position:absolute;left:0;top:0;width:588px;height:250px;z-index:1;}
+  .reticle .rc{
+    position:absolute;width:18px;height:18px;border-color:rgba(111,208,191,.62);z-index:2;
+  }
+  .reticle .rc.tl{top:var(--off);left:var(--off);border-top:1px solid;border-left:1px solid;}
+  .reticle .rc.tr{top:var(--off);right:var(--off);border-top:1px solid;border-right:1px solid;}
+  .reticle .rc.bl{bottom:var(--off);left:var(--off);border-bottom:1px solid;border-left:1px solid;}
+  .reticle .rc.br{bottom:var(--off);right:var(--off);border-bottom:1px solid;border-right:1px solid;}
+  .ret-label{
+    position:absolute;left:50%;top:2px;transform:translateX(-50%);z-index:2;white-space:nowrap;
+    font-family:"JetBrains Mono","Noto Sans SC",monospace;font-size:10px;letter-spacing:.15em;color:#8fa5a1;
+  }
+  .formula{
+    position:absolute;left:40px;right:40px;top:356px;text-align:center;white-space:nowrap;
+    font-family:"JetBrains Mono",monospace;font-size:20px;letter-spacing:.01em;color:var(--ink);
+    opacity:0;
+  }
+  .formula .sig{color:var(--teal);font-size:22px;}
+  .formula .eq{color:var(--dim2);margin:0 7px;}
+  .formula .coef{margin-left:3px;}
+  .formula .ca{color:var(--a);}
+  .formula .cb{color:var(--b);}
+  .formula .cc{color:var(--c);}
+  .formula .v{color:var(--ink);}
+  .formula .op{color:var(--dim2);margin:0 5px;}
+  .comp{
+    position:absolute;left:60px;top:400px;width:540px;height:7px;background:rgba(126,178,170,.12);
+    display:flex;
+  }
+  .comp .seg{height:7px;transform:scaleX(0);transform-origin:left;box-shadow:inset -1px 0 0 rgba(7,11,12,.9);}
+  .comp .sega{width:60%;background:var(--a);}
+  .comp .segb{width:30%;background:var(--b);}
+  .comp .segc{width:10%;background:var(--c);}
+  .legend{
+    position:absolute;left:60px;top:414px;width:540px;display:flex;justify-content:center;gap:26px;
+    font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.07em;color:var(--dim);opacity:0;
+  }
+  .legend .item{display:flex;align-items:center;gap:7px;}
+  .legend .sw{width:6px;height:6px;display:inline-block;}
+  .legend .swa{background:var(--a);}
+  .legend .swb{background:var(--b);}
+  .legend .swc{background:var(--c);}
+  .legend b{font-weight:400;color:var(--ink2);}
+  .legend em{font-style:normal;}
+  .legend .valA{color:var(--a);}
+  .legend .valB{color:var(--b);}
+  .legend .valC{color:var(--c);}
+
+  /* closing */
+  .take-rule{
+    position:absolute;left:50%;top:740px;width:620px;height:1px;transform:translateX(-50%);opacity:0;
+    background:linear-gradient(90deg,transparent,var(--line),transparent);
+  }
+  .takeaway{
+    position:absolute;left:0;top:758px;width:1920px;text-align:center;
+    font-size:21px;letter-spacing:.045em;color:var(--ink);line-height:1.4;
+  }
+  .takeaway .tk{display:inline-block;opacity:0;}
+  .takeaway .tk i{
+    font-family:"JetBrains Mono",monospace;font-style:normal;color:var(--teal);
+    margin:0 16px 0 18px;font-size:16px;
+  }
+  .takeaway .tk.last{color:#f0c690;}
+  .footnote{
+    position:absolute;left:0;top:802px;width:1920px;display:flex;justify-content:center;align-items:center;
+    font-family:"JetBrains Mono","Noto Sans SC",monospace;font-size:12px;letter-spacing:.09em;
+    color:#7f9491;opacity:0;
+  }
+  .footnote .fmark{width:4px;height:4px;background:var(--amber);opacity:.75;margin-right:9px;}
+  .footer{
+    position:absolute;left:72px;right:72px;top:852px;display:grid;grid-template-columns:1fr auto 1fr;
+    align-items:center;font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.14em;
+    color:rgba(126,178,170,.42);opacity:0;
+  }
+  .footer .state{color:rgba(111,208,191,.66);}
+  .footer .mid{text-align:center;}
+  .footer .tc{text-align:right;color:rgba(231,238,233,.58);}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="bg" width="1920" height="1080" aria-hidden="true"></canvas>
+  <canvas id="flow" width="1920" height="1080" aria-hidden="true"></canvas>
+
+  <div class="ui">
+    <div class="brand" id="brand">
+      <span class="sq"></span><span>SEMANTIC TERMINAL</span><span class="en">ATTENTION / SIM</span>
+    </div>
+    <div class="topright" id="topright">ASCII <b>//</b> 01 <span class="sep">·</span> SILENT</div>
+
+    <h1 id="title"><span id="titleText"></span><span id="titleCursor"></span></h1>
+    <div class="kicker" id="kicker">&gt; <span class="cn">DEMO</span> <span class="slash">/</span> ATTENTION <span class="slash">·</span> WEIGHTED SUM DEMO</div>
+
+    <div class="nav" id="nav">
+      <div class="nav-item on" data-step="0"><span class="n-dot"></span><span class="num">01</span><span>INPUT</span></div>
+      <div class="nav-item" data-step="1"><span class="n-dot"></span><span class="num">02</span><span>WEIGHT</span></div>
+      <div class="nav-item" data-step="2"><span class="n-dot"></span><span class="num">03</span><span>COMBINE</span></div>
+    </div>
+    <div class="rule" id="rule"><div class="rule-fill" id="ruleFill"></div></div>
+
+    <div class="stage-label" id="stageLabel">
+      <span class="tag">01 / INPUT</span><span class="tick"></span><span class="cn">WEIGHT BY RELEVANCE</span>
+    </div>
+
+    <div class="card" id="cardA">
+      <div class="topline"></div><div class="port"></div>
+      <span class="plus tl">+</span><span class="plus tr">+</span><span class="plus bl">+</span><span class="plus br">+</span>
+      <div class="card-inner">
+        <div class="card-idx">IN / 01</div>
+        <div class="card-name">Input A</div>
+        <div class="card-rel"><span class="dot"></span>High</div>
+        <div class="card-glyph" id="glyphA"></div>
+        <div class="metric">
+          <div class="pct"><span class="num" id="pctA">0</span><span class="unit">%</span></div>
+          <div class="meter">
+            <div class="fill" id="fillA"></div>
+            <span class="tick" style="left:25%"></span><span class="tick" style="left:50%"></span>
+            <span class="tick" style="left:75%"></span><span class="tick" style="left:100%"></span>
+          </div>
+          <div class="card-meta">WEIGHT · 0.60</div>
+        </div>
+        <div class="card-ok">[ OK ]</div>
+      </div>
+    </div>
+
+    <div class="card" id="cardB">
+      <div class="topline"></div><div class="port"></div>
+      <span class="plus tl">+</span><span class="plus tr">+</span><span class="plus bl">+</span><span class="plus br">+</span>
+      <div class="card-inner">
+        <div class="card-idx">IN / 02</div>
+        <div class="card-name">Input B</div>
+        <div class="card-rel"><span class="dot"></span>Medium</div>
+        <div class="card-glyph" id="glyphB"></div>
+        <div class="metric">
+          <div class="pct"><span class="num" id="pctB">0</span><span class="unit">%</span></div>
+          <div class="meter">
+            <div class="fill" id="fillB"></div>
+            <span class="tick" style="left:25%"></span><span class="tick" style="left:50%"></span>
+            <span class="tick" style="left:75%"></span><span class="tick" style="left:100%"></span>
+          </div>
+          <div class="card-meta">WEIGHT · 0.30</div>
+        </div>
+        <div class="card-ok">[ OK ]</div>
+      </div>
+    </div>
+
+    <div class="card" id="cardC">
+      <div class="topline"></div><div class="port"></div>
+      <span class="plus tl">+</span><span class="plus tr">+</span><span class="plus bl">+</span><span class="plus br">+</span>
+      <div class="card-inner">
+        <div class="card-idx">IN / 03</div>
+        <div class="card-name">Input C</div>
+        <div class="card-rel"><span class="dot"></span>Low</div>
+        <div class="card-glyph" id="glyphC"></div>
+        <div class="metric">
+          <div class="pct"><span class="num" id="pctC">0</span><span class="unit">%</span></div>
+          <div class="meter">
+            <div class="fill" id="fillC"></div>
+            <span class="tick" style="left:25%"></span><span class="tick" style="left:50%"></span>
+            <span class="tick" style="left:75%"></span><span class="tick" style="left:100%"></span>
+          </div>
+          <div class="card-meta">WEIGHT · 0.10</div>
+        </div>
+        <div class="card-ok">[ OK ]</div>
+      </div>
+    </div>
+
+    <div class="node" id="node">
+      <div class="node-label"><span class="num">02</span> / WEIGHTED SUM</div>
+      <div class="node-box" id="nodeBox">
+        <span class="plus tl">+</span><span class="plus tr">+</span><span class="plus bl">+</span><span class="plus br">+</span>
+        <div class="node-sigma" id="nodeSigma">Σ</div>
+      </div>
+    </div>
+
+    <div class="mult" id="multA">×0.60</div>
+    <div class="mult" id="multB">×0.30</div>
+    <div class="mult" id="multC">×0.10</div>
+
+    <div class="panel" id="panel">
+      <span class="plus tl">+</span><span class="plus tr">+</span><span class="plus bl">+</span><span class="plus br">+</span>
+      <div class="port"></div>
+      <div class="p-head">
+        <div class="p-code">03 / OUTPUT</div>
+        <div class="p-title" id="pTitle">Result</div>
+        <div class="p-sub">REPRESENTATION · WEIGHTED SUM</div>
+      </div>
+      <div class="p-status" id="pStatus"><span class="dot"></span><span id="pStatusText">WAIT</span></div>
+
+      <div class="reticle" id="reticle">
+        <canvas id="spec" width="588" height="250"></canvas>
+        <div class="rc tl"></div><div class="rc tr"></div><div class="rc bl"></div><div class="rc br"></div>
+        <div class="ret-label">Σ AGGREGATE</div>
+      </div>
+
+      <div class="formula" id="formula">
+        <span class="sig">Σ</span><span class="eq">=</span><span class="coef ca">0.60</span><span class="v">·A</span>
+        <span class="op">+</span><span class="coef cb">0.30</span><span class="v">·B</span>
+        <span class="op">+</span><span class="coef cc">0.10</span><span class="v">·C</span>
+      </div>
+
+      <div class="comp" id="comp">
+        <div class="seg sega" id="segA"></div>
+        <div class="seg segb" id="segB"></div>
+        <div class="seg segc" id="segC"></div>
+      </div>
+      <div class="legend" id="legend">
+        <span class="item"><i class="sw swa"></i><b>A</b><em class="valA">60%</em></span>
+        <span class="item"><i class="sw swb"></i><b>B</b><em class="valB">30%</em></span>
+        <span class="item"><i class="sw swc"></i><b>C</b><em class="valC">10%</em></span>
+      </div>
+    </div>
+
+    <div class="take-rule" id="takeRule"></div>
+    <div class="takeaway" id="takeaway">
+      <span class="tk" id="tk0">More relevant <i>→</i></span><span class="tk" id="tk1">Higher weight <i>→</i></span><span class="tk last" id="tk2">Combine into a result</span>
+    </div>
+    <div class="footnote" id="footnote"><span class="fmark"></span>Illustrative weights: 60% / 30% / 10%</div>
+
+    <div class="footer" id="footer">
+      <div>ATTENTION / <span class="state" id="state">SYS: BOOT</span></div>
+      <div class="mid">1920×1080 <span>·</span> SILENT</div>
+      <div class="tc" id="timecode">00:00.00 / 00:08.00</div>
+    </div>
+  </div>
+
+  <canvas id="front" width="1920" height="1080" aria-hidden="true"></canvas>
+  <div class="scanlines"></div>
+  <div class="vignette"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var scene = window.SCENE || {};
+  var D = Math.max(1, Number(scene.duration_seconds) || 8);
+  var DESIGN = 8;
+  var TIME_SCALE = D / DESIGN;
+
+  var $ = function(id){ return document.getElementById(id); };
+  var clamp = function(v,a,b){ a = (a===undefined)?0:a; b = (b===undefined)?1:b; return Math.max(a,Math.min(b,v)); };
+  var frac = function(v){ return v - Math.floor(v); };
+  var smooth = function(a,b,x){
+    var u = clamp((x-a)/(b-a));
+    return u*u*(3-2*u);
+  };
+  var outCubic = function(x){
+    x = clamp(x);
+    return 1 - Math.pow(1-x,3);
+  };
+  var lerp = function(a,b,u){ return a + (b-a)*u; };
+  var hash = function(n){ return frac(Math.sin(n*127.1 + 311.7) * 43758.5453123); };
+
+  function hexRgb(hex){
+    var n = parseInt(hex.slice(1),16);
+    return [ (n>>16)&255, (n>>8)&255, n&255 ];
+  }
+  function rgba(hex,a){
+    var c = hexRgb(hex);
+    return "rgba("+c[0]+","+c[1]+","+c[2]+","+a+")";
+  }
+  function mixHex(a,b,u){
+    u = clamp(u);
+    var ca = hexRgb(a), cb = hexRgb(b);
+    return "rgb("+Math.round(lerp(ca[0],cb[0],u))+","+Math.round(lerp(ca[1],cb[1],u))+","+Math.round(lerp(ca[2],cb[2],u))+")";
+  }
+
+  /* ---------- stage fit ---------- */
+  var stage = $("stage");
+  function fitStage(){
+    var w = window.innerWidth || 1920;
+    var h = window.innerHeight || 1080;
+    var s = Math.min(w/1920, h/1080);
+    var x = (w - 1920*s)/2;
+    var y = (h - 1080*s)/2;
+    stage.style.transform = "translate("+x+"px,"+y+"px) scale("+s+")";
+  }
+
+  /* ---------- title ---------- */
+  var title = $("title");
+  var titleText = $("titleText");
+  var titleCursor = $("titleCursor");
+  var cap = String(scene.caption || "How attention works").replace(/\s+/g," ").trim();
+  var capChars = Array.from(cap);
+  if(capChars.length > 10) title.style.fontSize = "46px";
+  if(capChars.length > 14) title.style.fontSize = "38px";
+  var titleFont = parseFloat(getComputedStyle(title).fontSize) || 60;
+  titleCursor.style.height = Math.round(titleFont*0.70)+"px";
+  titleCursor.style.width = Math.round(titleFont*0.24)+"px";
+
+  /* ---------- elements ---------- */
+  var brand = $("brand"), topright = $("topright"), kicker = $("kicker");
+  var nav = $("nav"), navItems = Array.prototype.slice.call(document.querySelectorAll(".nav-item"));
+  var rule = $("rule"), ruleFill = $("ruleFill"), stageLabel = $("stageLabel");
+  var node = $("node"), nodeBox = $("nodeBox"), nodeSigma = $("nodeSigma");
+  var nodeLabel = node.querySelector(".node-label");
+  var panel = $("panel"), pTitle = $("pTitle"), pStatus = $("pStatus");
+  var pStatusText = $("pStatusText");
+  var pStatusDot = pStatus.querySelector(".dot");
+  var reticle = $("reticle"), formula = $("formula"), legend = $("legend");
+  var segA = $("segA"), segB = $("segB"), segC = $("segC");
+  var multA = $("multA"), multB = $("multB"), multC = $("multC");
+  var takeRule = $("takeRule"), footnote = $("footnote"), footer = $("footer");
+  var stateEl = $("state"), timecodeEl = $("timecode");
+  var tk0 = $("tk0"), tk1 = $("tk1"), tk2 = $("tk2");
+
+  var cards = [
+    {
+      id:"A", w:60, color:"#e8b46b", rel:"High", seed:3.71,
+      art:"┌─────────┐\n│ ▓▒▓▒▓▒▓ │\n└─────────┘",
+      noise:"░▒▓#01+",
+      start:0.90, artStart:1.02, barStart:1.28
+    },
+    {
+      id:"B", w:30, color:"#6fd0bf", rel:"Medium", seed:8.24,
+      art:"···▄▆█▆▄···\n·▄▆▀···▀▆▄·\n▀·········▀",
+      noise:"░▒·:+-",
+      start:1.07, artStart:1.17, barStart:1.45
+    },
+    {
+      id:"C", w:10, color:"#a4b6b3", rel:"Low", seed:15.62,
+      art:"·   ·    ·\n  ·   ·\n·    ·   ·",
+      noise:"·.:",
+      start:1.24, artStart:1.32, barStart:1.62
+    }
+  ].map(function(d){
+    var el = $("card"+d.id);
+    var fill = $("fill"+d.id);
+    fill.style.width = d.w + "%";
+    fill.style.background = d.color;
+    return {
+      d:d, el:el,
+      inner:el.querySelector(".card-inner"),
+      topline:el.querySelector(".topline"),
+      glyph:$("glyph"+d.id),
+      pct:$("pct"+d.id),
+      fill:fill,
+      ok:el.querySelector(".card-ok"),
+      lastGlyph:null
+    };
+  });
+
+  function decodeArt(art,p,seed,noise){
+    if(p >= 1) return art;
+    var chars = Array.from(art);
+    var out = "";
+    for(var i=0;i<chars.length;i++){
+      var ch = chars[i];
+      if(ch === "\n" || ch === " "){ out += ch; continue; }
+      var th = (i / Math.max(1,chars.length)) * 0.30 + hash(seed + i*3.7) * 0.28;
+      out += (p > th) ? ch : noise[Math.floor(hash(seed*5.1 + i*11.3) * noise.length) % noise.length];
+    }
+    return out;
+  }
+
+  function fmt(sec){
+    sec = Math.max(0,Number(sec)||0);
+    var m = Math.floor(sec/60);
+    var s = Math.floor(sec%60);
+    var cs = Math.floor((sec - Math.floor(sec))*100);
+    var pad = function(n){ return (n<10?"0":"")+n; };
+    return pad(m)+":"+pad(s)+"."+pad(cs);
+  }
+
+  /* ---------- canvases ---------- */
+  var bg = $("bg"), bctx = bg.getContext("2d");
+  var flow = $("flow"), fctx = flow.getContext("2d");
+  var front = $("front"), xctx = front.getContext("2d");
+  var spec = $("spec"), sctx = spec.getContext("2d");
+
+  /* ---------- paths ---------- */
+  var paths = [
+    {
+      p:[[592,318],[730,318],[820,480],[925,480]], color:"#e8b46b", w:60,
+      start:2.28, end:2.88, pStart:2.92, speed:0.40, n:16, spread:5.2, seed:2.3,
+      chars:["0","1","+","▚","▓","·"]
+    },
+    {
+      p:[[592,480],[730,480],[820,480],[925,480]], color:"#6fd0bf", w:30,
+      start:2.43, end:3.02, pStart:3.06, speed:0.33, n:8, spread:3.0, seed:6.7,
+      chars:["0","1","+","▞","▒","·"]
+    },
+    {
+      p:[[592,642],[730,642],[820,480],[925,480]], color:"#a4b6b3", w:10,
+      start:2.58, end:3.16, pStart:3.20, speed:0.27, n:3, spread:1.4, seed:11.9,
+      chars:["·","+","░","1"]
+    }
+  ];
+
+  function bez(p,u){
+    var v = 1-u;
+    return {
+      x: v*v*v*p[0][0] + 3*v*v*u*p[1][0] + 3*v*u*u*p[2][0] + u*u*u*p[3][0],
+      y: v*v*v*p[0][1] + 3*v*v*u*p[1][1] + 3*v*u*u*p[2][1] + u*u*u*p[3][1]
+    };
+  }
+  function bezTan(p,u){
+    var v = 1-u;
+    return {
+      x: 3*v*v*(p[1][0]-p[0][0]) + 6*v*u*(p[2][0]-p[1][0]) + 3*u*u*(p[3][0]-p[2][0]),
+      y: 3*v*v*(p[1][1]-p[0][1]) + 6*v*u*(p[2][1]-p[1][1]) + 3*u*u*(p[3][1]-p[2][1])
+    };
+  }
+
+  /* ---------- background ---------- */
+  function drawBG(td){
+    var fade = smooth(0,0.55,td);
+    bctx.clearRect(0,0,1920,1080);
+    bctx.fillStyle = "#081012";
+    bctx.fillRect(0,0,1920,1080);
+
+    var g = bctx.createRadialGradient(1450,470,40,1450,470,820);
+    g.addColorStop(0,"rgba(35,82,74,"+(0.25*fade)+")");
+    g.addColorStop(0.55,"rgba(20,48,45,"+(0.11*fade)+")");
+    g.addColorStop(1,"rgba(8,16,18,0)");
+    bctx.fillStyle = g;
+    bctx.fillRect(0,0,1920,1080);
+
+    var gw = bctx.createRadialGradient(240,160,20,240,160,620);
+    gw.addColorStop(0,"rgba(150,100,50,"+(0.06*fade)+")");
+    gw.addColorStop(1,"rgba(8,16,18,0)");
+    bctx.fillStyle = gw;
+    bctx.fillRect(0,0,1920,1080);
+
+    var ox = Math.round(-5*Math.sin(td*0.18));
+    var oy = Math.round(-8*smooth(0,DESIGN,td));
+    bctx.save();
+    bctx.globalAlpha = 0.95*fade;
+    for(var y=-24;y<1104;y+=24){
+      for(var x=-24;x<1944;x+=24){
+        var ix = Math.round((x+1200)/24);
+        var iy = Math.round((y+1200)/24);
+        var major = (ix%6===0 && iy%6===0);
+        bctx.fillStyle = major ? "rgba(126,178,170,0.23)" : "rgba(126,178,170,0.11)";
+        bctx.fillRect(x+ox,y+oy,major?1.6:1,major?1.6:1);
+      }
+    }
+    bctx.restore();
+
+    bctx.save();
+    bctx.globalAlpha = 0.018*fade;
+    bctx.fillStyle = "#8fe0cf";
+    bctx.font = '420px "JetBrains Mono", Menlo, monospace';
+    bctx.textAlign = "center";
+    bctx.textBaseline = "middle";
+    bctx.fillText("Σ",982,476+Math.sin(td*0.22)*4);
+    bctx.globalAlpha = 0.04*fade;
+    bctx.strokeStyle = "rgba(111,208,191,0.5)";
+    bctx.lineWidth = 1;
+    bctx.setLineDash([2,12]);
+    bctx.beginPath();
+    bctx.arc(982,476,238,0,Math.PI*2);
+    bctx.stroke();
+    bctx.restore();
+
+    var ambient = ["0","1","+","·","Σ","░","|","▞"];
+    bctx.save();
+    bctx.font = '12px "JetBrains Mono", Menlo, monospace';
+    bctx.textAlign = "left";
+    bctx.textBaseline = "middle";
+    for(var i=0;i<22;i++){
+      var h1 = hash(i*3.13+0.7), h2 = hash(i*7.77+2.1);
+      var ax = h1 < 0.5 ? 26 + h2*92 : 1794 + h2*86;
+      var ay = frac(h2 + td*0.012 + h1*0.31)*1080;
+      bctx.globalAlpha = (0.045 + 0.075*h1)*fade;
+      bctx.fillStyle = i%4===0 ? "#e8b46b" : "#9fd8ce";
+      bctx.fillText(ambient[i%ambient.length], ax, ay);
+    }
+    bctx.restore();
+
+    bctx.save();
+    bctx.globalAlpha = 0.17*fade;
+    bctx.strokeStyle = "rgba(126,178,170,0.7)";
+    bctx.lineWidth = 1;
+    var corners = [[72,206,1,1],[1848,206,-1,1],[72,742,1,-1],[1848,742,-1,-1]];
+    for(var c=0;c<corners.length;c++){
+      var q = corners[c];
+      bctx.beginPath();
+      bctx.moveTo(q[0],q[1]+q[3]*14);
+      bctx.lineTo(q[0],q[1]);
+      bctx.lineTo(q[0]+q[2]*14,q[1]);
+      bctx.stroke();
+    }
+    bctx.restore();
+  }
+
+  /* ---------- flow ---------- */
+  function drawFlow(td){
+    fctx.clearRect(0,0,1920,1080);
+    var emph = 1 - 0.45*smooth(6.25,7.0,td);
+
+    for(var k=0;k<paths.length;k++){
+      var P = paths[k];
+      var ep = smooth(P.start,P.end,td);
+
+      if(ep > 0){
+        fctx.save();
+        fctx.strokeStyle = rgba(P.color,0.26);
+        fctx.lineWidth = 1;
+        fctx.setLineDash([3,8]);
+        fctx.lineDashOffset = -td*18;
+        fctx.beginPath();
+        var steps = 70;
+        var n = Math.max(2,Math.floor(ep*steps));
+        for(var i=0;i<=n;i++){
+          var u = (i/n)*ep;
+          var pt = bez(P.p,u);
+          if(i===0) fctx.moveTo(pt.x,pt.y); else fctx.lineTo(pt.x,pt.y);
+        }
+        fctx.stroke();
+        fctx.setLineDash([]);
+
+        var tip = bez(P.p,ep);
+        fctx.globalAlpha = 0.9*(1-smooth(0.97,1,ep));
+        fctx.fillStyle = P.color;
+        fctx.fillRect(tip.x-2,tip.y-2,4,4);
+        fctx.restore();
+      }
+
+      if(ep >= 0.999){
+        fctx.save();
+        fctx.strokeStyle = P.color;
+        fctx.lineWidth = P.w>=60 ? 7 : (P.w>=30 ? 3.5 : 1.6);
+        fctx.globalAlpha = 0.06*emph;
+        fctx.beginPath();
+        fctx.moveTo(P.p[0][0],P.p[0][1]);
+        fctx.bezierCurveTo(P.p[1][0],P.p[1][1],P.p[2][0],P.p[2][1],P.p[3][0],P.p[3][1]);
+        fctx.stroke();
+        fctx.globalAlpha = 0.16*emph;
+        fctx.lineWidth = 1;
+        fctx.stroke();
+        fctx.restore();
+      }
+
+      if(td > P.pStart){
+        var fade = smooth(P.pStart,P.pStart+0.25,td);
+        fctx.save();
+        fctx.font = '13px "JetBrains Mono", Menlo, monospace';
+        fctx.textAlign = "center";
+        fctx.textBaseline = "middle";
+        for(var j=0;j<P.n;j++){
+          var u0 = frac((td - P.pStart)*P.speed + j/P.n);
+          var tan = bezTan(P.p,u0);
+          var tl = Math.hypot(tan.x,tan.y) || 1;
+          var nx = -tan.y/tl, ny = tan.x/tl;
+          var off = (hash(j*4.7 + P.seed)-0.5)*P.spread*2;
+          for(var trail=0;trail<3;trail++){
+            var ut = u0 - trail*0.014;
+            if(ut < 0 || ut > 1) continue;
+            var pp = bez(P.p,ut);
+            var a = fade * smooth(0,0.06,ut) * (1-smooth(0.86,1,ut));
+            a *= (trail===0 ? 0.88 : (trail===1 ? 0.20 : 0.07)) * emph;
+            if(a <= 0.005) continue;
+            fctx.globalAlpha = a;
+            fctx.fillStyle = P.color;
+            var ch = P.chars[Math.floor(hash(j*9.1 + trail*2.3 + P.seed)*P.chars.length) % P.chars.length];
+            fctx.fillText(ch,pp.x+nx*off,pp.y+ny*off);
+          }
+        }
+        fctx.restore();
+      }
+    }
+
+    var nodeP = smooth(2.35,2.75,td);
+    if(nodeP > 0){
+      fctx.save();
+      fctx.globalAlpha = nodeP;
+      fctx.strokeStyle = "rgba(126,178,170,0.23)";
+      fctx.lineWidth = 1;
+      fctx.setLineDash([2,10]);
+      fctx.lineDashOffset = -td*10;
+      fctx.beginPath();
+      fctx.arc(980,480,78,0,Math.PI*2);
+      fctx.stroke();
+      fctx.setLineDash([]);
+
+      var charge = smooth(3.30,4.25,td);
+      if(charge > 0.001){
+        fctx.globalAlpha = nodeP*(0.32 + 0.32*charge);
+        fctx.strokeStyle = "#e8b46b";
+        fctx.lineWidth = 2;
+        fctx.beginPath();
+        fctx.arc(980,480,78,-Math.PI/2,-Math.PI/2+charge*Math.PI*2);
+        fctx.stroke();
+      }
+
+      var pulse = smooth(4.18,4.78,td);
+      if(pulse > 0 && pulse < 0.995){
+        fctx.globalAlpha = (1-pulse)*0.32*nodeP;
+        fctx.strokeStyle = "#9fe7d9";
+        fctx.lineWidth = 1;
+        fctx.beginPath();
+        fctx.arc(980,480,78+46*pulse,0,Math.PI*2);
+        fctx.stroke();
+      }
+      fctx.restore();
+    }
+
+    var cb = smooth(4.20,4.50,td) * (1-smooth(4.92,5.16,td));
+    if(cb > 0.001){
+      fctx.save();
+      var lg = fctx.createLinearGradient(1034,0,1138,0);
+      lg.addColorStop(0,"rgba(232,180,107,0.8)");
+      lg.addColorStop(0.55,"rgba(231,238,233,0.8)");
+      lg.addColorStop(1,"rgba(111,208,191,0.8)");
+      fctx.strokeStyle = lg;
+      fctx.globalAlpha = 0.22*cb;
+      fctx.lineWidth = 1;
+      fctx.setLineDash([2,5]);
+      fctx.beginPath();
+      fctx.moveTo(1034,480);
+      fctx.lineTo(1138,480);
+      fctx.stroke();
+      fctx.setLineDash([]);
+
+      fctx.font = '12px "JetBrains Mono", Menlo, monospace';
+      fctx.textAlign = "center";
+      fctx.textBaseline = "middle";
+      var mixed = ["Σ","·","+","0","1","▞"];
+      var cols = ["#e8b46b","#e7eee9","#6fd0bf"];
+      for(var c=0;c<9;c++){
+        var uc = frac((td-4.20)*1.15 + c/9);
+        var xx = lerp(1034,1138,uc);
+        var aa = Math.sin(Math.PI*uc)*cb*0.9;
+        if(aa <= 0.005) continue;
+        fctx.globalAlpha = aa;
+        fctx.fillStyle = cols[c%3];
+        fctx.fillText(mixed[Math.floor(hash(c*5.3+1.7)*mixed.length)%mixed.length],xx,480+Math.sin(uc*Math.PI*2+c)*2);
+      }
+      fctx.globalAlpha = cb;
+      fctx.fillStyle = "#ffd79d";
+      fctx.fillRect(1138,477,2,6);
+      fctx.restore();
+    }
+  }
+
+  /* ---------- spectrum ---------- */
+  function drawSpec(td){
+    var W = 588, H = 250, base = 218, cx = 294;
+    sctx.clearRect(0,0,W,H);
+    var show = smooth(2.80,3.10,td);
+    if(show <= 0.001) return;
+
+    sctx.save();
+    sctx.globalAlpha = show;
+    var glow = sctx.createRadialGradient(294,186,8,294,186,220);
+    glow.addColorStop(0,"rgba(232,180,107,0.055)");
+    glow.addColorStop(0.55,"rgba(111,208,191,0.025)");
+    glow.addColorStop(1,"rgba(8,16,18,0)");
+    sctx.fillStyle = glow;
+    sctx.fillRect(0,0,W,H);
+
+    sctx.strokeStyle = "rgba(126,178,170,0.22)";
+    sctx.lineWidth = 1;
+    sctx.setLineDash([2,8]);
+    sctx.beginPath(); sctx.arc(cx,116,84,0,Math.PI*2); sctx.stroke();
+    sctx.beginPath(); sctx.moveTo(30,116); sctx.lineTo(558,116); sctx.stroke();
+    sctx.beginPath(); sctx.moveTo(cx,38); sctx.lineTo(cx,198); sctx.stroke();
+    sctx.setLineDash([]);
+
+    sctx.globalAlpha = show*0.68;
+    sctx.fillStyle = "rgba(126,178,170,0.62)";
+    sctx.fillRect(24,base,540,1);
+
+    sctx.globalAlpha = show*0.32;
+    sctx.fillStyle = "#9fd8ce";
+    sctx.font = '11px "JetBrains Mono", Menlo, monospace';
+    sctx.textAlign = "center";
+    sctx.textBaseline = "middle";
+    sctx.fillText("+",cx,116);
+
+    /* faint target envelope: where the representation will form */
+    sctx.globalAlpha = show*0.13;
+    sctx.strokeStyle = "#6fd0bf";
+    sctx.lineWidth = 1;
+    sctx.setLineDash([2,7]);
+    sctx.beginPath();
+    for(var e=0;e<24;e++){
+      var ex = 59 + e*20 + 5;
+      var ef = 26 + 128*Math.exp(-Math.pow((e-11.5)/5.1,2));
+      if(e===0) sctx.moveTo(ex,base-ef); else sctx.lineTo(ex,base-ef);
+    }
+    sctx.stroke();
+    sctx.setLineDash([]);
+
+    var scan = smooth(4.65,5.75,td);
+    var headX = lerp(44,566,scan);
+    var shimmer = smooth(5.73,6.05,td);
+
+    for(var i=0;i<24;i++){
+      var x = 59 + i*20;
+      var full = 26 + 128*Math.exp(-Math.pow((i-11.5)/5.1,2));
+      var gp;
+      if(scan >= 1) gp = 1;
+      else gp = smooth(0,1,clamp((headX-(x-22))/64));
+      var h = full*outCubic(gp);
+      if(shimmer > 0) h += 1.1*Math.sin(td*2.3 + i*0.8)*shimmer;
+      h = Math.max(0,h);
+      if(h < 0.5) continue;
+
+      var d = Math.abs(i-11.5)/11.5;
+      var col;
+      if(d < 0.6) col = mixHex("#e8b46b","#e7eee9",(d/0.6)*0.88);
+      else if(d < 0.9) col = mixHex("#e7eee9","#6fd0bf",(d-0.6)/0.3);
+      else col = mixHex("#6fd0bf","#84989a",(d-0.9)/0.1);
+      sctx.globalAlpha = show*0.86;
+      sctx.fillStyle = col;
+      sctx.fillRect(x,base-h,10,h);
+
+      sctx.globalAlpha = show*0.95;
+      sctx.fillStyle = d<0.35 ? "#ffd9a6" : (d<0.7 ? "#e9f5ef" : "#b6c8c5");
+      sctx.fillRect(x,base-h,10,1.5);
+
+      sctx.globalAlpha = show*0.18;
+      sctx.fillStyle = "#9fd8ce";
+      sctx.fillRect(x+4,base+4,2,5);
+    }
+
+    if(scan > 0 && scan < 1.01){
+      var a = (1-smooth(5.65,5.90,td))*0.62;
+      var grad = sctx.createLinearGradient(0,48,0,base+10);
+      grad.addColorStop(0,"rgba(232,180,107,0)");
+      grad.addColorStop(0.5,"rgba(232,180,107,"+(a*0.5)+")");
+      grad.addColorStop(1,"rgba(232,180,107,"+a+")");
+      sctx.globalAlpha = 1;
+      sctx.fillStyle = grad;
+      sctx.fillRect(headX-1,48,2,base+10-48);
+      sctx.globalAlpha = a;
+      sctx.fillStyle = "#e8b46b";
+      sctx.fillRect(headX-3,base+2,6,1);
+      sctx.font = '10px "JetBrains Mono", Menlo, monospace';
+      sctx.textAlign = "center";
+      sctx.textBaseline = "bottom";
+      sctx.fillText("Σ",headX,46);
+    }
+
+    var pk = smooth(5.80,6.05,td);
+    if(pk > 0.001){
+      var peakX = 59 + 11.5*20 + 5;
+      sctx.globalAlpha = pk*(0.52 + 0.32*Math.sin(td*4.0));
+      sctx.fillStyle = "#ffd79d";
+      sctx.font = '13px "JetBrains Mono", Menlo, monospace';
+      sctx.textAlign = "center";
+      sctx.textBaseline = "bottom";
+      sctx.fillText("+",peakX,base-(26+128)-10);
+    }
+    sctx.restore();
+  }
+
+  /* ---------- foreground ---------- */
+  function drawFront(td,t){
+    xctx.clearRect(0,0,1920,1080);
+
+    var prog = clamp(t/D);
+    if(td > 0.18){
+      xctx.globalAlpha = smooth(0.18,0.5,td);
+      xctx.fillStyle = "rgba(111,208,191,0.32)";
+      xctx.fillRect(0,0,1920*prog,1);
+      xctx.fillStyle = "rgba(232,180,107,0.85)";
+      xctx.fillRect(Math.max(0,1920*prog-26),0,26,1);
+    }
+
+    if(td < 0.62){
+      var q = td/0.62;
+      var sy = lerp(-40,1120,outCubic(q));
+      var sg = xctx.createLinearGradient(0,sy-90,0,sy+50);
+      sg.addColorStop(0,"rgba(140,240,218,0)");
+      sg.addColorStop(0.62,"rgba(140,240,218,0.055)");
+      sg.addColorStop(1,"rgba(140,240,218,0)");
+      xctx.fillStyle = sg;
+      xctx.fillRect(0,sy-90,1920,140);
+      xctx.globalAlpha = 0.42*(1-q);
+      xctx.fillStyle = "rgba(170,250,232,0.85)";
+      xctx.fillRect(0,sy,1920,1);
+      xctx.globalAlpha = 1;
+    }
+
+    var ay = ((td*0.055)%1.15)*1080 - 100;
+    var ag = xctx.createLinearGradient(0,ay,0,ay+180);
+    ag.addColorStop(0,"rgba(111,208,191,0)");
+    ag.addColorStop(0.5,"rgba(111,208,191,0.030)");
+    ag.addColorStop(1,"rgba(111,208,191,0)");
+    xctx.fillStyle = ag;
+    xctx.fillRect(0,ay,1920,180);
+    xctx.fillStyle = "rgba(150,240,222,0.055)";
+    xctx.fillRect(0,ay+90,1920,1);
+
+    var flash = smooth(6.18,6.28,td)*(1-smooth(6.30,6.62,td));
+    if(flash > 0.001){
+      var fg = xctx.createRadialGradient(1470,470,20,1470,470,520);
+      fg.addColorStop(0,"rgba(255,230,190,"+(0.075*flash)+")");
+      fg.addColorStop(1,"rgba(255,230,190,0)");
+      xctx.fillStyle = fg;
+      xctx.fillRect(900,0,1020,1080);
+    }
+  }
+
+  /* ---------- UI ---------- */
+  function updateUI(td,t){
+    var titleP = smooth(0.18,0.46,td);
+    title.style.opacity = titleP;
+    var n = Math.floor(clamp((td-0.35)/0.72)*capChars.length);
+    var shown = capChars.slice(0,n).join("");
+    if(titleText.textContent !== shown) titleText.textContent = shown;
+    var typing = n < capChars.length;
+    var blink = (Math.floor(td*4)%2===0) ? 0.70 : 0;
+    titleCursor.style.opacity = typing ? 1 : (td < 1.55 ? blink : 0);
+
+    var hp = smooth(0.12,0.50,td);
+    brand.style.opacity = hp;
+    brand.style.transform = "translateY("+((1-hp)*4)+"px)";
+    topright.style.opacity = smooth(0.16,0.55,td);
+    kicker.style.opacity = smooth(0.42,0.82,td);
+    nav.style.opacity = smooth(0.48,0.88,td);
+    rule.style.opacity = smooth(0.42,0.80,td);
+    ruleFill.style.transform = "scaleX("+smooth(0.55,1.05,td)+")";
+    var sp = smooth(0.78,1.16,td);
+    stageLabel.style.opacity = sp;
+    stageLabel.style.transform = "translateY("+((1-sp)*5)+"px)";
+
+    var step = td < 2.85 ? 0 : (td < 4.70 ? 1 : 2);
+    for(var i=0;i<navItems.length;i++){
+      navItems[i].classList.toggle("on", i===step);
+    }
+
+    var dim = 1 - 0.10*smooth(4.90,5.60,td);
+    for(var c=0;c<cards.length;c++){
+      var C = cards[c], d = C.d;
+      var pIn = smooth(d.start,d.start+0.30,td);
+      C.el.style.opacity = (pIn*dim).toFixed(3);
+      C.el.style.transform = "translateY("+((1-pIn)*8)+"px)";
+      var cp = smooth(d.start+0.10,d.start+0.38,td);
+      C.inner.style.opacity = cp;
+      C.topline.style.transform = "scaleX("+pIn+")";
+
+      var dp = clamp((td-d.artStart)/0.50);
+      if(dp >= 1){
+        if(C.lastGlyph !== d.art){ C.glyph.textContent = d.art; C.lastGlyph = d.art; }
+      }else{
+        C.glyph.textContent = decodeArt(d.art,dp,d.seed,d.noise);
+        C.lastGlyph = null;
+      }
+
+      var bp = outCubic(clamp((td-d.barStart)/0.70));
+      C.fill.style.transform = "scaleX("+bp+")";
+      C.pct.textContent = String(Math.round(d.w*bp));
+      C.ok.style.opacity = (smooth(2.14,2.38,td)*0.55).toFixed(3);
+    }
+
+    var nodeP = smooth(2.35,2.72,td);
+    node.style.opacity = nodeP;
+    var charge = smooth(3.30,4.25,td);
+    var np = smooth(3.30,3.68,td);
+    nodeBox.style.transform = "scale("+(1 + 0.022*Math.sin(td*5.2)*np*(1-smooth(4.40,4.62,td)))+")";
+    nodeBox.style.borderColor = charge > 0.82 ? "rgba(232,180,107,0.40)" : "rgba(126,178,170,0.28)";
+    nodeSigma.style.textShadow = "0 0 "+(8+18*charge)+"px rgba(232,180,107,"+(0.10+0.24*charge)+")";
+    nodeLabel.style.opacity = smooth(2.55,2.85,td);
+
+    var mop = smooth(3.12,3.48,td)*(1-0.25*smooth(6.4,6.8,td));
+    multA.style.opacity = mop;
+    multB.style.opacity = mop;
+    multC.style.opacity = mop;
+
+    var panelP = smooth(2.62,2.98,td);
+    panel.style.opacity = panelP;
+    panel.style.transform = "translateY("+((1-panelP)*10)+"px)";
+    var lockP = smooth(5.72,6.02,td);
+    reticle.style.setProperty("--off", (14*(1-lockP)).toFixed(2)+"px");
+    pTitle.style.textShadow = "0 0 "+(lockP*18)+"px rgba(232,180,107,"+(lockP*0.24)+")";
+
+    var stat, scol;
+    if(td < 4.20){ stat = "WAIT"; scol = "#5c7371"; }
+    else if(td < 4.70){ stat = "SYNC"; scol = "#6fd0bf"; }
+    else if(td < 5.80){ stat = "MERGE"; scol = "#6fd0bf"; }
+    else { stat = "LOCK"; scol = "#e8b46b"; }
+    if(pStatusText.textContent !== stat) pStatusText.textContent = stat;
+    pStatus.style.color = scol;
+    pStatusDot.style.opacity = (stat==="LOCK") ? 1 : ((Math.floor(td*3)%2===0) ? 0.35 : 1);
+
+    var fp = smooth(5.85,6.18,td);
+    formula.style.opacity = fp;
+    formula.style.clipPath = "inset(0 "+((1-fp)*100).toFixed(2)+"% 0 0)";
+    formula.style.transform = "translateX("+((1-fp)*8)+"px)";
+
+    var cA = smooth(5.00,5.35,td);
+    var cB = smooth(5.22,5.57,td);
+    var cC = smooth(5.44,5.79,td);
+    segA.style.transform = "scaleX("+cA+")";
+    segB.style.transform = "scaleX("+cB+")";
+    segC.style.transform = "scaleX("+cC+")";
+    legend.style.opacity = smooth(5.55,5.85,td);
+
+    var tkP = [smooth(6.55,6.85,td),smooth(6.72,7.02,td),smooth(6.88,7.18,td)];
+    var tks = [tk0,tk1,tk2];
+    for(var q=0;q<3;q++){
+      tks[q].style.opacity = tkP[q];
+      tks[q].style.transform = "translateY("+((1-tkP[q])*7)+"px)";
+    }
+    takeRule.style.opacity = smooth(6.35,6.65,td);
+    footnote.style.opacity = smooth(7.02,7.28,td);
+
+    var ftp = smooth(0.25,0.65,td)*0.92;
+    footer.style.opacity = ftp;
+    stateEl.textContent = "SYS: " + (td<0.9 ? "BOOT" : (td<2.85 ? "INPUT" : (td<4.20 ? "MERGE" : (td<5.80 ? "SYNC" : "LOCK"))));
+    timecodeEl.textContent = fmt(t)+" / "+fmt(D);
+  }
+
+  /* ---------- render ---------- */
+  function render(time){
+    var t = clamp(Number(time)||0,0,D);
+    var td = Math.min(DESIGN, t/TIME_SCALE);
+    updateUI(td,t);
+    drawBG(td);
+    drawFlow(td);
+    drawSpec(td);
+    drawFront(td,t);
+  }
+
+  var external = false;
+  window.film = {
+    frame: function(t){
+      external = true;
+      render(t);
+    }
+  };
+
+  fitStage();
+  window.addEventListener("resize", fitStage);
+  render(0);
+
+  var start = performance.now();
+  function loop(now){
+    if(!external){
+      render(((now-start)/1000)%D);
+    }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

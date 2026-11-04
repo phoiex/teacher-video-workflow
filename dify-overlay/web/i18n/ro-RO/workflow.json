@@ -1076,6 +1076,8 @@
   "tabs.unconfiguredStartDisabledTip": "Un nod de pornire neconfigurat a fost adăugat pe canvas. Finalizați configurarea înainte de a continua.",
   "tabs.utilities": "Utilități",
   "tabs.workflowTool": "Flux de lucru",
+  "teacherStyle.followCourse": "Follow course",
+  "teacherStyle.previewLanguage": "Preview language",
   "tracing.stopBy": "Oprit de {{user}}",
   "triggerStatus.enabled": "DECLANȘATOR",
   "variableReference.assignedVarsDescription": "Variabilele atribuite trebuie să fie variabile inscripționabile, cum ar fi variabilele de conversație.",

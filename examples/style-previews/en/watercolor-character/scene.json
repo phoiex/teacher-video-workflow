@@ -1,0 +1,9 @@
+{
+  "id": "s01",
+  "narration": "Attention assigns weights, then combines information.",
+  "caption": "How attention works",
+  "animation": "Three inputs combine with illustrative weights of 60%, 30% and 10%. Keep the original eight-second animation and style, with English labels.",
+  "preview_fraction": 0.6,
+  "duration_seconds": 8.0,
+  "language": "en"
+}

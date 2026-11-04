@@ -1076,6 +1076,8 @@
   "tabs.unconfiguredStartDisabledTip": "Un nœud de départ non configuré a été ajouté au canevas. Terminez la configuration avant de continuer.",
   "tabs.utilities": "Utilitaires",
   "tabs.workflowTool": "Workflow",
+  "teacherStyle.followCourse": "Follow course",
+  "teacherStyle.previewLanguage": "Preview language",
   "tracing.stopBy": "Arrêté par {{user}}",
   "triggerStatus.enabled": "DÉCLENCHEUR",
   "variableReference.assignedVarsDescription": "Les variables affectées doivent être accessibles en écriture, telles que des variables de conversation.",

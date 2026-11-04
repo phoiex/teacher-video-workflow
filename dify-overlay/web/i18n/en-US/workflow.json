@@ -1076,6 +1076,8 @@
   "tabs.unconfiguredStartDisabledTip": "An unconfigured start node has been added to canvas. Please complete the setup before continuing.",
   "tabs.utilities": "Utilities",
   "tabs.workflowTool": "Workflow",
+  "teacherStyle.followCourse": "Follow course",
+  "teacherStyle.previewLanguage": "Preview language",
   "tracing.stopBy": "Stop by {{user}}",
   "triggerStatus.enabled": "TRIGGER",
   "variableReference.assignedVarsDescription": "Assigned variables must be writable variables, such as conversation variables.",

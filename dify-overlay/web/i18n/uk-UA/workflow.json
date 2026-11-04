@@ -1076,6 +1076,8 @@
   "tabs.unconfiguredStartDisabledTip": "На полотно додано неналаштований початковий вузол. Завершіть налаштування, перш ніж продовжити.",
   "tabs.utilities": "Утиліти",
   "tabs.workflowTool": "Робочий процес",
+  "teacherStyle.followCourse": "Follow course",
+  "teacherStyle.previewLanguage": "Preview language",
   "tracing.stopBy": "Зупинено користувачем {{user}}",
   "triggerStatus.enabled": "СПУСКОВИЙ МЕХАНІЗМ",
   "variableReference.assignedVarsDescription": "Призначені змінні мають бути доступними для запису, такими як змінні розмови.",

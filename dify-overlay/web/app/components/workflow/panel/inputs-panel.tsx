@@ -103,6 +103,11 @@ const InputsPanel = ({ onRun }: Props) => {
             {variable.variable === 'style_preset' && (
               <StylePreviewOptions
                 options={variable.options || []}
+                courseLanguage={
+                  typeof initialInputs.course_language === 'string'
+                    ? initialInputs.course_language
+                    : undefined
+                }
                 value={initialInputs[variable.variable] as string}
                 onChange={(value) => handleValueChange(variable.variable, value)}
               />

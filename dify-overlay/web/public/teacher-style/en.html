@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Video style previews · Teacher Video Workflow</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --paper: #f6f6f3;
+        --card: #fff;
+        --text: #20252a;
+        --muted: #6d7479;
+        --line: #e5e7e6;
+        --accent: #405bd2;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --paper: #141719;
+          --card: #1d2124;
+          --text: #edf0ed;
+          --muted: #acb4b8;
+          --line: #333a3d;
+          --accent: #a7b7ff;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--text);
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        line-height: 1.6;
+      }
+      main {
+        max-width: 1280px;
+        padding: 44px 24px 60px;
+        margin: auto;
+      }
+      header {
+        margin-bottom: 30px;
+      }
+      h1 {
+        font-size: clamp(27px, 4vw, 42px);
+        line-height: 1.3;
+        margin: 0 0 12px;
+        font-weight: 650;
+      }
+      header p {
+        margin: 0;
+        color: var(--muted);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 24px;
+      }
+      article {
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--card);
+        overflow: hidden;
+      }
+      h2 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+      }
+      .caption {
+        padding: 18px 20px;
+      }
+      .caption p {
+        font-size: 13px;
+        color: var(--muted);
+        margin: 3px 0 0;
+      }
+      video {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16/9;
+        background: #121416;
+      }
+      .meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+        font-size: 13px;
+        padding: 12px 20px;
+        color: var(--muted);
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      a:focus-visible,
+      video:focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 3px;
+      }
+      footer {
+        margin-top: 28px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      @media (max-width: 680px) {
+        main {
+          padding: 28px 14px 36px;
+        }
+        .grid {
+          grid-template-columns: 1fr;
+          gap: 18px;
+        }
+        .caption {
+          padding: 15px 16px;
+        }
+        .meta {
+          padding: 12px 16px;
+        }
+      }
+      nav {
+        display: flex;
+        gap: 8px;
+        margin-top: 20px;
+      }
+      nav a {
+        padding: 6px 16px;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+      }
+      nav a[aria-current] {
+        font-weight: 650;
+        border-color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Video style previews</h1>
+        <p>Ten eight-second animations, with the same example in each style.</p>
+        <nav aria-label="Preview language">
+          <a href="index.html" lang="zh-CN">中文</a
+          ><a href="en.html" lang="en" aria-current="page">English</a>
+        </nav>
+      </header>
+      <div class="grid">
+        <article>
+          <div class="caption">
+            <h2>01 · Warm diagrams</h2>
+            <p>Warm paper, clear type and simple animated diagrams.</p>
+          </div>
+          <video
+            aria-label="Warm diagrams"
+            controls
+            playsinline
+            preload="none"
+            poster="posters/en/warm.jpg"
+          >
+            <source src="videos/en/warm.mp4" type="video/mp4" />
+            <track kind="captions" src="captions/en/warm.vtt" srclang="en" />
+          </video>
+          <div class="meta">
+            <span>8 seconds · 1080p · Silent</span
+            ><a href="videos/en/warm.mp4" download>Download video</a>
+          </div>
+        </article>
+        <article>
+          <div class="caption">
+            <h2>02 · ASCII terminal</h2>
+            <p>Character grids, terminal panels and flowing data.</p>
+          </div>
+          <video
+            aria-label="ASCII terminal"
+            controls
+            playsinline
+            preload="none"
+            poster="posters/en/ascii.jpg"
+          >
+            <source src="videos/en/ascii.mp4" type="video/mp4" />
+            <track kind="captions" src="captions/en/ascii.vtt" srclang="en" />
+          </video>
+          <div class="meta">
+            <span>8 seconds · 1080p · Silent</span
+            ><a href="videos/en/ascii.mp4" download>Download video</a>
+          </div>
+        </article>
+        <article>
+          <div class="caption">
+            <h2>03 · Spatial code animation</h2>
+            <p>Geometric objects, depth, lighting and camera movement.</p>
+          </div>
+          <video
+            aria-label="Spatial code animation"
+            controls
+            playsinline
+            preload="none"
+            poster="posters/en/openfilm.jpg"
+          >
+            <source src="videos/en/openfilm.mp4" type="video/mp4" />
+            <track kind="captions" src="captions/en/openfilm.vtt" srclang="en" />
+          </video>
+          <div class="meta">
+            <span>8 seconds · 1080p · Silent</span
+            ><a href="videos/en/openfilm.mp4" download>Download video</a>
+          </div>
+        </article>
+        <article>
+          <div class="caption">
+            <h2>04 · Chalkboard</h2>
+            <p>Chalk textures, handwritten steps and highlights.</p>
+          </div>
+          <video
+            aria-label="Chalkboard"
+            controls
+            playsinline
+            preload="none"
+            poster="posters/en/chalkboard.jpg"
+          >
+            <source src="videos/en/chalkboard.mp4" type="video/mp4" />
+            <track kind="captions" src="captions/en/chalkboard.vtt" srclang="en" />
+          </video>
+          <div class="meta">
+            <span>8 seconds · 1080p · Silent</span
+            ><a href="videos/en/chalkboard.mp4" download>Download video</a>
+          </div>
+        </article>
+        <article>
+          <div class="caption">
+            <h2>05 · Hand-drawn whiteboard</h2>
+            <p>Drawn shapes, arrows and labels reveal an idea step by step.</p>
+          </div>
+          <video
+            aria-label="Hand-drawn whiteboard"
+            controls
+            playsinline
+            preload="none"
+            poster="posters/en/whiteboard.jpg"
+          >
+            <source src="videos/en/whiteboard.mp4" type="video/mp4" />
+            <track kind="captions" src="captions/en/whiteboard.vtt" srclang="en" />
+          </video>
+          <div class="meta">
+            <span>8 seconds · 1080p · Silent</span
+            ><a href="videos/en/whiteboard.mp4" download>Download video</a>
+          </div>
+        </article>
+        <article>
+          <div class="caption">
+            <h2>06 · Miniature workshop</h2>
+            <p>Small models and moving parts explain a system.</p>
+          </div>
+          <video
+            aria-label="Miniature workshop"
+            controls
+            playsinline
+            preload="none"
+            poster="posters/en/miniature-diorama.jpg"
+          >
+            <source src="videos/en/miniature-diorama.mp4" type="video/mp4" />
+            <track kind="captions" src="captions/en/miniature-diorama.vtt" srclang="en" />
+          </video>
+          <div class="meta">
+            <span>8 seconds · 1080p · Silent</span
+            ><a href="videos/en/miniature-diorama.mp4" download>Download video</a>
+          </div>
+        </article>
+        <article>
+          <div class="caption">
+            <h2>07 · Paper collage</h2>
+            <p>Layered paper, cutouts and stop-motion movement.</p>
+          </div>
+          <video
+            aria-label="Paper collage"
+            controls
+            playsinline
+            preload="none"
+            poster="posters/en/paper-collage.jpg"
+          >
+            <source src="videos/en/paper-collage.mp4" type="video/mp4" />
+            <track kind="captions" src="captions/en/paper-collage.vtt" srclang="en" />
+          </video>
+          <div class="meta">
+            <span>8 seconds · 1080p · Silent</span
+            ><a href="videos/en/paper-collage.mp4" download>Download video</a>
+          </div>
+        </article>
+        <article>
+          <div class="caption">
+            <h2>08 · Watercolor characters</h2>
+            <p>Painted textures and characters guide the explanation.</p>
+          </div>
+          <video
+            aria-label="Watercolor characters"
+            controls
+            playsinline
+            preload="none"
+            poster="posters/en/watercolor-character.jpg"
+          >
+            <source src="videos/en/watercolor-character.mp4" type="video/mp4" />
+            <track kind="captions" src="captions/en/watercolor-character.vtt" srclang="en" />
+          </video>
+          <div class="meta">
+            <span>8 seconds · 1080p · Silent</span
+            ><a href="videos/en/watercolor-character.mp4" download>Download video</a>
+          </div>
+        </article>
+        <article>
+          <div class="caption">
+            <h2>09 · Data storytelling</h2>
+            <p>Charts and annotations reveal relationships in the data.</p>
+          </div>
+          <video
+            aria-label="Data storytelling"
+            controls
+            playsinline
+            preload="none"
+            poster="posters/en/data-storytelling.jpg"
+          >
+            <source src="videos/en/data-storytelling.mp4" type="video/mp4" />
+            <track kind="captions" src="captions/en/data-storytelling.vtt" srclang="en" />
+          </video>
+          <div class="meta">
+            <span>8 seconds · 1080p · Silent</span
+            ><a href="videos/en/data-storytelling.mp4" download>Download video</a>
+          </div>
+        </article>
+        <article>
+          <div class="caption">
+            <h2>10 · Kinetic typography</h2>
+            <p>Words, numbers and movement carry the explanation.</p>
+          </div>
+          <video
+            aria-label="Kinetic typography"
+            controls
+            playsinline
+            preload="none"
+            poster="posters/en/kinetic-typography.jpg"
+          >
+            <source src="videos/en/kinetic-typography.mp4" type="video/mp4" />
+            <track kind="captions" src="captions/en/kinetic-typography.vtt" srclang="en" />
+          </video>
+          <div class="meta">
+            <span>8 seconds · 1080p · Silent</span
+            ><a href="videos/en/kinetic-typography.mp4" download>Download video</a>
+          </div>
+        </article>
+      </div>
+      <footer>
+        Original animations generated with DeepSeek Flash. English text and layouts adapted from the
+        Chinese versions.
+        <a href="https://github.com/phoiex/teacher-video-workflow">Project and instructions</a>
+      </footer>
+    </main>
+    <script>
+      document.querySelectorAll('video').forEach((v) =>
+        v.addEventListener('play', () =>
+          document.querySelectorAll('video').forEach((other) => {
+            if (other !== v) other.pause()
+          }),
+        ),
+      )
+    </script>
+  </body>
+</html>

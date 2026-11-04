@@ -1076,6 +1076,8 @@
   "tabs.unconfiguredStartDisabledTip": "Do obszaru roboczego dodano nieskonfigurowany węzeł startowy. Przed kontynuowaniem dokończ konfigurację.",
   "tabs.utilities": "Narzędzia pomocnicze",
   "tabs.workflowTool": "Przepływ pracy",
+  "teacherStyle.followCourse": "Follow course",
+  "teacherStyle.previewLanguage": "Preview language",
   "tracing.stopBy": "Zatrzymane przez {{user}}",
   "triggerStatus.enabled": "WYZWALACZ",
   "variableReference.assignedVarsDescription": "Przypisane zmienne muszą być zmiennymi zapisywalnymi, takimi jak zmienne konwersacji.",

@@ -1076,6 +1076,8 @@
   "tabs.unconfiguredStartDisabledTip": "Um nó inicial não configurado foi adicionado à tela. Conclua a configuração antes de continuar.",
   "tabs.utilities": "Utilitários",
   "tabs.workflowTool": "Fluxo de trabalho",
+  "teacherStyle.followCourse": "Follow course",
+  "teacherStyle.previewLanguage": "Preview language",
   "tracing.stopBy": "Parado por {{user}}",
   "triggerStatus.enabled": "GATILHO",
   "variableReference.assignedVarsDescription": "As variáveis atribuídas devem ser variáveis graváveis, como variáveis de conversação.",

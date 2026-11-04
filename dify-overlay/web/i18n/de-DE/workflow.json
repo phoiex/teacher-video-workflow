@@ -1076,6 +1076,8 @@
   "tabs.unconfiguredStartDisabledTip": "Ein nicht konfigurierter Startknoten wurde zur Arbeitsfläche hinzugefügt. Schließen Sie die Einrichtung ab, bevor Sie fortfahren.",
   "tabs.utilities": "Dienstprogramme",
   "tabs.workflowTool": "Workflow",
+  "teacherStyle.followCourse": "Follow course",
+  "teacherStyle.previewLanguage": "Preview language",
   "tracing.stopBy": "Gestoppt von {{user}}",
   "triggerStatus.enabled": "AUSLÖSER",
   "variableReference.assignedVarsDescription": "Zugewiesene Variablen müssen beschreibbare Variablen sein, z. B. Konversationsvariablen.",

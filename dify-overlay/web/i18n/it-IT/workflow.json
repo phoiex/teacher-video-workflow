@@ -1076,6 +1076,8 @@
   "tabs.unconfiguredStartDisabledTip": "Un nodo iniziale non configurato è stato aggiunto alla tela. Completa la configurazione prima di continuare.",
   "tabs.utilities": "Utility",
   "tabs.workflowTool": "Workflow",
+  "teacherStyle.followCourse": "Follow course",
+  "teacherStyle.previewLanguage": "Preview language",
   "tracing.stopBy": "Interrotto da {{user}}",
   "triggerStatus.enabled": "GRILLETTO",
   "variableReference.assignedVarsDescription": "Le variabili assegnate devono essere variabili scrivibili, ad esempio variabili di conversazione.",

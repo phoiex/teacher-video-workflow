@@ -1,0 +1,302 @@
+[
+  {
+    "style": "warm",
+    "language": "en",
+    "adapted_from": {
+      "language": "zh",
+      "source_sha256": "8e8f2a321a0048898d511da68acebd5ac87eafa658b9e85b0fa0ce13640cb6ec",
+      "model": {
+        "provider": "deepseek",
+        "model": "deepseek-flash",
+        "protocol": "chat.completions",
+        "harness": "deepseek",
+        "reasoning_effort": "max"
+      }
+    },
+    "adaptation": "English text and layout adapted from the existing DeepSeek animation; rendered locally without a new model call.",
+    "duration": 8.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "audio": "silent",
+    "sha256": "4cea79cdb747c5a9aef941c247ccc8e5921b0567292abf801576892ecc16db2f",
+    "bytes": 701918,
+    "source_sha256": "5f9454b5648fd60c7b16a5e11bb31e8e4a23e99249d6f2beec34460d63ea6702",
+    "technical_check": "passed",
+    "visual_check": {
+      "status": "passed",
+      "scope": "Checked decoded frames at 4.0 and 7.9 seconds; English labels fit their panels and the illustrative weights match.",
+      "full_playback_reviewed": false
+    }
+  },
+  {
+    "style": "ascii",
+    "language": "en",
+    "adapted_from": {
+      "language": "zh",
+      "source_sha256": "c58c862a8be1876b7dc99c04f6b1819116713ace2ae12a393ebcf19a0d611aa7",
+      "model": {
+        "provider": "deepseek",
+        "model": "deepseek-flash",
+        "protocol": "chat.completions",
+        "harness": "deepseek",
+        "reasoning_effort": "max"
+      }
+    },
+    "adaptation": "English text and layout adapted from the existing DeepSeek animation; rendered locally without a new model call.",
+    "duration": 8.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "audio": "silent",
+    "sha256": "c5706c6ebc1ae31d6991ca364c1d98b9ccace73513a3b17ba6beca81e75acd3d",
+    "bytes": 1011770,
+    "source_sha256": "0e8f6ef819f31cab88aadff4048b8f56c0b58599d210ed1a5d5e00a0f8492bbe",
+    "technical_check": "passed",
+    "visual_check": {
+      "status": "passed",
+      "scope": "Checked decoded frames at 4.0 and 7.9 seconds; English labels fit their panels and the illustrative weights match.",
+      "full_playback_reviewed": false
+    }
+  },
+  {
+    "style": "openfilm",
+    "language": "en",
+    "adapted_from": {
+      "language": "zh",
+      "source_sha256": "1cb418d87b68ad3e8d73201b8be7bdcbb95118f5bea11836a58e10db4bf0f877",
+      "model": {
+        "provider": "deepseek",
+        "model": "deepseek-flash",
+        "protocol": "chat.completions",
+        "harness": "deepseek",
+        "reasoning_effort": "max"
+      }
+    },
+    "adaptation": "English text and layout adapted from the existing DeepSeek animation; rendered locally without a new model call.",
+    "duration": 8.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "audio": "silent",
+    "sha256": "62ead9b55d6d6c068f4761941d81e917f072a2e3c6a688be6aca6370b7a9ec6b",
+    "bytes": 1238176,
+    "source_sha256": "0217fd40c51e1b67833623d16d0ac47826c85bc9142048036eb9c0e867c6daf8",
+    "technical_check": "passed",
+    "visual_check": {
+      "status": "passed",
+      "scope": "Checked decoded frames at 4.0 and 7.9 seconds; English labels fit their panels and the illustrative weights match.",
+      "full_playback_reviewed": false
+    }
+  },
+  {
+    "style": "chalkboard",
+    "language": "en",
+    "adapted_from": {
+      "language": "zh",
+      "source_sha256": "7f14e7185b9832568326d90b91bd8acfd6ac1469c6d17301322637a06385056b",
+      "model": {
+        "provider": "deepseek",
+        "model": "deepseek-flash",
+        "protocol": "chat.completions",
+        "harness": "deepseek",
+        "reasoning_effort": "max"
+      }
+    },
+    "adaptation": "English text and layout adapted from the existing DeepSeek animation; rendered locally without a new model call.",
+    "duration": 8.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "audio": "silent",
+    "sha256": "8ac932d4423bb0ebc324d2fd185fbb0de0eedbd3684de67a1ffa29e46aa8fe78",
+    "bytes": 1048292,
+    "source_sha256": "ec50d30a18d3547b553e6dee6c88bdb1cffee41e0da720dd0c2dcb6830527639",
+    "technical_check": "passed",
+    "visual_check": {
+      "status": "passed",
+      "scope": "Checked decoded frames at 4.0 and 7.9 seconds; English labels fit their panels and the illustrative weights match.",
+      "full_playback_reviewed": false
+    }
+  },
+  {
+    "style": "whiteboard",
+    "language": "en",
+    "adapted_from": {
+      "language": "zh",
+      "source_sha256": "f45d01f15ffe5e8e305a0edcf11ae7d2618bc4191161e4a0d708c36d669409eb",
+      "model": {
+        "provider": "deepseek",
+        "model": "deepseek-flash",
+        "protocol": "chat.completions",
+        "harness": "deepseek",
+        "reasoning_effort": "max"
+      }
+    },
+    "adaptation": "English text and layout adapted from the existing DeepSeek animation; rendered locally without a new model call.",
+    "duration": 8.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "audio": "silent",
+    "sha256": "91aadbff022768b75984540cf5f14a8bed3d000580ab8a0c2d9774205c4c4753",
+    "bytes": 464463,
+    "source_sha256": "0c0de108710a9efe0d492fdc505212c5e8cd5ea544212b1b7aa47df1c38b0d04",
+    "technical_check": "passed",
+    "visual_check": {
+      "status": "passed",
+      "scope": "Checked decoded frames at 4.0 and 7.9 seconds; English labels fit their panels and the illustrative weights match.",
+      "full_playback_reviewed": false
+    }
+  },
+  {
+    "style": "miniature-diorama",
+    "language": "en",
+    "adapted_from": {
+      "language": "zh",
+      "source_sha256": "0c0cb84c055e512d132f0fd5ae351bb1781bf1ffe72c36775f9c975eaf435893",
+      "model": {
+        "provider": "deepseek",
+        "model": "deepseek-flash",
+        "protocol": "chat.completions",
+        "harness": "deepseek",
+        "reasoning_effort": "max"
+      }
+    },
+    "adaptation": "English text and layout adapted from the existing DeepSeek animation; rendered locally without a new model call.",
+    "duration": 8.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "audio": "silent",
+    "sha256": "c7991ff4f65ef47e784cb15f9f0602d49148505f1dcc33bfd5453f3c2a255446",
+    "bytes": 889427,
+    "source_sha256": "2132a24bbf5f8d9d00bb2b901c61b7d19c14d2b12ea8ea633f44d13623fb53fa",
+    "technical_check": "passed",
+    "visual_check": {
+      "status": "passed",
+      "scope": "Checked decoded frames at 4.0 and 7.9 seconds; English labels fit their panels and the illustrative weights match.",
+      "full_playback_reviewed": false
+    }
+  },
+  {
+    "style": "paper-collage",
+    "language": "en",
+    "adapted_from": {
+      "language": "zh",
+      "source_sha256": "9baec1e2e50439ab6a9f1189d1d86a2fb31a1c4ef498f47d6f17b14d2dd80f97",
+      "model": {
+        "provider": "deepseek",
+        "model": "deepseek-flash",
+        "protocol": "chat.completions",
+        "harness": "deepseek",
+        "reasoning_effort": "max"
+      }
+    },
+    "adaptation": "English text and layout adapted from the existing DeepSeek animation; rendered locally without a new model call.",
+    "duration": 8.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "audio": "silent",
+    "sha256": "e180b0d2faebb13cb2efdcab68808a8601a96239e694b2c34d75a60656dbd6ed",
+    "bytes": 1642847,
+    "source_sha256": "7423c9cc11c92a038f2401e75a12023d56cc08621d5c657ff0af5f0a52d167e4",
+    "technical_check": "passed",
+    "visual_check": {
+      "status": "passed",
+      "scope": "Checked decoded frames at 4.0 and 7.9 seconds; English labels fit their panels and the illustrative weights match.",
+      "full_playback_reviewed": false
+    }
+  },
+  {
+    "style": "watercolor-character",
+    "language": "en",
+    "adapted_from": {
+      "language": "zh",
+      "source_sha256": "af03e511460acb1f5f55213f4cb21d635cb1ddf9de6171602e52ce03281244a5",
+      "model": {
+        "provider": "deepseek",
+        "model": "deepseek-flash",
+        "protocol": "chat.completions",
+        "harness": "deepseek",
+        "reasoning_effort": "max"
+      }
+    },
+    "adaptation": "English text and layout adapted from the existing DeepSeek animation; rendered locally without a new model call.",
+    "duration": 8.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "audio": "silent",
+    "sha256": "8b22a70074c9bbe2f8297ea3378c89c75d97895253ce811db973f74240d269f4",
+    "bytes": 2957819,
+    "source_sha256": "e2ddb3e2d13ef3d3309f9cb14df60bc99b13b49090917ec384db68934997b206",
+    "technical_check": "passed",
+    "visual_check": {
+      "status": "passed",
+      "scope": "Checked decoded frames at 4.0 and 7.9 seconds; English labels fit their panels and the illustrative weights match.",
+      "full_playback_reviewed": false
+    }
+  },
+  {
+    "style": "data-storytelling",
+    "language": "en",
+    "adapted_from": {
+      "language": "zh",
+      "source_sha256": "915ba520256063606342030fe798f1f5e2ced02364bc50282ca67e778f4fe25d",
+      "model": {
+        "provider": "deepseek",
+        "model": "deepseek-flash",
+        "protocol": "chat.completions",
+        "harness": "deepseek",
+        "reasoning_effort": "max"
+      }
+    },
+    "adaptation": "English text and layout adapted from the existing DeepSeek animation; rendered locally without a new model call.",
+    "duration": 8.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "audio": "silent",
+    "sha256": "590d2f0d2390ef3092c70caa6a6e6adcf140cb274e8e6aa1576f2285cabbbbaa",
+    "bytes": 1908060,
+    "source_sha256": "7a9da6aa2cf271c2f07ec66c11cfa63235536acba2230b60bac6f4cb6fcdc931",
+    "technical_check": "passed",
+    "visual_check": {
+      "status": "passed",
+      "scope": "Checked decoded frames at 4.0 and 7.9 seconds; English labels fit their panels and the illustrative weights match.",
+      "full_playback_reviewed": false
+    }
+  },
+  {
+    "style": "kinetic-typography",
+    "language": "en",
+    "adapted_from": {
+      "language": "zh",
+      "source_sha256": "fae3e3d8944d3a7da6fd9efb20ea38c994324bd5718658707e5be7f5731dfea5",
+      "model": {
+        "provider": "deepseek",
+        "model": "deepseek-flash",
+        "protocol": "chat.completions",
+        "harness": "deepseek",
+        "reasoning_effort": "max"
+      }
+    },
+    "adaptation": "English text and layout adapted from the existing DeepSeek animation; rendered locally without a new model call.",
+    "duration": 8.0,
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "audio": "silent",
+    "sha256": "ae3b5e63d4425e4fe822bea066eea3755aff61e5ee49e2ba3373c8ec4b2361bf",
+    "bytes": 543334,
+    "source_sha256": "1764d63b33c6d5508ce4344b5dd62bae35de2da1af5cc75bd87c6d71ee308543",
+    "technical_check": "passed",
+    "visual_check": {
+      "status": "passed",
+      "scope": "Checked decoded frames at 4.0 and 7.9 seconds; English labels fit their panels and the illustrative weights match.",
+      "full_playback_reviewed": false
+    }
+  }
+]

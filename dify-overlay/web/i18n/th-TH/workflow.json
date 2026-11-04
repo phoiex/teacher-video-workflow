@@ -1076,6 +1076,8 @@
   "tabs.unconfiguredStartDisabledTip": "มีการเพิ่มโหนดเริ่มต้นที่ยังไม่ได้กำหนดค่าลงในแคนวาส โปรดตั้งค่าให้เสร็จก่อนดำเนินการต่อ",
   "tabs.utilities": "สาธารณูปโภค",
   "tabs.workflowTool": "เวิร์กโฟลว์",
+  "teacherStyle.followCourse": "Follow course",
+  "teacherStyle.previewLanguage": "Preview language",
   "tracing.stopBy": "แวะที่ {{user}}",
   "triggerStatus.enabled": "ทริกเกอร์",
   "variableReference.assignedVarsDescription": "ตัวแปรที่กําหนดต้องเป็นตัวแปรที่เขียนได้ เช่น ตัวแปรการสนทนา",
