@@ -7,19 +7,33 @@ VOICE = os.environ.get('TTS_VOICE', 'longanlingxin')
 LEGACY = {'model': 'qwen-audio-3.0-tts-plus', 'voice': 'longanlingxin'}
 
 
-def snapshot():
-    return {'model': MODEL, 'voice': VOICE}
+def with_language(settings, language):
+    from .languages import normalize
+    result = dict(settings)
+    if normalize(language) == 'en':
+        result['language'] = 'en'
+    else:
+        result.pop('language', None)
+    return result
+
+
+def snapshot(language='zh'):
+    return with_language({'model': MODEL, 'voice': VOICE}, language)
 
 
 def for_course(course):
-    return dict(course.get('tts_settings') or LEGACY)
+    from .languages import for_course as course_language
+    settings = dict(course.get('tts_settings') or LEGACY)
+    return with_language(settings, settings.get('language') or course_language(course))
 
 
 def clip_name(text, instruction, settings):
     from .common import digest
     fields = {'text': text, 'instruction': instruction, 'voice': settings['voice']}
-    if settings != LEGACY:
+    if {k: v for k, v in settings.items() if k != 'language'} != LEGACY:
         fields['model'] = settings['model']
+    if settings.get('language', 'zh') != 'zh':
+        fields['language'] = settings['language']
     return 'tts_' + digest(fields)[:24]
 
 

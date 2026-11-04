@@ -9,12 +9,12 @@ import subprocess
 import time
 from pathlib import Path
 
-from . import model_call, prompts, style_references, styles, codex_jobs, materials, network_retry
-from .common import (COURSES, DEFAULT_VOICE_INSTRUCTION, RENDER_RUNTIME, NODE, RUNTIME, TOOL, archive, course_dir, digest,
+from . import model_call, prompts, style_references, styles, codex_jobs, materials, network_retry, languages, tts_config
+from .common import (COURSES, RENDER_RUNTIME, NODE, RUNTIME, TOOL, archive, course_dir, digest,
                      estimate_seconds, lock, public_url, save, state, store, version)
 
 FIELDS = ["topic", "audience", "duration_minutes", "objectives", "prerequisites", "style", "style_preset",
-            "voice_instruction", "production_mode", "approved_script", "feedback", "screen_text", "knowledge_selection"]
+            "voice_instruction", "production_mode", "approved_script", "feedback", "screen_text", "knowledge_selection", "course_language"]
 
 
 def normalize(text):
@@ -41,6 +41,7 @@ def new_course(payload):
         bind_run(payload.get('run_id'), resume)
         return {"course_id": resume, "notice": "课程已打开", "phase": saved["phase"]}
     style_preset = styles.validate_preset(payload.get("style_preset"))
+    course_language = languages.normalize(payload.get('course_language'), default='')
     references = style_references.validate_files(payload.get("style_files"))
     cid = digest({"run": payload.get("run_id") or time.time_ns(), "requirement": text})[:24]
     with lock(cid):
@@ -54,7 +55,8 @@ def new_course(payload):
                         "style_notes": str(payload.get("style_notes") or "").strip(),
                         "style_files": references,
                         "style_preview_version": 1,
-                        "tts_settings": voice_settings(),
+                        "course_language": course_language,
+                        "tts_settings": voice_settings(course_language),
                         **({'model_roles': models} if models else {}),
                         "phase": "requirements", "created_at": time.time(),
                         "approvals": {}, "errors": [], "production": {}})
@@ -158,7 +160,7 @@ def prepare_script(cid, step):
                 job = {'input_version':input_version, 'status':'planning',
                        'pipeline':'plan_write_deslop_v1'}
                 s['script_job']=job;store(cid,s)
-                plan=model_call.generate('teacher-script-plan-v1',prompts.assemble('script_plan'),
+                plan=model_call.generate('teacher-script-plan-v1',prompts.assemble('script_plan', course_language=languages.for_course(s)),
                                          inputs,images=source_images)
                 if not isinstance(plan,dict) or not plan.get('sequence'):
                     raise ValueError('教学安排未返回完整结果。')
@@ -173,7 +175,7 @@ def prepare_script(cid, step):
                 s["script_job"] = job
                 store(cid, s)
                 writer_inputs={**inputs, **({'teaching_plan':job['plan']} if job.get('plan') else {})}
-                raw = model_call.generate("teacher-script-draft-v2", prompts.assemble("script"), writer_inputs, images=source_images)
+                raw = model_call.generate("teacher-script-draft-v2", prompts.assemble("script", course_language=languages.for_course(s)), writer_inputs, images=source_images)
                 if not isinstance(raw, dict) or not isinstance(raw.get("script"), str) or not raw["script"].strip():
                     raise ValueError("未收到完整讲稿初稿，请查看错误记录")
                 job.update(raw=raw, raw_version=version(raw), status="awaiting_deslop")
@@ -185,7 +187,7 @@ def prepare_script(cid, step):
             raise ValueError("请先完成讲稿初稿")
         job["status"] = "editing_expression"
         store(cid, s)
-        edited = model_call.generate("teacher-script-deslop-v1", prompts.assemble("script_deslop"), {
+        edited = model_call.generate("teacher-script-deslop-v1", prompts.assemble("script_deslop", course_language=languages.for_course(s)), {
             "requirements": s["requirements"], "draft": job["raw"],
         })
         if not isinstance(edited, dict) or not isinstance(edited.get("script"), str) or not edited["script"].strip():
@@ -212,6 +214,7 @@ def show(cid, stage, producer=''):
                     "courseware_knowledge": s.get('materials', {}).get('knowledge_points', []),
                     "knowledge_focus": s.get('knowledge_focus', ''),
                     "has_existing_script": bool(s["existing_script"]),
+                    "course_language": s.get('course_language', ''),
                 })
                 store(cid, s)
             data = copy.deepcopy(s.get("requirements") or s["intake"])
@@ -220,10 +223,13 @@ def show(cid, stage, producer=''):
                          s.get("style_reference", {}).get("description", "")]
                 data["style"] = "\n\n".join(dict.fromkeys(item for item in notes if item))
                 data["style_preset"] = s.get("style_preset") or ("自定义" if data["style"] else "自由设计")
-            data["voice_instruction"] = data.get("voice_instruction") or DEFAULT_VOICE_INSTRUCTION
+            language = languages.normalize((s.get('requirements') or {}).get('course_language')
+                or s.get('course_language') or data.get('course_language'))
+            data['course_language'] = languages.LABELS[language]
+            data["voice_instruction"] = data.get("voice_instruction") or languages.VOICE_INSTRUCTIONS[language]
             rows = [f"| {label} | {str(data.get(name, '')) or '待补充'} |" for name, label in [
                 ("topic","主题"),("audience","授课对象"),("duration_minutes","视频时长（分钟）"),
-                ("objectives","教学目标"),("prerequisites","学生基础"),
+                ("objectives","教学目标"),("prerequisites","学生基础"),("course_language","讲稿、配音和字幕语言"),
                 ("voice_instruction","语速和语气")]]
             message = s["intake"].get("teacher_message", "")
             questions = s["intake"].get("questions") or []
@@ -298,7 +304,7 @@ def show(cid, stage, producer=''):
                 feedback = s.pop("board_feedback", "")
                 s["board"] = model_call.generate("teacher-storyboard-v1",
                     prompts.assemble("storyboard", s["requirements"].get("style", ""),
-                                     s["requirements"].get("style_preset", "")), {
+                                     s["requirements"].get("style_preset", ""), course_language=languages.for_course(s)), {
                         "requirements": s["requirements"], "script": s["approved_script"],
                         "previous_storyboard": s.get("board"), "feedback": feedback,
                     })
@@ -313,7 +319,7 @@ def show(cid, stage, producer=''):
                     detail = errors[-1].read_text(errors="replace")[-4000:] if errors else str(exc)
                     s["board"] = model_call.generate("teacher-storyboard-repair-v1",
                         prompts.assemble("storyboard", s["requirements"].get("style", ""),
-                                         s["requirements"].get("style_preset", "")), {
+                                         s["requirements"].get("style_preset", ""), course_language=languages.for_course(s)), {
                             "requirements": s["requirements"], "script": s["approved_script"],
                             "previous_storyboard": s["board"], "feedback": feedback,
                             "render_or_contract_error": detail,
@@ -361,6 +367,9 @@ def apply(cid, stage, payload):
             fields = {name: str(payload.get(name, "")).strip() for name in
                       ("topic","audience","duration_minutes","objectives","prerequisites","style",
                        "voice_instruction","production_mode")}
+            language = languages.normalize(payload.get('course_language')
+                or s.get('display_fields', {}).get('course_language') or languages.for_course(s))
+            fields['course_language'] = language
             # 旧执行图只有style字段，按旧契约保存；新图显式保存选择的分支。
             if "style_preset" in payload:
                 fields.update(styles.resolve(payload["style_preset"], fields["style"],
@@ -371,11 +380,14 @@ def apply(cid, stage, payload):
                                              if p['id'] in fields['knowledge_ids']]
             elif 'knowledge_selection' in payload:
                 fields['knowledge_focus'] = str(payload['knowledge_selection']).strip()
-            fields["voice_instruction"] = fields["voice_instruction"] or DEFAULT_VOICE_INSTRUCTION
+            shown_language = languages.normalize(s.get('display_fields', {}).get('course_language'))
+            if fields['voice_instruction'] == languages.VOICE_INSTRUCTIONS[shown_language]:
+                fields['voice_instruction'] = languages.VOICE_INSTRUCTIONS[language]
+            fields["voice_instruction"] = fields["voice_instruction"] or languages.VOICE_INSTRUCTIONS[language]
             voice_units = sum(2 if "\u3400" <= ch <= "\u9fff" else 1
                               for ch in fields["voice_instruction"])
             if voice_units > 100:
-                raise ValueError("语速和语气的说明请控制在约50个汉字以内")
+                raise ValueError("语速和语气说明请控制在50个汉字或100个英文字符以内")
             try:
                 minutes = float(fields["duration_minutes"])
             except ValueError:
@@ -389,6 +401,8 @@ def apply(cid, stage, payload):
                 s.pop("draft", None); s.pop("board", None)
                 s.pop("script_job", None); s.pop("script_feedback", None)
             s["requirements"] = fields
+            s['course_language'] = language
+            s['tts_settings'] = tts_config.with_language(s.get('tts_settings') or tts_config.LEGACY, language)
             s["approvals"]["requirements"] = version(fields)
             s["phase"] = "script"
             archive(cid, "requirements", fields)

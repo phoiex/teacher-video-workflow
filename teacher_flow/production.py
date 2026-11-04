@@ -14,10 +14,10 @@ import time
 import wave
 import zipfile
 
-from .common import (DEFAULT_VOICE_INSTRUCTION, PYTHON, TOOL, course_dir, digest, estimate_seconds, load,
+from .common import (PYTHON, TOOL, course_dir, digest, estimate_seconds, load,
                      lock, public_url, save, state, store, version)
 from .engine import render, validate_board
-from . import network_retry, tts_client, tts_config
+from . import network_retry, tts_client, tts_config, languages, subtitles
 
 ACTIVE = set()
 PRESENCE = {}
@@ -66,8 +66,7 @@ def start(cid):
         assert_approved(s)
         key = version({"script": s["approved_script"], "board": s["board"],
                        **({'tts_settings': s['tts_settings']} if 'tts_settings' in s else {}),
-                       "voice_instruction": s["requirements"].get("voice_instruction")
-                       or DEFAULT_VOICE_INSTRUCTION})
+                       "voice_instruction": languages.voice_instruction(s)})
         current = s.get("production", {})
         if current.get("input_version") != key:
             s["production"] = {"input_version": key, "status": "armed",
@@ -90,7 +89,9 @@ def maybe_launch(cid):
     threading.Thread(target=run, args=(cid,), daemon=True, name=f"course-{cid[:8]}").start()
 
 
-def sentence_chunks(text):
+def sentence_chunks(text, language='zh'):
+    if languages.normalize(language) == 'en':
+        return subtitles.english_speech_chunks(text)
     pieces = re.findall(r".+?(?:[。！？!?](?:[”」』])?|$)", text, re.S)
     result = []
     for piece in pieces:
@@ -115,12 +116,12 @@ def audio_retry_info(cid, s=None):
         return None
     if p.get("failed_step") != "audio" and not p.get("message", "").startswith("配音"):
         return None
-    instruction = s.get("requirements", {}).get("voice_instruction") or DEFAULT_VOICE_INSTRUCTION
+    instruction = languages.voice_instruction(s)
     settings = tts_config.for_course(s)
     folder = course_dir(cid) / "audio"
     completed, total, failed = 0, 0, []
     for i, scene in enumerate(s.get("board", {}).get("scenes", []), 1):
-        for j, text in enumerate(sentence_chunks(scene.get("narration", "")), 1):
+        for j, text in enumerate(sentence_chunks(scene.get("narration", ""), languages.for_course(s)), 1):
             total += 1
             name = tts_config.clip_name(text, instruction, settings)
             record = folder / (name + ".json")
@@ -132,7 +133,8 @@ def audio_retry_info(cid, s=None):
                 return None
             if (data.get("text_sha256") != hashlib.sha256(text.encode()).hexdigest()
                     or data.get("voice") != settings['voice'] or data.get("instruction") != instruction
-                    or data.get('model', settings['model']) != settings['model']):
+                    or data.get('model', settings['model']) != settings['model']
+                    or data.get('language', 'zh') != settings.get('language', 'zh')):
                 return None
             if data.get("status") == "complete":
                 if not (folder / (name + ".wav")).is_file():
@@ -196,7 +198,8 @@ def run(cid):
     try:
         checkpoint(cid)
         s = state(cid); assert_approved(s)
-        instruction = s["requirements"].get("voice_instruction") or DEFAULT_VOICE_INSTRUCTION
+        instruction = languages.voice_instruction(s)
+        language = languages.for_course(s)
         settings = tts_config.for_course(s)
         freeze = s["production"]["input_version"]
         audio_dir = root / "audio"; audio_dir.mkdir(exist_ok=True)
@@ -205,7 +208,7 @@ def run(cid):
         prepared = []
         for i, scene in enumerate(scenes):
             audios = []
-            texts = sentence_chunks(scene["narration"])
+            texts = sentence_chunks(scene["narration"], language)
             for j, text in enumerate(texts):
                 checkpoint(cid)
                 name = tts_config.clip_name(text, instruction, settings)
@@ -231,8 +234,9 @@ def run(cid):
             combined = build / (scene["id"] + ".wav")
             duration, times = join_wav(audios, combined)
             prepared.append({**scene, "duration_seconds": math.ceil((duration + 0.6) * 30) / 30,
+                             **({'language': language} if language != 'zh' else {}),
                              "audio": str(combined), "cues": [
-                                 {"text": text, "start": begin, "end": end}
+                                 {"text": subtitles.caption(text, language), "start": begin, "end": end}
                                  for text, (begin, end) in zip(texts, times)]})
         total = sum(x["duration_seconds"] for x in prepared)
         save(build / "timeline.json", prepared)
@@ -271,13 +275,13 @@ def run(cid):
         subprocess.run([shutil.which("ffmpeg"), "-hide_banner", "-loglevel", "error", "-y",
                         "-f", "concat", "-safe", "0", "-i", str(playlist), "-c", "copy",
                         "-movflags", "+faststart", str(movie)], check=True, capture_output=True, timeout=180)
-        subtitles=[]; offset=0
+        srt_blocks=[]; offset=0
         for scene in prepared:
             for cue in scene["cues"]:
-                subtitles.append(f"{len(subtitles)+1}\n{timed(offset+cue['start'])} --> "
+                srt_blocks.append(f"{len(srt_blocks)+1}\n{timed(offset+cue['start'])} --> "
                                  f"{timed(offset+cue['end'])}\n{cue['text']}\n")
             offset += scene["duration_seconds"]
-        (final_dir / "lesson.srt").write_text("\n".join(subtitles))
+        (final_dir / "lesson.srt").write_text("\n".join(srt_blocks))
         (final_dir / "讲稿.txt").write_text(s["approved_script"])
         subprocess.run([shutil.which("ffmpeg"), "-v", "error", "-i", str(movie),
                         "-f", "null", "-"], check=True, capture_output=True, timeout=300)

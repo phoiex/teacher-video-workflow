@@ -7,7 +7,7 @@
 → 讲稿确认 → 制作分镜 → 分镜确认（可选）→ 配音与渲染 → 下载成片和工程
 ```
 
-**v0.2.2 将千问写稿和独立改写默认设为最高思考档。** 两套模型方案的功能相同。 10 种风格预设、图片与视频参考、课件解析、审核弹窗、实时进度、暂停和断点重试都由两套方案共用。老师从 Dify 发布页制作课程，需要编辑节点时进入「流程与测试」。
+**v0.3.0 支持中文和英文微课。** 开场选择课程语言，讲稿、配音、画面文字和字幕随之切换。两套模型方案共用 10 种风格、图片与视频参考、课件解析、审核弹窗、实时进度、暂停和断点重试。老师从 Dify 发布页制作课程，需要编辑节点时进入「流程与测试」。
 
 [播放十种风格样片](https://phoiex.github.io/teacher-video-workflow/) · [样片与源码](examples/style-previews/README.md)
 
@@ -38,6 +38,8 @@ GPT、Claude 与 DeepSeek 示例设为 `max`；Qwen3.8-Max 开启思考，写稿
 在本地 `.env` 填写 API Key。百炼配音还需要北京地域的 Workspace ID。文字模型和语音服务分别确认开通与余额；桌面应用订阅不等同于这些 API 服务。具体字段和入口见[服务与音色配置](docs/服务与音色.md)。
 
 默认配音：`qwen-audio-3.0-tts-plus`、女声 `longanlingxin`，24 kHz 单声道 WAV。同模型可选男声 `longanlufeng`；在 `.env` 修改 `TTS_VOICE` 后，新课程使用新音色，旧课程继续使用原设置。[官方音色与试听](https://help.aliyun.com/zh/model-studio/qwen-audio-tts-voice-list)
+
+选择 `English` 后生成英文讲稿，并独立修改一轮表达，再交老师确认。配音使用英文参数，字幕按完整单词换行，导出视频和 SRT。[英文配音字幕短片](examples/english-course/README.md)
 
 ## 风格与 Skill
 

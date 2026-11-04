@@ -8,6 +8,7 @@ import wave
 from pathlib import Path
 from .common import load, save
 from . import network_retry
+from .languages import normalize as normalize_language
 
 
 def provider():
@@ -26,11 +27,15 @@ def synthesize(text,name,folder,instruction,*,checkpoint=None,on_retry=None,sett
     recovery=folder/'download-recovery'/(name+'.json')
     module=provider()
     settings = settings or {'model': module.MODEL, 'voice': getattr(module, 'VOICE', 'longanlingxin')}
+    language = normalize_language(settings.get('language'))
     expected={'text_sha256':hashlib.sha256(text.encode()).hexdigest(),
               'model':settings['model'],'voice':settings['voice'],'instruction':instruction}
+    if language != 'zh':
+        expected['language'] = language
     previous=load(record_path) if record_path.exists() else None
     if previous:
-        if any(previous.get(k)!=v for k,v in expected.items()):raise ValueError('已保存的配音与当前文本或声音设置不一致。')
+        if any(previous.get(k)!=v for k,v in expected.items()) or previous.get('language', 'zh') != language:
+            raise ValueError('已保存的配音与当前文本或声音设置不一致。')
         if previous.get('status')=='complete':
             if not audio.exists() or hashlib.sha256(audio.read_bytes()).hexdigest()!=previous.get('sha256'):
                 raise ValueError('已完成配音的文件不完整，请查看保存记录。')
@@ -47,7 +52,7 @@ def synthesize(text,name,folder,instruction,*,checkpoint=None,on_retry=None,sett
     if not recovery.exists():
         key=module.read_credential('API Key');workspace=module.read_credential('Workspace ID')
         endpoint=f'https://{workspace}.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer'
-        payload={'model':settings['model'],'input':{'text':text,'voice':settings['voice'],'language_hints':['zh'],
+        payload={'model':settings['model'],'input':{'text':text,'voice':settings['voice'],'language_hints':[language],
             'format':'wav','sample_rate':24000,'seed':17,'instruction':instruction}}
         def request_once(attempt):
             if record_path.exists():archive(folder,name,load(record_path))

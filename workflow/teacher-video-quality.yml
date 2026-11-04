@@ -1213,12 +1213,12 @@ workflow:
     - data:
         code: "import json\n\ndef main(requirement, source_files, knowledge_focus,\
           \ style_preset, style_notes, style_files, source_text, existing_script,\
-          \ resume_course, run_id, model_roles):\n    return {\"payload\": json.dumps({'requirement':\
-          \ requirement, 'source_files': source_files, 'knowledge_focus': knowledge_focus,\
-          \ 'style_preset': style_preset, 'style_notes': style_notes, 'style_files':\
-          \ style_files, 'source_text': source_text, 'existing_script': existing_script,\
-          \ 'resume_course': resume_course, 'run_id': run_id, 'model_roles': model_roles},\
-          \ ensure_ascii=False)}\n"
+          \ resume_course, run_id, model_roles, course_language):\n    return {\"\
+          payload\": json.dumps({'requirement': requirement, 'course_language': course_language,\
+          \ 'source_files': source_files, 'knowledge_focus': knowledge_focus, 'style_preset':\
+          \ style_preset, 'style_notes': style_notes, 'style_files': style_files,\
+          \ 'source_text': source_text, 'existing_script': existing_script, 'resume_course':\
+          \ resume_course, 'run_id': run_id, 'model_roles': model_roles}, ensure_ascii=False)}\n"
         code_language: python3
         desc: 读取你填写的课程要求和教学材料。
         outputs:
@@ -1273,6 +1273,10 @@ workflow:
           - env
           - COURSE_MODELS
           variable: model_roles
+        - variable: course_language
+          value_selector:
+          - start
+          - course_language
       height: 80
       id: create_args
       position:
@@ -2397,12 +2401,13 @@ workflow:
     - data:
         code: "import json\n\ndef main(course_id, version, action, topic, audience,\
           \ duration_minutes, knowledge_selection, objectives, prerequisites, style_preset,\
-          \ style, voice_instruction, production_mode):\n    return {'payload': json.dumps({'course_id':\
-          \ course_id, 'version': version, 'action': action, 'topic': topic, 'audience':\
-          \ audience, 'duration_minutes': duration_minutes, 'knowledge_selection':\
-          \ knowledge_selection, 'objectives': objectives, 'prerequisites': prerequisites,\
-          \ 'style_preset': style_preset, 'style': style, 'voice_instruction': voice_instruction,\
-          \ 'production_mode': production_mode}, ensure_ascii=False)}\n"
+          \ style, voice_instruction, production_mode, course_language):\n    return\
+          \ {'payload': json.dumps({'course_id': course_id, 'version': version, 'action':\
+          \ action, 'topic': topic, 'audience': audience, 'duration_minutes': duration_minutes,\
+          \ 'knowledge_selection': knowledge_selection, 'objectives': objectives,\
+          \ 'prerequisites': prerequisites, 'style_preset': style_preset, 'style':\
+          \ style, 'voice_instruction': voice_instruction, 'production_mode': production_mode,\
+          \ 'course_language': course_language}, ensure_ascii=False)}\n"
         code_language: python3
         desc: 读取你提交的内容和修改意见。
         isInIteration: false
@@ -2468,6 +2473,10 @@ workflow:
           - requirements_review
           - production_mode
           variable: production_mode
+        - variable: course_language
+          value_selector:
+          - requirements_review
+          - course_language
       height: 80
       id: requirements_apply_args
       parentId: requirements_loop
@@ -2521,9 +2530,10 @@ workflow:
           \    result={name:str(data.get(name,'') or '') for name in ['course_id',\
           \ 'view', 'version', 'topic', 'audience', 'duration_minutes', 'objectives',\
           \ 'prerequisites', 'style', 'style_preset', 'voice_instruction', 'production_mode',\
-          \ 'approved_script', 'feedback', 'screen_text', 'status', 'knowledge_selection']}\n\
-          \    result['done']=bool(data.get('done',False))\n    result['ready']=bool(data.get('ready',True))\n\
-          \    result['paused']=bool(data.get('paused',False))\n    return result\n"
+          \ 'approved_script', 'feedback', 'screen_text', 'status', 'knowledge_selection',\
+          \ 'course_language']}\n    result['done']=bool(data.get('done',False))\n\
+          \    result['ready']=bool(data.get('ready',True))\n    result['paused']=bool(data.get('paused',False))\n\
+          \    return result\n"
         code_language: python3
         desc: 读取本阶段结果，准备展示。
         isInIteration: false
@@ -2590,6 +2600,9 @@ workflow:
           voice_instruction:
             children: null
             type: string
+          course_language:
+            type: string
+            children: null
         selected: false
         title: 读取结果
         type: code
@@ -2695,6 +2708,12 @@ workflow:
           {{#$output.audience#}}
 
 
+          ### 讲稿、配音和字幕语言
+
+
+          {{#$output.course_language#}}
+
+
           ### 视频时长（分钟）
 
 
@@ -2765,6 +2784,22 @@ workflow:
           output_variable_name: audience
           required: true
           type: paragraph
+        - label: 讲稿、配音和字幕语言
+          output_variable_name: course_language
+          required: true
+          type: select
+          default:
+            selector:
+            - requirements_data
+            - course_language
+            type: variable
+            value: ''
+          option_source:
+            selector: []
+            type: constant
+            value:
+            - 中文（普通话）
+            - English
         - default:
             selector:
             - requirements_data
@@ -4052,6 +4087,14 @@ workflow:
           required: false
           type: paragraph
           variable: requirement
+        - variable: course_language
+          label: 讲稿、配音和字幕语言
+          type: select
+          required: false
+          options:
+          - 中文（普通话）
+          - English
+          hint: 留空时从课程要求识别，未指定则用中文。
         - allowed_file_extensions:
           - .pdf
           - .pptx

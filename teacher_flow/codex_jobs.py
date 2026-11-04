@@ -13,7 +13,7 @@ import sys
 import time
 
 from .common import (PRODUCTION_SKILL, TOOL, PYTHON, course_dir, digest, load, save, state, version)
-from . import styles
+from . import styles, languages
 from .codex_runtime import SDK_PYTHON, SessionPaused, continuation_label
 from .common import RUNTIME
 
@@ -50,6 +50,7 @@ def inputs_for(s):
         resources += '\n\n' + PRODUCTION_SKILL.joinpath('branches', branch).read_text()
     resources += ('\n\n本课程使用固定讲稿和既有课程工具。已完成讲稿确认；本阶段只制作分镜。'
                   '不增加样片或配音，不询问模型分工。完成后交回工作流，由老师按既定模式确认。')
+    resources += '\n\n' + languages.instructions(languages.for_course(s))
     inputs = {**_course_content(s), 'style_instructions': resources}
     if s.get('style_preview_version'):
         inputs['style_reference_images'] = styles.preview_images(s['requirements'].get('style_preset', ''))

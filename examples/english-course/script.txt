@@ -1,0 +1,1 @@
+Attention gives each word a weight, then combines their information.

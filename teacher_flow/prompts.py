@@ -1,6 +1,6 @@
 """各步骤的教学要求和资源在实际调用时装配。"""
 from .common import DESLOP, PRODUCTION_SKILL
-from . import styles
+from . import styles, languages
 
 RULES = """
 按本步骤的要求准备课程内容。
@@ -21,17 +21,20 @@ INTAKE = """
 风格未指定时留空，说明将自由设计即可，不强迫选择预设。不要替老师确认。
 老师明确要先审核分镜时，production_mode填“先看分镜”；明确不审核分镜直接制作时填“直接制作”。
 没有说明制作方式时留空，放进questions一次询问；不要再次询问已经明确的选择。
+course_language选择非空时沿用该选择；否则从老师要求提取中文或英文，未指定时用zh。
+course_language输出zh或en，分别表示整课的中文或英文讲稿、配音和字幕。
 输出：
 {"topic":"主题","audience":"受众","duration_minutes":"分钟数或空",
+"course_language":"zh或en",
 "objectives":"讲完希望学会什么","prerequisites":"先修要求或待确认",
-"style":"老师原有风格要求或空","voice_instruction":"老师指定的语速语气或空，最多50个汉字",
+"style":"老师原有风格要求或空","voice_instruction":"老师指定的语速语气或空，最多50个汉字或100个英文字符",
 "production_mode":"先看分镜、直接制作或空",
 "questions":["仍需补充的关键问题"],
 "knowledge_points":["拟覆盖知识点"],"teacher_message":"简短具体的确认说明"}
 """
 
 SCRIPT = """
-按已确认需求写可直接口述的完整中文讲稿。自行组织讲法、例子和段落；
+按已确认需求的course_language写可直接口述的完整讲稿。自行组织讲法、例子和段落；
 开头点明本课要解决的问题及主要知识，结尾回到例子说明知识怎样发挥作用。
 受众可能是大学或中学学生，深度按本课信息安排，不固定为K12。
 目标时长从一开始就约束内容，不能事后靠加速语音硬塞。
@@ -61,7 +64,7 @@ SCRIPT_DESLOP = """
 受众、教学目标、知识点、例子、数学条件、计算数值、因果关系和结论保持原意。
 保留开头的学习目标与结尾结合例子的回顾；它们是本课教学要求。
 删去空泛套话，调整不自然的句子，已经自然准确的句子保留。
-按课程受众采用适合口述的中文，不硬塞口语词，不压成笔记或大纲。
+按课程受众和course_language采用适合口述的表达，不硬塞口语词，不压成笔记或大纲。
 只改script正文，不增补知识点，不重新设计课程，不输出评价或审稿报告。
 独立读取本次提供的完整初稿和课程要求，不依赖上一位写稿者的对话或推理。
 输出 {"script":"修改后的完整口述正文","teacher_message":""}。
@@ -75,7 +78,7 @@ requirements.style_preset是老师选定的方向，style是老师审核后的�
 参考素材提炼的说明只约束视觉表达，不得拿参考作品的内容、题目或文字改写本课讲稿。
 本阶段交付可运行的每场景HTML，而非只写分镜建议；系统将实际渲染图片给老师审核。
 每份HTML必须自包含，内嵌CSS与JS，不访问网络，不使用外部图片或库。
-1920x1080横屏，中文用系统sans-serif字体，主体清晰，底部留出字幕区域。
+1920x1080横屏，用系统sans-serif字体，画面文字遵循course_language，主体清晰，底部留出字幕区域。
 运行前会注入window.SCENE，包含caption、narration、duration_seconds；
 画面中主标题/说明用SCENE.caption，支持老师直接改画面文字。
 必须暴露window.film={frame(t){...}}，t是场景内秒数。
@@ -105,11 +108,12 @@ STYLE_REFERENCE = """
 """
 
 
-def assemble(stage, style="", preset=""):
+def assemble(stage, style="", preset="", course_language='zh'):
+    language_rules = languages.instructions(course_language) if stage != 'intake' else ''
     if stage == "script":
         # 写稿和表达修改分别调用模型；首轮不装配去AI写作Skill。
-        return RULES + "\n" + SCRIPT
-    text = RULES + "\n" + DESLOP.read_text()
+        return RULES + "\n" + SCRIPT + "\n" + language_rules
+    text = RULES + "\n" + DESLOP.read_text() + "\n" + language_rules
     if stage == "intake":
         return text + "\n" + INTAKE
     if stage == "script_plan":
